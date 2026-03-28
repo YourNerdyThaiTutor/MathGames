@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Math Tug-of-War: Arcade Edition</title>
+    <style>
+        :root { --blue: #2196f3; --red: #ff4757; --dark: #2f3542; }
+        /* Disable all browser-level zooming and scrolling gestures */
+html, body {
+    touch-action: none; 
+    user-select: none; 
+    -webkit-user-select: none;
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+}
+
+.numpad button {
+    /* ... your other styles ... */
+    touch-action: manipulation; /* Disables double-tap to zoom specifically on buttons */
+    -webkit-tap-highlight-color: transparent; /* Removes the annoying gray box on tap */
+}
+        body { font-family: sans-serif; text-align: center; background: #1a1a1a; margin: 0; padding: 0; height: 100vh; overflow: hidden; user-select: none; }
+        
+        /* Fix for cut-off numpads */
+        * { box-sizing: border-box; }
+
+        #game-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    background: #1a1a1a;
+}
+
+        /* Slimmer Middle Bar to save space */
+        .middle-bar { 
+    order: 2; 
+    flex-shrink: 0; 
+    background: #333; 
+    padding: 10px 0;
+    border-top: 1px solid #555;
+    border-bottom: 1px solid #555;
+}
+        .settings { display: flex; justify-content: center; gap: 15px; color: white; margin-bottom: 10px; flex-wrap: wrap; }
+        
+        #track { position: relative; width: 90%; height: 20px; background: #000; border-radius: 10px; margin: 5px auto; border: 2px solid #555; overflow: hidden; }
+        #rope { position: absolute; height: 100%; width: 10px; background: gold; left: 50%; margin-left: -5px; box-shadow: 0 0 15px orange; transition: left 0.2s; }
+
+        /* PLAYERS AREA */
+        .players-area { display: flex; flex-direction: column; height: 100%; order: 1; flex: 1; }
+        .player-box {
+    flex: 1; /* Both players share remaining space equally */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly; /* Even spacing between question and pad */
+    padding: 10px;
+    min-height: 0; /* Allows boxes to shrink if needed */
+}
+        
+        /* Player 1 (Top) */
+        .p1 { 
+    order: 1; 
+    flex: 1; 
+    background: #0d47a1; 
+    transform: rotate(180deg); 
+}
+        /* Player 2 (Bottom) */
+        .p2 { background: #b71c1c; color: white; order: 3; }
+
+        /* Question size scales down for smaller screens */
+        .question { font-size: 2.5rem; margin: 5px 0; }
+        .current-entry { font-size: 2rem; background: rgba(255,255,255,0.1); width: 150px; height: 50px; line-height: 50px; border-radius: 8px; margin: 0 auto 10px; border: 1px solid rgba(255,255,255,0.3); }
+
+        /* Numpads */
+        .numpad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    width: 100%;
+    max-width: 300px; /* Limits width so buttons don't get too giant */
+    max-height: 40vh; /* Prevents pad from being taller than the player area */
+    margin: 0 auto;
+}
+
+.numpad button {
+    padding: 12px 5px; /* Taller touch targets, narrower width */
+    font-size: 1.2rem;
+    background: #fff;
+    border-radius: 10px;
+    touch-action: none; /* Physically tells the hardware: no gestures here */
+    -webkit-user-select: none; /* No text highlighting */
+    user-select: none;
+}
+        .numpad .clr { background: #ffa502; color: white; grid-column: span 2; }
+
+        .win-msg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    max-width: 400px;
+    background: white;
+    padding: 30px;
+    border-radius: 20px;
+    display: none; /* Hidden by default */
+    z-index: 1000; /* Stays on top */
+    box-shadow: 0 0 100px rgba(0,0,0,0.8);
+    text-align: center;
+}
+
+.win-msg h2 {
+    margin: 0 0 20px 0;
+    color: #333;
+    font-size: 2.5rem;
+}
+
+/* A special big button just for the winner screen */
+.win-msg .big-reset {
+    padding: 15px 30px;
+    font-size: 1.5rem;
+    background: #2ed573;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+}
+        .restart-btn { padding: 10px 20px; background: #fff; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="winner" class="win-msg">
+    <h2 id="win-text"></h2>
+    <button class="big-reset" onclick="resetGame()">PLAY AGAIN</button>
+</div>
+
+    <div class="player-box p1">
+        <div class="question" id="p1-q">...</div>
+        <div class="current-entry" id="p1-display"></div>
+        <div class="numpad" id="p1-pad"></div>
+    </div>
+
+    <div class="middle-bar">
+    <div class="settings" style="display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.9rem;">
+        
+        <button class="restart-btn" onclick="resetGame()" style="padding: 2px 8px; font-size: 0.8rem;">RESET</button>
+    </div>
+    <div id="track"><div id="rope"></div></div>
+</div>
+
+    <div class="player-box p2">
+        <div class="question" id="p2-q">...</div>
+        <div class="current-entry" id="p2-display"></div>
+        <div class="numpad" id="p2-pad"></div>
+    </div>
+</div>
+
+<script>
+    let ropePos = 50;
+    let p1Target, p2Target;
+    let p1Typed = "", p2Typed = "";
+    // This prevents the "zoom" and "scroll" at the root level
+    document.addEventListener('touchstart', (e) => {
+        if (e.touches.length > 1) e.preventDefault(); 
+    }, { passive: false });
+
+    document.addEventListener('touchend', (e) => {
+        // This stops the 300ms "click" delay entirely
+        // e.preventDefault(); 
+    }, { passive: false });
+    function createPads() {
+    [1, 2].forEach(p => {
+        const container = document.getElementById(`p${p}-pad`);
+        container.innerHTML = ""; 
+        
+        // Array of button labels to maintain layout
+        const labels = ['1','2','3','4','5','6','7','8','9','0','CLEAR'];
+        
+        labels.forEach(label => {
+            let btn = document.createElement('button');
+            btn.innerText = label;
+            if (label === 'CLEAR') btn.className = "clr";
+
+            // USE TOUCHSTART FOR INSTANT MULTI-TOUCH
+            btn.ontouchstart = (e) => {
+                e.preventDefault(); // STOP THE BROWSER FROM DELAYING
+                if (label === 'CLEAR') {
+                    if(p === 1) p1Typed = ""; else p2Typed = "";
+                } else {
+                    handleInput(p, label);
+                }
+                updateDisplays();
+            };
+
+            // Safety for mouse testing on PC
+            btn.onmousedown = (e) => {
+                if (e.pointerType === 'touch') return; // Don't double-fire on iPad
+                if (label === 'CLEAR') {
+                    if(p === 1) p1Typed = ""; else p2Typed = "";
+                } else {
+                    handleInput(p, label);
+                }
+                updateDisplays();
+            };
+
+            container.appendChild(btn);
+        });
+    });
+}
+
+    function generateProblem(player) {
+    // Form: ax + b = c
+        let a = Math.floor(Math.random() * 5) + 2; // coefficient 2-6
+        let x = Math.floor(Math.random() * 9) + 1; // target answer 1-9
+        let b = Math.floor(Math.random() * 10) + 1; // constant
+        let op = Math.random() > 0.5 ? '+' : '-';
+        let c = op === '+' ? (a * x) + b : (a * x) - b;
+
+        document.getElementById(`p${player}-q`).innerText = `${a}x ${op} ${b} = ${c}`;
+        return x;
+}
+
+    function handleInput(player, val) {
+        if (player === 1) {
+            p1Typed += val;
+            if (parseInt(p1Typed) === p1Target) { ropePos -= 5; p1Typed = ""; p1Target = generateProblem(1); }
+            else if (p1Typed.length > 4) p1Typed = "";
+        } else {
+            p2Typed += val;
+            if (parseInt(p2Typed) === p2Target) { ropePos += 5; p2Typed = ""; p2Target = generateProblem(2); }
+            else if (p2Typed.length > 4) p2Typed = "";
+        }
+        updateDisplays();
+        updateRope();
+    }
+
+    function updateDisplays() {
+        document.getElementById('p1-display').innerText = p1Typed;
+        document.getElementById('p2-display').innerText = p2Typed;
+    }
+
+    function updateRope() {
+        document.getElementById('rope').style.left = ropePos + "%";
+        if (ropePos <= 5) endGame("Player 1 Wins!");
+        if (ropePos >= 95) endGame("Player 2 Wins!");
+    }
+
+    function endGame(msg) {
+    document.getElementById('win-text').innerText = msg;
+    document.getElementById('winner').style.display = "block";
+}
+
+    function resetGame() {
+    ropePos = 50; 
+    p1Typed = ""; 
+    p2Typed = "";
+    p1Target = generateProblem(1); 
+    p2Target = generateProblem(2);
+    updateDisplays(); 
+    updateRope();
+    
+    // Hide the winner screen
+    document.getElementById('winner').style.display = "none";
+}
+
+    // External Numpad Support
+    window.addEventListener('keydown', (e) => {
+        const key = e.key;
+        if (e.code.startsWith('Digit') && ['1','2','3','4','5'].includes(key)) handleInput(1, key);
+        if (key === 'Backspace' || key.toLowerCase() === 'q') { p1Typed = p1Typed.slice(0,-1); updateDisplays(); }
+        
+        if (e.code.startsWith('Numpad') && key >= '0' && key <= '9') handleInput(2, key);
+        if (['6','7','8','9','0'].includes(key) && e.code.startsWith('Digit')) handleInput(2, key);
+        if (key === 'Enter' || key === 'Delete') { p2Typed = p2Typed.slice(0,-1); updateDisplays(); }
+    });
+
+    createPads();
+    resetGame();
+</script>
+</body>
+</html>
