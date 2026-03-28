@@ -8,10 +8,27 @@
         :root { --blue: #2196f3; --red: #ff4757; --dark: #2f3542; }
         body { font-family: sans-serif; text-align: center; background: #1a1a1a; margin: 0; padding: 0; height: 100vh; overflow: hidden; user-select: none; }
         
-        #game-container { display: flex; flex-direction: column; height: 100vh; width: 100vw; transition: all 0.3s; }
+        /* Fix for cut-off numpads */
+        * { box-sizing: border-box; }
 
-        /* THE DIVIDER (Rope + Settings) */
-        .middle-bar { background: #333; padding: 10px; border-top: 2px solid #444; border-bottom: 2px solid #444; z-index: 10; order: 2; }
+        #game-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    background: #1a1a1a;
+}
+
+        /* Slimmer Middle Bar to save space */
+        .middle-bar { 
+    order: 2; 
+    flex-shrink: 0; 
+    background: #333; 
+    padding: 10px 0;
+    border-top: 1px solid #555;
+    border-bottom: 1px solid #555;
+}
         .settings { display: flex; justify-content: center; gap: 15px; color: white; margin-bottom: 10px; flex-wrap: wrap; }
         
         #track { position: relative; width: 90%; height: 20px; background: #000; border-radius: 10px; margin: 5px auto; border: 2px solid #555; overflow: hidden; }
@@ -19,29 +36,90 @@
 
         /* PLAYERS AREA */
         .players-area { display: flex; flex-direction: column; height: 100%; order: 1; flex: 1; }
-        .player-box { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 10px; position: relative; }
+        .player-box {
+    flex: 1; /* Both players share remaining space equally */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly; /* Even spacing between question and pad */
+    padding: 10px;
+    min-height: 0; /* Allows boxes to shrink if needed */
+}
         
         /* Player 1 (Top) */
-        .p1 { background: #0d47a1; color: white; order: 1; transform: rotate(180deg); }
+        .p1 { 
+    order: 1; 
+    flex: 1; 
+    background: #0d47a1; 
+    transform: rotate(180deg); 
+}
         /* Player 2 (Bottom) */
         .p2 { background: #b71c1c; color: white; order: 3; }
 
-        .question { font-size: 3rem; font-weight: bold; margin: 10px 0; }
+        /* Question size scales down for smaller screens */
+        .question { font-size: 2.5rem; margin: 5px 0; }
         .current-entry { font-size: 2rem; background: rgba(255,255,255,0.1); width: 150px; height: 50px; line-height: 50px; border-radius: 8px; margin: 0 auto 10px; border: 1px solid rgba(255,255,255,0.3); }
 
         /* Numpads */
-        .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 280px; margin: 0 auto; }
-        .numpad button { padding: 15px; font-size: 1.5rem; font-weight: bold; cursor: pointer; border: none; border-radius: 8px; background: #eee; color: #333; touch-action: manipulation; }
+        .numpad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    width: 100%;
+    max-width: 300px; /* Limits width so buttons don't get too giant */
+    max-height: 40vh; /* Prevents pad from being taller than the player area */
+    margin: 0 auto;
+}
+
+.numpad button {
+    padding: 12px 5px; /* Taller touch targets, narrower width */
+    font-size: 1.2rem;
+    background: #fff;
+    border-radius: 10px;
+}
         .numpad .clr { background: #ffa502; color: white; grid-column: span 2; }
 
-        .win-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 3rem; color: #2ed573; background: white; padding: 20px; border-radius: 15px; display: none; z-index: 100; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
+        .win-msg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    max-width: 400px;
+    background: white;
+    padding: 30px;
+    border-radius: 20px;
+    display: none; /* Hidden by default */
+    z-index: 1000; /* Stays on top */
+    box-shadow: 0 0 100px rgba(0,0,0,0.8);
+    text-align: center;
+}
+
+.win-msg h2 {
+    margin: 0 0 20px 0;
+    color: #333;
+    font-size: 2.5rem;
+}
+
+/* A special big button just for the winner screen */
+.win-msg .big-reset {
+    padding: 15px 30px;
+    font-size: 1.5rem;
+    background: #2ed573;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+}
         .restart-btn { padding: 10px 20px; background: #fff; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <div id="winner" class="win-msg"></div>
+    <div id="winner" class="win-msg">
+    <h2 id="win-text"></h2>
+    <button class="big-reset" onclick="resetGame()">PLAY AGAIN</button>
+</div>
 
     <div class="player-box p1">
         <div class="question" id="p1-q">...</div>
@@ -50,17 +128,19 @@
     </div>
 
     <div class="middle-bar">
-    <div class="settings">
-        <select id="diff-select" onchange="resetGame()">
-            <option value="10">Easy</option>
-            <option value="25">Med</option>
-            <option value="100">Hard</option>
+    <div class="settings" style="display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.9rem;">
+        <select id="diff-select" onchange="resetGame()" style="padding: 2px;">
+            <option value="10">E</option>
+            <option value="25">M</option>
+            <option value="100">H</option>
         </select>
-        <label><input type="checkbox" class="op" value="+" checked>+</label>
-        <label><input type="checkbox" class="op" value="-" checked>-</label>
-        <label><input type="checkbox" class="op" value="*">×</label>
-        <label><input type="checkbox" class="op" value="/">÷</label>
-        <button class="restart-btn" onclick="resetGame()">RESET</button>
+        <div style="display: flex; gap: 4px;">
+            <label><input type="checkbox" class="op" value="+" checked>+</label>
+            <label><input type="checkbox" class="op" value="-" checked>-</label>
+            <label><input type="checkbox" class="op" value="*">×</label>
+            <label><input type="checkbox" class="op" value="/">÷</label>
+        </div>
+        <button class="restart-btn" onclick="resetGame()" style="padding: 2px 8px; font-size: 0.8rem;">RESET</button>
     </div>
     <div id="track"><div id="rope"></div></div>
 </div>
@@ -165,16 +245,22 @@
     }
 
     function endGame(msg) {
-        document.getElementById('winner').innerText = msg;
-        document.getElementById('winner').style.display = "block";
-    }
+    document.getElementById('win-text').innerText = msg;
+    document.getElementById('winner').style.display = "block";
+}
 
     function resetGame() {
-        ropePos = 50; p1Typed = ""; p2Typed = "";
-        p1Target = generateProblem(1); p2Target = generateProblem(2);
-        updateDisplays(); updateRope();
-        document.getElementById('winner').style.display = "none";
-    }
+    ropePos = 50; 
+    p1Typed = ""; 
+    p2Typed = "";
+    p1Target = generateProblem(1); 
+    p2Target = generateProblem(2);
+    updateDisplays(); 
+    updateRope();
+    
+    // Hide the winner screen
+    document.getElementById('winner').style.display = "none";
+}
 
     // External Numpad Support
     window.addEventListener('keydown', (e) => {
