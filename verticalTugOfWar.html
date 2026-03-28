@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Math Tug-of-War: Arcade Edition</title>
     <style>
         :root { --blue: #2196f3; --red: #ff4757; --dark: #2f3542; }
@@ -92,8 +91,9 @@ html, body {
     font-size: 1.2rem;
     background: #fff;
     border-radius: 10px;
-    touch-action: manipulation; /* Disables double-tap to zoom specifically on buttons */
-    -webkit-tap-highlight-color: transparent; /* Removes the annoying gray box on tap */
+    touch-action: none; /* Physically tells the hardware: no gestures here */
+    -webkit-user-select: none; /* No text highlighting */
+    user-select: none;
 }
         .numpad .clr { background: #ffa502; color: white; grid-column: span 2; }
 
@@ -175,39 +175,52 @@ html, body {
     let ropePos = 50;
     let p1Target, p2Target;
     let p1Typed = "", p2Typed = "";
+    // This prevents the "zoom" and "scroll" at the root level
+    document.addEventListener('touchstart', (e) => {
+        if (e.touches.length > 1) e.preventDefault(); 
+    }, { passive: false });
 
+    document.addEventListener('touchend', (e) => {
+        // This stops the 300ms "click" delay entirely
+        // e.preventDefault(); 
+    }, { passive: false });
     function createPads() {
     [1, 2].forEach(p => {
         const container = document.getElementById(`p${p}-pad`);
         container.innerHTML = ""; 
         
-        // Number buttons 0-9
-        for (let i = 0; i <= 9; i++) {
+        // Array of button labels to maintain layout
+        const labels = ['1','2','3','4','5','6','7','8','9','0','CLEAR'];
+        
+        labels.forEach(label => {
             let btn = document.createElement('button');
-            btn.innerText = i;
-            
-            // CRITICAL: use pointerdown + preventDefault for zero-delay multi-touch
-            btn.onpointerdown = (e) => {
-                e.preventDefault(); // This is what stops the zoom and the screen moving
-                handleInput(p, i.toString());
-            };
-            
-            // Style fix: put 0 at the end
-            if (i === 0) btn.style.order = "10";
-            container.appendChild(btn);
-        }
+            btn.innerText = label;
+            if (label === 'CLEAR') btn.className = "clr";
 
-        // Clear Button
-        let clr = document.createElement('button');
-        clr.innerText = "CLEAR";
-        clr.className = "clr";
-        clr.style.order = "11";
-        clr.onpointerdown = (e) => {
-            e.preventDefault();
-            if(p === 1) p1Typed = ""; else p2Typed = ""; 
-            updateDisplays();
-        };
-        container.appendChild(clr);
+            // USE TOUCHSTART FOR INSTANT MULTI-TOUCH
+            btn.ontouchstart = (e) => {
+                e.preventDefault(); // STOP THE BROWSER FROM DELAYING
+                if (label === 'CLEAR') {
+                    if(p === 1) p1Typed = ""; else p2Typed = "";
+                } else {
+                    handleInput(p, label);
+                }
+                updateDisplays();
+            };
+
+            // Safety for mouse testing on PC
+            btn.onmousedown = (e) => {
+                if (e.pointerType === 'touch') return; // Don't double-fire on iPad
+                if (label === 'CLEAR') {
+                    if(p === 1) p1Typed = ""; else p2Typed = "";
+                } else {
+                    handleInput(p, label);
+                }
+                updateDisplays();
+            };
+
+            container.appendChild(btn);
+        });
     });
 }
 
