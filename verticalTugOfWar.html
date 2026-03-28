@@ -6,6 +6,22 @@
     <title>Math Tug-of-War: Arcade Edition</title>
     <style>
         :root { --blue: #2196f3; --red: #ff4757; --dark: #2f3542; }
+        /* Disable all browser-level zooming and scrolling gestures */
+html, body {
+    touch-action: none; 
+    user-select: none; 
+    -webkit-user-select: none;
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+}
+
+.numpad button {
+    /* ... your other styles ... */
+    touch-action: manipulation; /* Disables double-tap to zoom specifically on buttons */
+    -webkit-tap-highlight-color: transparent; /* Removes the annoying gray box on tap */
+}
         body { font-family: sans-serif; text-align: center; background: #1a1a1a; margin: 0; padding: 0; height: 100vh; overflow: hidden; user-select: none; }
         
         /* Fix for cut-off numpads */
@@ -75,6 +91,8 @@
     font-size: 1.2rem;
     background: #fff;
     border-radius: 10px;
+    touch-action: manipulation; /* Disables double-tap to zoom specifically on buttons */
+    -webkit-tap-highlight-color: transparent; /* Removes the annoying gray box on tap */
 }
         .numpad .clr { background: #ffa502; color: white; grid-column: span 2; }
 
@@ -158,27 +176,39 @@
     let p1Typed = "", p2Typed = "";
 
     function createPads() {
-        [1, 2].forEach(p => {
-            const container = document.getElementById(`p${p}-pad`);
-            container.innerHTML = ""; 
-            for (let i = 1; i <= 9; i++) {
-                let btn = document.createElement('button');
-                btn.innerText = i;
-                btn.onpointerdown = (e) => { e.preventDefault(); handleInput(p, i.toString()); };
-                container.appendChild(btn);
-            }
-            let zero = document.createElement('button');
-            zero.innerText = "0";
-            zero.onpointerdown = (e) => { e.preventDefault(); handleInput(p, "0"); };
-            container.appendChild(zero);
+    [1, 2].forEach(p => {
+        const container = document.getElementById(`p${p}-pad`);
+        container.innerHTML = ""; 
+        
+        // Number buttons 0-9
+        for (let i = 0; i <= 9; i++) {
+            let btn = document.createElement('button');
+            btn.innerText = i;
+            
+            // CRITICAL: use pointerdown + preventDefault for zero-delay multi-touch
+            btn.onpointerdown = (e) => {
+                e.preventDefault(); // This is what stops the zoom and the screen moving
+                handleInput(p, i.toString());
+            };
+            
+            // Style fix: put 0 at the end
+            if (i === 0) btn.style.order = "10";
+            container.appendChild(btn);
+        }
 
-            let clr = document.createElement('button');
-            clr.className = "clr";
-            clr.innerText = "CLEAR";
-            clr.onpointerdown = (e) => { e.preventDefault(); if(p===1) p1Typed = ""; else p2Typed = ""; updateDisplays(); };
-            container.appendChild(clr);
-        });
-    }
+        // Clear Button
+        let clr = document.createElement('button');
+        clr.innerText = "CLEAR";
+        clr.className = "clr";
+        clr.style.order = "11";
+        clr.onpointerdown = (e) => {
+            e.preventDefault();
+            if(p === 1) p1Typed = ""; else p2Typed = ""; 
+            updateDisplays();
+        };
+        container.appendChild(clr);
+    });
+}
 
     function generateProblem(player) {
     const max = parseInt(document.getElementById('diff-select').value);
