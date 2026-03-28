@@ -136,6 +136,12 @@
         }
         
     }
+   
+    const isRightSideDigit = e.code.startsWith('Digit') && ['6', '7', '8', '9', '0'].includes(key);
+    
+    if (isRightSideDigit) {
+        handleInput(2, key);
+    }
     
     // Optional: Clear key
     
