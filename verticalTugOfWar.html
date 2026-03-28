@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Math Tug-of-War: Arcade Edition</title>
+    <style>
+        :root { --blue: #2196f3; --red: #ff4757; --dark: #2f3542; }
+        body { font-family: sans-serif; text-align: center; background: #1a1a1a; margin: 0; padding: 0; height: 100vh; overflow: hidden; user-select: none; }
+        
+        #game-container { display: flex; flex-direction: column; height: 100vh; width: 100vw; transition: all 0.3s; }
+
+        /* THE DIVIDER (Rope + Settings) */
+        .middle-bar { background: #333; padding: 10px; border-top: 2px solid #444; border-bottom: 2px solid #444; z-index: 10; order: 2; }
+        .settings { display: flex; justify-content: center; gap: 15px; color: white; margin-bottom: 10px; flex-wrap: wrap; }
+        
+        #track { position: relative; width: 90%; height: 20px; background: #000; border-radius: 10px; margin: 5px auto; border: 2px solid #555; overflow: hidden; }
+        #rope { position: absolute; height: 100%; width: 10px; background: gold; left: 50%; margin-left: -5px; box-shadow: 0 0 15px orange; transition: left 0.2s; }
+
+        /* PLAYERS AREA */
+        .players-area { display: flex; flex-direction: column; height: 100%; order: 1; flex: 1; }
+        .player-box { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 10px; position: relative; }
+        
+        /* Player 1 (Top) */
+        .p1 { background: #0d47a1; color: white; order: 1; transform: rotate(180deg); }
+        /* Player 2 (Bottom) */
+        .p2 { background: #b71c1c; color: white; order: 3; }
+
+        .question { font-size: 3rem; font-weight: bold; margin: 10px 0; }
+        .current-entry { font-size: 2rem; background: rgba(255,255,255,0.1); width: 150px; height: 50px; line-height: 50px; border-radius: 8px; margin: 0 auto 10px; border: 1px solid rgba(255,255,255,0.3); }
+
+        /* Numpads */
+        .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 280px; margin: 0 auto; }
+        .numpad button { padding: 15px; font-size: 1.5rem; font-weight: bold; cursor: pointer; border: none; border-radius: 8px; background: #eee; color: #333; touch-action: manipulation; }
+        .numpad .clr { background: #ffa502; color: white; grid-column: span 2; }
+
+        .win-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 3rem; color: #2ed573; background: white; padding: 20px; border-radius: 15px; display: none; z-index: 100; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
+        .restart-btn { padding: 10px 20px; background: #fff; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="winner" class="win-msg"></div>
+
+    <div class="player-box p1">
+        <div class="question" id="p1-q">...</div>
+        <div class="current-entry" id="p1-display"></div>
+        <div class="numpad" id="p1-pad"></div>
+    </div>
+
+    <div class="middle-bar">
+    <div class="settings">
+        <select id="diff-select" onchange="resetGame()">
+            <option value="10">Easy</option>
+            <option value="25">Med</option>
+            <option value="100">Hard</option>
+        </select>
+        <label><input type="checkbox" class="op" value="+" checked>+</label>
+        <label><input type="checkbox" class="op" value="-" checked>-</label>
+        <label><input type="checkbox" class="op" value="*">×</label>
+        <label><input type="checkbox" class="op" value="/">÷</label>
+        <button class="restart-btn" onclick="resetGame()">RESET</button>
+    </div>
+    <div id="track"><div id="rope"></div></div>
+</div>
+
+    <div class="player-box p2">
+        <div class="question" id="p2-q">...</div>
+        <div class="current-entry" id="p2-display"></div>
+        <div class="numpad" id="p2-pad"></div>
+    </div>
+</div>
+
+<script>
+    let ropePos = 50;
+    let p1Target, p2Target;
+    let p1Typed = "", p2Typed = "";
+
+    function createPads() {
+        [1, 2].forEach(p => {
+            const container = document.getElementById(`p${p}-pad`);
+            container.innerHTML = ""; 
+            for (let i = 1; i <= 9; i++) {
+                let btn = document.createElement('button');
+                btn.innerText = i;
+                btn.onpointerdown = (e) => { e.preventDefault(); handleInput(p, i.toString()); };
+                container.appendChild(btn);
+            }
+            let zero = document.createElement('button');
+            zero.innerText = "0";
+            zero.onpointerdown = (e) => { e.preventDefault(); handleInput(p, "0"); };
+            container.appendChild(zero);
+
+            let clr = document.createElement('button');
+            clr.className = "clr";
+            clr.innerText = "CLEAR";
+            clr.onpointerdown = (e) => { e.preventDefault(); if(p===1) p1Typed = ""; else p2Typed = ""; updateDisplays(); };
+            container.appendChild(clr);
+        });
+    }
+
+    function generateProblem(player) {
+    const max = parseInt(document.getElementById('diff-select').value);
+    const ops = Array.from(document.querySelectorAll('.op:checked')).map(cb => cb.value);
+    
+    // Default to addition if nothing is checked
+    const op = ops.length > 0 ? ops[Math.floor(Math.random() * ops.length)] : "+";
+    let a, b, ans;
+
+    switch(op) {
+        case '+':
+            a = Math.floor(Math.random() * max) + 1;
+            b = Math.floor(Math.random() * max) + 1;
+            ans = a + b;
+            break;
+        case '-':
+            a = Math.floor(Math.random() * max) + 10;
+            b = Math.floor(Math.random() * a) + 1;
+            ans = a - b;
+            break;
+        case '*':
+            // Limit multiplication to 12x10 for "Hard", 10x10 for others
+            let limit = max > 25 ? 12 : 10;
+            a = Math.floor(Math.random() * limit) + 2;
+            b = Math.floor(Math.random() * 10) + 2;
+            ans = a * b;
+            break;
+        case '/':
+            // Work backwards: (Answer * Divisor = Dividend)
+            ans = Math.floor(Math.random() * 10) + 2;
+            b = Math.floor(Math.random() * 10) + 2;
+            a = ans * b; 
+            break;
+    }
+
+    const symbol = op === '*' ? '×' : (op === '/' ? '÷' : op);
+    document.getElementById(`p${player}-q`).innerText = `${a} ${symbol} ${b}`;
+    return ans;
+}
+
+    function handleInput(player, val) {
+        if (player === 1) {
+            p1Typed += val;
+            if (parseInt(p1Typed) === p1Target) { ropePos -= 5; p1Typed = ""; p1Target = generateProblem(1); }
+            else if (p1Typed.length > 4) p1Typed = "";
+        } else {
+            p2Typed += val;
+            if (parseInt(p2Typed) === p2Target) { ropePos += 5; p2Typed = ""; p2Target = generateProblem(2); }
+            else if (p2Typed.length > 4) p2Typed = "";
+        }
+        updateDisplays();
+        updateRope();
+    }
+
+    function updateDisplays() {
+        document.getElementById('p1-display').innerText = p1Typed;
+        document.getElementById('p2-display').innerText = p2Typed;
+    }
+
+    function updateRope() {
+        document.getElementById('rope').style.left = ropePos + "%";
+        if (ropePos <= 5) endGame("Player 1 Wins!");
+        if (ropePos >= 95) endGame("Player 2 Wins!");
+    }
+
+    function endGame(msg) {
+        document.getElementById('winner').innerText = msg;
+        document.getElementById('winner').style.display = "block";
+    }
+
+    function resetGame() {
+        ropePos = 50; p1Typed = ""; p2Typed = "";
+        p1Target = generateProblem(1); p2Target = generateProblem(2);
+        updateDisplays(); updateRope();
+        document.getElementById('winner').style.display = "none";
+    }
+
+    // External Numpad Support
+    window.addEventListener('keydown', (e) => {
+        const key = e.key;
+        if (e.code.startsWith('Digit') && ['1','2','3','4','5'].includes(key)) handleInput(1, key);
+        if (key === 'Backspace' || key.toLowerCase() === 'q') { p1Typed = p1Typed.slice(0,-1); updateDisplays(); }
+        
+        if (e.code.startsWith('Numpad') && key >= '0' && key <= '9') handleInput(2, key);
+        if (['6','7','8','9','0'].includes(key) && e.code.startsWith('Digit')) handleInput(2, key);
+        if (key === 'Enter' || key === 'Delete') { p2Typed = p2Typed.slice(0,-1); updateDisplays(); }
+    });
+
+    createPads();
+    resetGame();
+</script>
+</body>
+</html>
