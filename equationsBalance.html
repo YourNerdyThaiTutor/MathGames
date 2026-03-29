@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Visual 1-Unit Algebra</title>
+    <style>
+        :root { --x-pos: #4caf50; --c-pos: #2196f3; --bg: #121212; --gold: #ffca28; }
+        * { box-sizing: border-box; touch-action: none; user-select: none; }
+        
+        body {
+            margin: 0; padding: 0; height: 100dvh; background: var(--bg);
+            display: grid; grid-template-rows: 100px 1fr 180px;
+            font-family: 'Courier New', monospace; color: white;
+            overflow: hidden;
+        }
+
+        header { border-bottom: 2px solid #333; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #1a1a1a; z-index: 10; }
+        #mission-text { color: var(--gold); font-size: 1rem; margin-bottom: 5px; font-weight: bold; }
+        #current-eq { font-size: 1.8rem; font-weight: bold; }
+
+        #stage { position: relative; display: flex; justify-content: center; align-items: center; }
+        #fulcrum { position: absolute; bottom: 10%; width: 0; height: 0; border-left: 20px solid transparent; border-right: 20px solid transparent; border-bottom: 35px solid #444; }
+        
+        #beam { 
+            position: absolute; width: 90%; height: 10px; background: #666; border-radius: 10px; 
+            display: flex; justify-content: space-between; 
+            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            padding: 0 20px;
+        }
+
+        .pan { 
+            width: 190px; min-height: 180px; background: rgba(255,255,255,0.03); 
+            border: 2px solid #333; border-radius: 0 0 15px 15px; 
+            position: relative; top: 10px;
+            display: grid; 
+            grid-template-columns: repeat(5, 1fr); 
+            grid-auto-rows: 32px;
+            gap: 4px; padding: 8px;
+            align-content: end; 
+        }
+
+        /* --- THE BLOCKS --- */
+        .block { 
+            width: 30px; height: 30px; border-radius: 4px; 
+            display: flex; align-items: center; justify-content: center; 
+            font-weight: bold; font-size: 0.9rem; border: 1px solid rgba(0,0,0,0.2);
+        }
+        
+        .block.x.pos { background: var(--x-pos); }
+        .block.c.pos { background: var(--c-pos); } /* Constant is Blue */
+        
+        .block.neg { background: transparent; border: 2px dashed white; }
+        .block.x.neg { border-color: var(--x-pos); color: var(--x-pos); }
+        .block.c.neg { border-color: var(--c-pos); color: var(--c-pos); }
+
+        .block.dragging { position: fixed; pointer-events: none; z-index: 1000; opacity: 0.8; width: 35px; height: 35px; }
+
+        /* --- TOOLBOX --- */
+        #toolbox { background: #1a1a1a; border-top: 2px solid #333; display: flex; flex-direction: column; padding: 15px; gap: 12px; }
+        .row { display: flex; justify-content: space-between; align-items: center; }
+        
+        .multi-btn-group { display: flex; background: #222; border-radius: 8px; padding: 4px; border: 1px solid #444; }
+        .m-btn { padding: 10px 15px; border: none; background: transparent; color: #666; font-weight: bold; }
+        .m-btn.active { background: #444; color: white; border-radius: 4px; }
+
+        .type-btn { padding: 10px 20px; border: 2px solid #444; background: #222; color: #888; border-radius: 8px; font-weight: bold; }
+        .type-btn.active { border-color: #2ed573; color: white; }
+
+        .btn-action { padding: 15px 20px; border-radius: 10px; border: none; font-weight: bold; font-family: inherit; }
+        .btn-check { background: #2ed573; color: white; flex-grow: 1; margin: 0 10px; font-size: 1.1rem; }
+        .btn-new { background: #444; color: white; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div id="mission-text">GENERATING...</div>
+    <div id="current-eq">0 = 0</div>
+</header>
+
+<div id="stage">
+    <div id="fulcrum"></div>
+    <div id="beam">
+        <div id="pan-left" class="pan"></div>
+        <div id="pan-right" class="pan"></div>
+    </div>
+</div>
+
+<div id="toolbox">
+    <div class="row">
+        <div class="multi-btn-group">
+            <button class="m-btn active" onclick="setMult(1)">x1</button>
+            <button class="m-btn" onclick="setMult(5)">x5</button>
+            <button class="m-btn" onclick="setMult(10)">x10</button>
+        </div>
+        <div style="display:flex; gap:10px;">
+            <button id="btn-pos" class="type-btn active" onclick="setMode('pos')">+</button>
+            <button id="btn-neg" class="type-btn" onclick="setMode('neg')">-</button>
+        </div>
+    </div>
+    <div class="row">
+        <div style="display:flex; gap:15px; align-items: center;">
+            <div class="block x pos" onpointerdown="startDrag(event, 'x')">x</div>
+            <div class="block c pos" onpointerdown="startDrag(event, 'c')">1</div>
+        </div>
+        <button class="btn-action btn-check" onclick="checkSolution()">CHECK ANSWER</button>
+        <button class="btn-action btn-new" onclick="newMission()">NEW</button>
+    </div>
+</div>
+
+<script>
+    let dragEl = null;
+    let multiplier = 1;
+    let mode = 'pos';
+    let mission = { x: 0, val: 0 };
+    let state = { lX: 0, lNX: 0, lC: 0, lNC: 0, rX: 0, rNX: 0, rC: 0, rNC: 0 };
+
+    function newMission() {
+        const x = Math.floor(Math.random() * 6) + 2; 
+        const xCount = Math.floor(Math.random() * 2) + 1;
+        const cLeft = Math.floor(Math.random() * 12) + 1;
+        const cRight = (x * xCount) + cLeft;
+        mission = { val: x, xCount, cLeft, cRight };
+        document.getElementById('mission-text').innerText = `SOLVE: ${xCount}x + ${cLeft} = ${cRight}`;
+        resetScale();
+    }
+
+    function setMult(n) {
+        multiplier = n;
+        document.querySelectorAll('.m-btn').forEach(b => b.classList.toggle('active', b.innerText === 'x'+n));
+    }
+
+    function setMode(m) {
+        mode = m;
+        document.getElementById('btn-pos').classList.toggle('active', m === 'pos');
+        document.getElementById('btn-neg').classList.toggle('active', m === 'neg');
+    }
+
+    function startDrag(e, type) {
+        dragEl = document.createElement('div');
+        dragEl.className = `block ${type} ${mode} dragging`;
+        // Label logic: Variable says "x", Constant says "1"
+        dragEl.innerText = (mode === 'pos' ? '' : '-') + (type === 'x' ? 'x' : '1');
+        document.body.appendChild(dragEl);
+        moveDrag(e);
+        window.onpointermove = moveDrag;
+        window.onpointerup = stopDrag;
+    }
+
+    function moveDrag(e) { if(dragEl){ dragEl.style.left = (e.clientX-15)+'px'; dragEl.style.top = (e.clientY-15)+'px'; } }
+
+    function stopDrag(e) {
+        if(!dragEl) return;
+        const lP = document.getElementById('pan-left').getBoundingClientRect();
+        const rP = document.getElementById('pan-right').getBoundingClientRect();
+        const type = dragEl.classList.contains('x') ? 'X' : 'C';
+        const isNeg = dragEl.classList.contains('neg') ? 'N' : '';
+        
+        if (isInside(e.clientX, e.clientY, lP)) state['l'+isNeg+type] += multiplier;
+        else if (isInside(e.clientX, e.clientY, rP)) state['r'+isNeg+type] += multiplier;
+
+        document.body.removeChild(dragEl); dragEl = null;
+        window.onpointermove = null; window.onpointerup = null;
+        render();
+    }
+
+    function isInside(x, y, r) { return x > r.left && x < r.right && y > r.top && y < r.bottom; }
+
+    function render() {
+        ['l', 'r'].forEach(s => {
+            const pan = document.getElementById(`pan-${s==='l'?'left':'right'}`);
+            pan.innerHTML = '';
+            drawBlocks(pan, s, 'X', 'pos'); drawBlocks(pan, s, 'X', 'neg');
+            drawBlocks(pan, s, 'C', 'pos'); drawBlocks(pan, s, 'C', 'neg');
+        });
+        updateEq();
+        updatePhysics();
+    }
+
+    function drawBlocks(pan, side, type, m) {
+        const key = side + (m === 'neg' ? 'N' : '') + type;
+        const label = (m === 'neg' ? '-' : '') + (type === 'X' ? 'x' : '1');
+        for (let i = 0; i < state[key]; i++) {
+            const b = document.createElement('div');
+            b.className = `block ${type.toLowerCase()} ${m}`;
+            b.innerText = label;
+            b.onclick = (e) => { e.stopPropagation(); state[key]--; render(); };
+            pan.appendChild(b);
+        }
+    }
+
+    function updateEq() {
+        const f = (s) => {
+            let x = state[s+'X'] - state[s+'NX'], c = state[s+'C'] - state[s+'NC'];
+            let res = [];
+            if(x !== 0) res.push(`${x==1?'':(x==-1?'-':x)}x`);
+            if(c !== 0) res.push((c>0 && res.length > 0 ? '+ ' : '') + c);
+            return res.length === 0 ? '0' : res.join(' ');
+        }
+        document.getElementById('current-eq').innerText = `${f('l')} = ${f('r')}`;
+    }
+
+    function updatePhysics() {
+        const c = (s) => ((state[s+'X']-state[s+'NX'])*mission.val) + (state[s+'C']-state[s+'NC']);
+        const tilt = Math.max(-25, Math.min(25, (c('r')-c('l'))*3));
+        document.getElementById('beam').style.transform = `rotate(${tilt}deg)`;
+    }
+
+    function checkSolution() {
+        const lX = state.lX - state.lNX, lC = state.lC - state.lNC;
+        const rX = state.rX - state.rNX, rC = state.rC - state.rNC;
+        if ((lX === 1 && lC === 0 && rC === mission.val && rX === 0) || (rX === 1 && rC === 0 && lC === mission.val && lX === 0)) {
+            alert(`AWESOME! x = ${mission.val}`); newMission();
+        } else {
+            alert("Balanced, but keep going until you have 1x alone!");
+        }
+    }
+
+    function resetScale() { state = { lX: 0, lNX: 0, lC: 0, lNC: 0, rX: 0, rNX: 0, rC: 0, rNC: 0 }; render(); }
+    newMission();
+</script>
+</body>
+</html>
