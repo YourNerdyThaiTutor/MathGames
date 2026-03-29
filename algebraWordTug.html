@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-BQ56JZ1LM4"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'G-BQ56JZ1LM4');
+    </script>
+
+    <script 
+        async 
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2893492306157134"
+        crossorigin="anonymous">
+    </script>
+
+    <meta property="og:title" content="Algebra Tug Of War Game">
+    <meta property="og:description" content="An Algebra Math Game For 2 players to face of in their Algebra skills in a game of Tug Of War">
+    <meta property="og:image" content="https://i.imgur.com/7gxEMVe.png">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://yournerdythaitutor.github.io/MathGames/algebratug.html">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Math Tug-of-War: Arcade Edition</title>
+    <style>
+        :root { --blue: #2196f3; --red: #ff4757; --dark: #2f3542; }
+        /* Disable all browser-level zooming and scrolling gestures */
+html, body {
+    touch-action: none; 
+    user-select: none; 
+    -webkit-user-select: none;
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+}
+
+.numpad button {
+    /* ... your other styles ... */
+    touch-action: manipulation; /* Disables double-tap to zoom specifically on buttons */
+    -webkit-tap-highlight-color: transparent; /* Removes the annoying gray box on tap */
+}
+        body { font-family: sans-serif; text-align: center; background: #1a1a1a; margin: 0; padding: 0; height: 100vh; overflow: hidden; user-select: none; }
+        
+        /* Fix for cut-off numpads */
+        * { box-sizing: border-box; }
+
+        #game-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    background: #1a1a1a;
+}
+
+        /* Slimmer Middle Bar to save space */
+        .middle-bar { 
+    order: 2; 
+    flex-shrink: 0; 
+    background: #333; 
+    padding: 10px 0;
+    border-top: 1px solid #555;
+    border-bottom: 1px solid #555;
+}
+        .settings { display: flex; justify-content: center; gap: 15px; color: white; margin-bottom: 10px; flex-wrap: wrap; }
+        
+        #track { position: relative; width: 90%; height: 20px; background: #000; border-radius: 10px; margin: 5px auto; border: 2px solid #555; overflow: hidden; }
+        #rope { position: absolute; height: 100%; width: 10px; background: gold; left: 50%; margin-left: -5px; box-shadow: 0 0 15px orange; transition: left 0.2s; }
+
+        /* PLAYERS AREA */
+        .players-area { display: flex; flex-direction: column; height: 100%; order: 1; flex: 1; }
+        .player-box {
+    flex: 1; /* Both players share remaining space equally */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly; /* Even spacing between question and pad */
+    padding: 10px;
+    min-height: 0; /* Allows boxes to shrink if needed */
+}
+        
+        /* Player 1 (Top) */
+        .p1 { 
+    order: 1; 
+    flex: 1; 
+    background: #0d47a1; 
+    transform: rotate(180deg); 
+}
+        /* Player 2 (Bottom) */
+        .p2 { background: #b71c1c; color: white; order: 3; }
+
+        /* Question size scales down for smaller screens */
+        .question { font-size: 1rem; margin: 5px 0; }
+        .current-entry { font-size: 2rem; background: rgba(255,255,255,0.1); width: 150px; height: 50px; line-height: 50px; border-radius: 8px; margin: 0 auto 10px; border: 1px solid rgba(255,255,255,0.3); }
+
+        /* Numpads */
+        .numpad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    width: 100%;
+    max-width: 300px; /* Limits width so buttons don't get too giant */
+    max-height: 40vh; /* Prevents pad from being taller than the player area */
+    margin: 0 auto;
+}
+
+.numpad button {
+    padding: 12px 5px; /* Taller touch targets, narrower width */
+    font-size: 1.2rem;
+    background: #fff;
+    border-radius: 10px;
+    touch-action: none; /* Physically tells the hardware: no gestures here */
+    -webkit-user-select: none; /* No text highlighting */
+    user-select: none;
+}
+        .numpad .clr { background: #ffa502; color: white; grid-column: span 2; }
+
+        .win-msg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    max-width: 400px;
+    background: white;
+    padding: 30px;
+    border-radius: 20px;
+    display: none; /* Hidden by default */
+    z-index: 1000; /* Stays on top */
+    box-shadow: 0 0 100px rgba(0,0,0,0.8);
+    text-align: center;
+}
+
+.win-msg h2 {
+    margin: 0 0 20px 0;
+    color: #333;
+    font-size: 2.5rem;
+}
+
+/* A special big button just for the winner screen */
+.win-msg .big-reset {
+    padding: 15px 30px;
+    font-size: 1.5rem;
+    background: #2ed573;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+}
+        .restart-btn { padding: 10px 20px; background: #fff; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="winner" class="win-msg">
+    <h2 id="win-text"></h2>
+    <button class="big-reset" onclick="resetGame()">PLAY AGAIN</button>
+</div>
+
+    <div class="player-box p1">
+        <div class="question" id="p1-q">...</div>
+        <div class="current-entry" id="p1-display"></div>
+        <div class="numpad" id="p1-pad"></div>
+    </div>
+
+    <div class="middle-bar">
+    <div class="settings" style="display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.9rem;">
+        
+        <button class="restart-btn" onclick="resetGame()" style="padding: 2px 8px; font-size: 0.8rem;">RESET</button>
+    </div>
+    <div id="track"><div id="rope"></div></div>
+</div>
+
+    <div class="player-box p2">
+        <div class="question" id="p2-q">...</div>
+        <div class="current-entry" id="p2-display"></div>
+        <div class="numpad" id="p2-pad"></div>
+    </div>
+</div>
+
+<script>
+    let ropePos = 50;
+    let p1Target, p2Target;
+    let p1Typed = "", p2Typed = "";
+    const scenarios = [
+        {
+        category: "Tug of War",
+        plus: "The [TeamA] is pulling with [XCount] secret giant(s) (x) and [C] extra strength units. They are perfectly tied with [CRight] units on the other side.",
+        minus: "The [TeamA] is pulling with [XCount] secret giant(s) (x), but [C] units are accidentally pulling the wrong way (-). They are tied with [CRight] units on the other side.",
+        tags: { TeamA: ["Robot Squad", "Dragon Team", "Space Pirates", "Ninja Clan"] }
+    },
+    {
+        category: "Fruit Harvest",
+        plus: "A farmer has [XCount] identical baskets of apples (x) and [C] loose apples. The total count is [CRight]. How many are in each basket?",
+        minus: "A farmer has [XCount] baskets of apples (x). He found [C] apples were rotten and threw them away (-). He has [CRight] good apples left.",
+        tags: {}
+    },
+    {
+        category: "Gym Training",
+        plus: "A weightlifter puts [XCount] mystery plates (x) and [C] kg of small weights on a bar. The total weight is [CRight] kg.",
+        minus: "A weightlifter had [XCount] mystery plates (x) on a bar, but decided to remove [C] kg to make it lighter. The bar now weighs [CRight] kg.",
+        tags: {}
+    },
+    {
+        category: "Space Cargo",
+        plus: "A rocket is carrying [XCount] alien artifacts (x) and [C] tons of space dust. The total payload is [CRight] tons.",
+        minus: "A rocket has [XCount] alien artifacts (x). To landing safely, it jettisoned [C] tons of scrap metal (-). The final weight is [CRight] tons.",
+        tags: {}
+    },
+    {
+        category: "Animal Rescue",
+        plus: "A rescue center has [XCount] bags of kibble (x) and [C] extra scoops. They have [CRight] scoops in total.",
+        minus: "A rescue center had [XCount] bags of kibble (x). After feeding the puppies [C] scoops (-), they have [CRight] scoops left.",
+        tags: {}
+    },
+    {
+        category: "Hidden Treasure",
+        plus: "A pirate found [XCount] treasure chests (x) and [C] loose gold coins. He has [CRight] coins in total.",
+        minus: "A pirate had [XCount] treasure chests (x), but [C] coins fell through a hole in the boat (-). He has [CRight] coins left.",
+        tags: {}
+    }
+];
+    // This prevents the "zoom" and "scroll" at the root level
+    document.addEventListener('touchstart', (e) => {
+        if (e.touches.length > 1) e.preventDefault(); 
+    }, { passive: false });
+
+    document.addEventListener('touchend', (e) => {
+        // This stops the 300ms "click" delay entirely
+        // e.preventDefault(); 
+    }, { passive: false });
+    function createPads() {
+    [1, 2].forEach(p => {
+        const container = document.getElementById(`p${p}-pad`);
+        container.innerHTML = ""; 
+        
+        // Array of button labels to maintain layout
+        const labels = ['1','2','3','4','5','6','7','8','9','0','CLEAR'];
+        
+        labels.forEach(label => {
+            let btn = document.createElement('button');
+            btn.innerText = label;
+            if (label === 'CLEAR') btn.className = "clr";
+
+            // USE TOUCHSTART FOR INSTANT MULTI-TOUCH
+            btn.ontouchstart = (e) => {
+                e.preventDefault(); // STOP THE BROWSER FROM DELAYING
+                if (label === 'CLEAR') {
+                    if(p === 1) p1Typed = ""; else p2Typed = "";
+                } else {
+                    handleInput(p, label);
+                }
+                updateDisplays();
+            };
+
+            // Safety for mouse testing on PC
+            btn.onmousedown = (e) => {
+                if (e.pointerType === 'touch') return; // Don't double-fire on iPad
+                if (label === 'CLEAR') {
+                    if(p === 1) p1Typed = ""; else p2Typed = "";
+                } else {
+                    handleInput(p, label);
+                }
+                updateDisplays();
+            };
+
+            container.appendChild(btn);
+        });
+    });
+}
+
+    function generateProblem(player) {
+    // Form: ax + b = c
+        // 1. Determine Math First
+    const xVal = Math.floor(Math.random() * 8) + 3; 
+    const xCount = Math.floor(Math.random() * 2) + 1;
+    const isNegative = Math.random() > 0.5; // 50/50 split
+    const cVal = Math.floor(Math.random() * 10) + 1;
+    
+    let cRight, problemStr, equation;
+    const scenario = scenarios[Math.floor(Math.random() * scenarios.length)];
+
+    // 2. Build the Story based on the Math Type
+    if (isNegative) {
+        cRight = (xCount * xVal) - cVal;
+        // Use the 'minus' version of the story
+        problemStr = scenario.minus
+            .replace("[XCount]", xCount)
+            .replace("[C]", cVal) // We show it as a positive number in the text ("gave 5 away")
+            .replace("[CRight]", cRight);
+        equation = `${xCount === 1 ? '' : xCount}x - ${cVal} = ${cRight}`;
+    } else {
+        cRight = (xCount * xVal) + cVal;
+        // Use the 'plus' version of the story
+        problemStr = scenario.plus
+            .replace("[XCount]", xCount)
+            .replace("[C]", cVal)
+            .replace("[CRight]", cRight);
+        equation = `${xCount === 1 ? '' : xCount}x + ${cVal} = ${cRight}`;
+    }
+
+    // 3. Handle optional Team Names
+    if (scenario.tags && scenario.tags.TeamA) {
+        const team = scenario.tags.TeamA[Math.floor(Math.random() * scenario.tags.TeamA.length)];
+        problemStr = problemStr.replaceAll("[TeamA]", team);
+    }
+
+        document.getElementById(`p${player}-q`).innerText = problemStr;
+        return xVal;
+}
+
+    function handleInput(player, val) {
+        if (player === 1) {
+            p1Typed += val;
+            if (parseInt(p1Typed) === p1Target) { ropePos -= 5; p1Typed = ""; p1Target = generateProblem(1); }
+            else if (p1Typed.length > 4) p1Typed = "";
+        } else {
+            p2Typed += val;
+            if (parseInt(p2Typed) === p2Target) { ropePos += 5; p2Typed = ""; p2Target = generateProblem(2); }
+            else if (p2Typed.length > 4) p2Typed = "";
+        }
+        updateDisplays();
+        updateRope();
+    }
+
+    function updateDisplays() {
+        document.getElementById('p1-display').innerText = p1Typed;
+        document.getElementById('p2-display').innerText = p2Typed;
+    }
+
+    function updateRope() {
+        document.getElementById('rope').style.left = ropePos + "%";
+        if (ropePos <= 5) endGame("Player 1 Wins!");
+        if (ropePos >= 95) endGame("Player 2 Wins!");
+    }
+
+    function endGame(msg) {
+    document.getElementById('win-text').innerText = msg;
+    document.getElementById('winner').style.display = "block";
+}
+
+    function resetGame() {
+    ropePos = 50; 
+    p1Typed = ""; 
+    p2Typed = "";
+    p1Target = generateProblem(1); 
+    p2Target = generateProblem(2);
+    updateDisplays(); 
+    updateRope();
+    
+    // Hide the winner screen
+    document.getElementById('winner').style.display = "none";
+}
+
+    // External Numpad Support
+    window.addEventListener('keydown', (e) => {
+        const key = e.key;
+        if (e.code.startsWith('Digit') && ['1','2','3','4','5'].includes(key)) handleInput(1, key);
+        if (key === 'Backspace' || key.toLowerCase() === 'q') { p1Typed = p1Typed.slice(0,-1); updateDisplays(); }
+        
+        if (e.code.startsWith('Numpad') && key >= '0' && key <= '9') handleInput(2, key);
+        if (['6','7','8','9','0'].includes(key) && e.code.startsWith('Digit')) handleInput(2, key);
+        if (key === 'Enter' || key === 'Delete') { p2Typed = p2Typed.slice(0,-1); updateDisplays(); }
+    });
+
+    createPads();
+    resetGame();
+</script>
+</body>
+</html>

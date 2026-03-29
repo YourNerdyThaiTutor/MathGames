@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algebra Story Generator</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #121212; color: white; display: flex; justify-content: center; padding: 20px; }
+        .card { background: #1e1e1e; border: 2px solid #333; border-radius: 15px; padding: 25px; width: 100%; max-width: 500px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        h2 { color: #ffca28; margin-top: 0; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 1px; }
+        #problem-text { font-size: 1.2rem; line-height: 1.6; margin-bottom: 20px; min-height: 100px; }
+        .equation-hint { color: #4caf50; font-family: 'Courier New', monospace; font-weight: bold; font-size: 1.4rem; background: #252525; padding: 10px; border-radius: 8px; text-align: center; margin-bottom: 15px; display: none; }
+        .answer-box { background: #2d2d2d; padding: 15px; border-radius: 8px; border-left: 5px solid #2196f3; margin-top: 20px; display: none; }
+        .controls { display: flex; gap: 10px; margin-top: 20px; }
+        button { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-family: inherit; transition: 0.2s; }
+        .btn-gen { background: #ffca28; color: #000; }
+        .btn-reveal { background: #444; color: white; }
+        button:active { transform: scale(0.98); }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Algebra Adventure</h2>
+    <div id="problem-text">Press "New Problem" to start!</div>
+    
+    <div id="equation-hint" class="equation-hint"></div>
+    
+    <div id="answer-box" class="answer-box">
+        <strong>Solution:</strong> <span id="answer-text"></span>
+    </div>
+
+    <div class="controls">
+        <button class="btn-gen" onclick="generateProblem()">NEW PROBLEM</button>
+        <button class="btn-reveal" onclick="toggleAnswer()">REVEAL ANSWER</button>
+    </div>
+</div>
+
+<script>
+    const scenarios = [
+        {
+        category: "Tug of War",
+        plus: "The [TeamA] is pulling with [XCount] secret giant(s) (x) and [C] extra strength units. They are perfectly tied with [CRight] units on the other side.",
+        minus: "The [TeamA] is pulling with [XCount] secret giant(s) (x), but [C] units are accidentally pulling the wrong way (-). They are tied with [CRight] units on the other side.",
+        tags: { TeamA: ["Robot Squad", "Dragon Team", "Space Pirates", "Ninja Clan"] }
+    },
+    {
+        category: "Fruit Harvest",
+        plus: "A farmer has [XCount] identical baskets of apples (x) and [C] loose apples. The total count is [CRight]. How many are in each basket?",
+        minus: "A farmer has [XCount] baskets of apples (x). He found [C] apples were rotten and threw them away (-). He has [CRight] good apples left.",
+        tags: {}
+    },
+    {
+        category: "Gym Training",
+        plus: "A weightlifter puts [XCount] mystery plates (x) and [C] kg of small weights on a bar. The total weight is [CRight] kg.",
+        minus: "A weightlifter had [XCount] mystery plates (x) on a bar, but decided to remove [C] kg to make it lighter. The bar now weighs [CRight] kg.",
+        tags: {}
+    },
+    {
+        category: "Space Cargo",
+        plus: "A rocket is carrying [XCount] alien artifacts (x) and [C] tons of space dust. The total payload is [CRight] tons.",
+        minus: "A rocket has [XCount] alien artifacts (x). To landing safely, it jettisoned [C] tons of scrap metal (-). The final weight is [CRight] tons.",
+        tags: {}
+    },
+    {
+        category: "Animal Rescue",
+        plus: "A rescue center has [XCount] bags of kibble (x) and [C] extra scoops. They have [CRight] scoops in total.",
+        minus: "A rescue center had [XCount] bags of kibble (x). After feeding the puppies [C] scoops (-), they have [CRight] scoops left.",
+        tags: {}
+    },
+    {
+        category: "Hidden Treasure",
+        plus: "A pirate found [XCount] treasure chests (x) and [C] loose gold coins. He has [CRight] coins in total.",
+        minus: "A pirate had [XCount] treasure chests (x), but [C] coins fell through a hole in the boat (-). He has [CRight] coins left.",
+        tags: {}
+    }
+];
+
+function generateProblem() {
+    // 1. Determine Math First
+    const xVal = Math.floor(Math.random() * 8) + 3; 
+    const xCount = Math.floor(Math.random() * 2) + 1;
+    const isNegative = Math.random() > 0.5; // 50/50 split
+    const cVal = Math.floor(Math.random() * 10) + 1;
+    
+    let cRight, problemStr, equation;
+    const scenario = scenarios[Math.floor(Math.random() * scenarios.length)];
+
+    // 2. Build the Story based on the Math Type
+    if (isNegative) {
+        cRight = (xCount * xVal) - cVal;
+        // Use the 'minus' version of the story
+        problemStr = scenario.minus
+            .replace("[XCount]", xCount)
+            .replace("[C]", cVal) // We show it as a positive number in the text ("gave 5 away")
+            .replace("[CRight]", cRight);
+        equation = `${xCount === 1 ? '' : xCount}x - ${cVal} = ${cRight}`;
+    } else {
+        cRight = (xCount * xVal) + cVal;
+        // Use the 'plus' version of the story
+        problemStr = scenario.plus
+            .replace("[XCount]", xCount)
+            .replace("[C]", cVal)
+            .replace("[CRight]", cRight);
+        equation = `${xCount === 1 ? '' : xCount}x + ${cVal} = ${cRight}`;
+    }
+
+    // 3. Handle optional Team Names
+    if (scenario.tags && scenario.tags.TeamA) {
+        const team = scenario.tags.TeamA[Math.floor(Math.random() * scenario.tags.TeamA.length)];
+        problemStr = problemStr.replaceAll("[TeamA]", team);
+    }
+
+    // 4. Update UI
+    document.getElementById('problem-text').innerText = problemStr;
+    document.getElementById('equation-hint').innerText = equation;
+    document.getElementById('answer-text').innerText = `x = ${xVal}`;
+    
+    // Hide previous answers
+    document.getElementById('answer-box').style.display = 'none';
+    document.getElementById('equation-hint').style.display = 'none';
+}
+
+    
+
+    function toggleAnswer() {
+        const box = document.getElementById('answer-box');
+        const hint = document.getElementById('equation-hint');
+        const isHidden = box.style.display === 'none';
+        box.style.display = isHidden ? 'block' : 'none';
+        hint.style.display = isHidden ? 'block' : 'none';
+    }
+</script>
+
+</body>
+</html>
