@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Systems of Equations: Lab v4</title>
+    <style>
+        :root { --x-color: #4caf50; --y-color: #f44336; --c-color: #2196f3; --bg: #0f172a; --gold: #fbbf24; }
+        * { box-sizing: border-box; touch-action: none; user-select: none; }
+        body { margin: 0; padding: 0; height: 100dvh; background: var(--bg); display: grid; grid-template-rows: 110px 1fr 220px; font-family: 'Segoe UI', monospace; color: white; overflow: hidden; }
+
+        header { border-bottom: 2px solid #334155; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #1e293b; padding: 10px; z-index: 10; }
+        #mission-text { color: var(--gold); font-size: 0.9rem; margin-bottom: 8px; text-align: center; font-weight: bold; line-height: 1.2; }
+        .eq-tabs { display: flex; gap: 15px; }
+        .tab { padding: 6px 20px; border: 2px solid #475569; border-radius: 20px; cursor: pointer; font-size: 0.8rem; font-weight: bold; transition: 0.3s; }
+        .tab.active { background: #38bdf8; border-color: #38bdf8; color: #0f172a; }
+
+        #stage { position: relative; display: flex; justify-content: center; align-items: center; }
+        #fulcrum { position: absolute; bottom: 15%; width: 0; height: 0; border-left: 20px solid transparent; border-right: 20px solid transparent; border-bottom: 35px solid #475569; }
+        
+        #beam { 
+            position: absolute; width: 85%; height: 10px; background: #94a3b8; border-radius: 10px; 
+            display: flex; justify-content: space-between; 
+            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            padding: 0 10px; 
+        }
+        
+        .pan { width: 160px; min-height: 160px; background: rgba(255,255,255,0.05); border: 2px solid #475569; border-radius: 0 0 15px 15px; position: relative; top: 10px; display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 35px; gap: 4px; padding: 8px; align-content: end; }
+        
+        /* High-Position Pan Headers */
+        .pan-header { 
+            position: absolute; 
+            top: -85px; /* Moved significantly higher */
+            width: 100%; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 8px; 
+            pointer-events: none;
+        }
+        .pan-label { 
+            background: rgba(15, 23, 42, 0.8);
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: #38bdf8; 
+            font-weight: bold; 
+            font-size: 1rem; 
+            min-height: 24px;
+            white-space: nowrap;
+        }
+        .pan-label.hidden { opacity: 0; }
+        .clear-btn { 
+            background: #334155; 
+            border: 2px solid #ef4444; 
+            color: #ef4444; 
+            border-radius: 50%; 
+            width: 34px; 
+            height: 34px; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 18px; 
+            transition: 0.2s; 
+            pointer-events: auto; /* Re-enable clicks for the button */
+        }
+        .clear-btn:active { background: #ef4444; color: white; transform: scale(0.9); }
+
+        .block { width: 32px; height: 32px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.8rem; cursor: pointer; border: 1px solid rgba(0,0,0,0.2); }
+        .block.x { background: var(--x-color); }
+        .block.y { background: var(--y-color); }
+        .block.c { background: var(--c-color); }
+        .block.neg { border: 2px dashed white; background: transparent; }
+        .block.dragging { position: fixed; pointer-events: none; z-index: 1000; opacity: 0.8; transform: scale(1.2); }
+
+        #toolbox { background: #1e293b; border-top: 2px solid #334155; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .row { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 10px; }
+        
+        .btn-group { display: flex; background: #0f172a; border-radius: 10px; padding: 3px; border: 1px solid #475569; }
+        .ctrl-btn { padding: 8px 12px; border: none; background: transparent; color: #94a3b8; font-weight: bold; cursor: pointer; border-radius: 7px; font-size: 0.75rem; }
+        .ctrl-btn.active { background: #475569; color: white; }
+
+        .btn-check { background: #2ed573; color: #052e16; padding: 12px; border-radius: 12px; border: none; font-weight: bold; flex-grow: 1; cursor: pointer; font-size: 0.9rem; }
+        .toggle-label-btn { background: #334155; color: white; border: 1px solid #475569; padding: 8px 12px; border-radius: 8px; font-size: 0.75rem; cursor: pointer; }
+        .toggle-label-btn.on { background: #38bdf8; color: #0f172a; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div id="mission-text">Initializing Systems...</div>
+    <div class="eq-tabs">
+        <div id="tab1" class="tab active" onclick="switchEq(1)">Equation A</div>
+        <div id="tab2" class="tab" onclick="switchEq(2)">Equation B</div>
+    </div>
+</header>
+
+<div id="stage">
+    <div id="fulcrum"></div>
+    <div id="beam">
+        <div id="pan-left" class="pan">
+            <div class="pan-header">
+                <button class="clear-btn" onclick="event.stopPropagation(); clearBasket('l')">🗑️</button>
+                <div id="label-left" class="pan-label">0</div>
+            </div>
+        </div>
+        <div id="pan-right" class="pan">
+            <div class="pan-header">
+                <button class="clear-btn" onclick="event.stopPropagation(); clearBasket('r')">🗑️</button>
+                <div id="label-right" class="pan-label">0</div>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="solve-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.95); z-index:2000; flex-direction:column; align-items:center; justify-content:center; gap:20px;">
+    <h2 style="color:var(--gold); margin:0;">Final Challenge: Crack the Code</h2>
+    <p style="text-align:center; padding:0 20px;">Use the two balanced scales to find the hidden values.</p>
+    
+    <div style="display:flex; gap:20px; background:#1e293b; padding:20px; border-radius:15px; border:2px solid #38bdf8;">
+        <div style="text-align:center;">
+            <div style="color:var(--x-color); font-weight:bold; font-size:1.2rem; margin-bottom:5px;">x = ?</div>
+            <input type="number" id="guess-x" style="width:60px; padding:10px; border-radius:8px; border:none; text-align:center; font-size:1.2rem;">
+        </div>
+        <div style="text-align:center;">
+            <div style="color:var(--y-color); font-weight:bold; font-size:1.2rem; margin-bottom:5px;">y = ?</div>
+            <input type="number" id="guess-y" style="width:60px; padding:10px; border-radius:8px; border:none; text-align:center; font-size:1.2rem;">
+        </div>
+    </div>
+    
+    <div style="display:flex; gap:10px;">
+        <button class="btn-check" style="padding:15px 30px;" onclick="submitFinalGuess()">SUBMIT VALUES</button>
+        <button onclick="closeModal()" style="background:#475569; color:white; border:none; padding:15px; border-radius:12px; cursor:pointer;">BACK TO SCALES</button>
+    </div>
+</div>
+<div id="toolbox">
+    <div class="row">
+        <div class="btn-group">
+            <button class="ctrl-btn active" id="m1" onclick="setMult(1)">x1</button>
+            <button class="ctrl-btn" id="m5" onclick="setMult(5)">x5</button>
+            <button class="ctrl-btn" id="m10" onclick="setMult(10)">x10</button>
+        </div>
+        <div class="btn-group">
+            <button class="ctrl-btn active" id="btn-pos" onclick="setMode('pos')">+</button>
+            <button class="ctrl-btn" id="btn-neg" onclick="setMode('neg')">-</button>
+        </div>
+        <button id="toggle-label" class="toggle-label-btn on" onclick="toggleLabels()">LABELS: ON</button>
+    </div>
+
+    <div class="row">
+        <div style="display:flex; gap:10px; align-items: center;">
+            <div class="block x" onpointerdown="startDrag(event, 'x')">x</div>
+            <div class="block y" onpointerdown="startDrag(event, 'y')">y</div>
+            <div class="block c" onpointerdown="startDrag(event, 'c')">1</div>
+        </div>
+        <button class="btn-check" onclick="checkSystem()">SOLVE SYSTEM</button>
+        <button style="padding:10px; background:#475569; color:white; border:none; border-radius:10px; font-weight:bold; font-size:0.7rem;" onclick="newSystem()">NEW</button>
+    </div>
+</div>
+
+<script>
+    let dragEl = null, multiplier = 1, mode = 'pos', currentEq = 1, labelsVisible = true;
+    let solutions = { x: 0, y: 0 }, missions = { 1: {}, 2: {} };
+    let states = {
+        1: { lX: 0, lNX: 0, lY: 0, lNY: 0, lC: 0, lNC: 0, rX: 0, rNX: 0, rY: 0, rNY: 0, rC: 0, rNC: 0 },
+        2: { lX: 0, lNX: 0, lY: 0, lNY: 0, lC: 0, lNC: 0, rX: 0, rNX: 0, rY: 0, rNY: 0, rC: 0, rNC: 0 }
+    };
+
+    function clearBasket(side) {
+        const s = states[currentEq];
+        ['X', 'Y', 'C'].forEach(type => {
+            s[side + type] = 0;
+            s[side + 'N' + type] = 0;
+        });
+        render();
+    }
+
+    function toggleLabels() {
+        labelsVisible = !labelsVisible;
+        const btn = document.getElementById('toggle-label');
+        btn.innerText = `LABELS: ${labelsVisible ? 'ON' : 'OFF'}`;
+        btn.classList.toggle('on', labelsVisible);
+        document.getElementById('label-left').classList.toggle('hidden', !labelsVisible);
+        document.getElementById('label-right').classList.toggle('hidden', !labelsVisible);
+    }
+
+    function setMult(n) { multiplier = n; [1, 5, 10].forEach(v => document.getElementById('m'+v).classList.toggle('active', v === n)); }
+    function setMode(m) { mode = m; document.getElementById('btn-pos').classList.toggle('active', m === 'pos'); document.getElementById('btn-neg').classList.toggle('active', m === 'neg'); }
+
+    function newSystem() {
+        const x = Math.floor(Math.random() * 4) + 2, y = Math.floor(Math.random() * 4) + 2;
+        solutions = { x, y };
+        const a1 = Math.floor(Math.random() * 2) + 1, b1 = Math.floor(Math.random() * 2) + 1, c1 = (a1 * x) + (b1 * y);
+        const a2 = a1 === 1 ? 2 : 1, b2 = b1 === 1 ? 3 : 1, c2 = (a2 * x) + (b2 * y);
+        missions[1] = { a: a1, b: b1, c: c1 }; missions[2] = { a: a2, b: b2, c: c2 };
+        document.getElementById('mission-text').innerHTML = `Eq A: ${a1}x + ${b1}y = ${c1} <br> Eq B: ${a2}x + ${b2}y = ${c2}`;
+        resetStates(); render();
+    }
+
+    function switchEq(num) { currentEq = num; document.getElementById('tab1').classList.toggle('active', num === 1); document.getElementById('tab2').classList.toggle('active', num === 2); render(); }
+
+    function startDrag(e, type) {
+        dragEl = document.createElement('div'); dragEl.className = `block ${type} ${mode} dragging`;
+        dragEl.innerText = (mode === 'neg' ? '-' : '') + (type === 'c' ? '1' : type);
+        document.body.appendChild(dragEl); moveDrag(e);
+        window.onpointermove = moveDrag; window.onpointerup = stopDrag;
+    }
+
+    function moveDrag(e) { if(dragEl) { dragEl.style.left = (e.clientX-16)+'px'; dragEl.style.top = (e.clientY-16)+'px'; } }
+
+    function stopDrag(e) {
+        if(!dragEl) return;
+        const lP = document.getElementById('pan-left').getBoundingClientRect(), rP = document.getElementById('pan-right').getBoundingClientRect();
+        const type = dragEl.classList.contains('x') ? 'X' : (dragEl.classList.contains('y') ? 'Y' : 'C');
+        const prefix = mode === 'neg' ? 'N' : '';
+        if (isInside(e.clientX, e.clientY, lP)) states[currentEq]['l' + prefix + type] += multiplier;
+        else if (isInside(e.clientX, e.clientY, rP)) states[currentEq]['r' + prefix + type] += multiplier;
+        document.body.removeChild(dragEl); dragEl = null; window.onpointermove = null; window.onpointerup = null; render();
+    }
+
+    function isInside(x, y, r) { return x > r.left && x < r.right && y > r.top && y < r.bottom; }
+
+    function formatText(s, pre) {
+        let x = s[pre+'X']-s[pre+'NX'], y = s[pre+'Y']-s[pre+'NY'], c = s[pre+'C']-s[pre+'NC'];
+        let parts = [];
+        if(x !== 0) parts.push(`${x}x`);
+        if(y !== 0) parts.push(`${y > 0 && parts.length ? '+ ' : ''}${y}y`);
+        if(c !== 0) parts.push(`${c > 0 && parts.length ? '+ ' : ''}${c}`);
+        return parts.length ? parts.join(' ') : '0';
+    }
+
+    function render() {
+        const s = states[currentEq];
+        ['l', 'r'].forEach(side => {
+            const pan = document.getElementById(`pan-${side==='l'?'left':'right'}`);
+            // Update labels without wiping child elements if possible, but keeping structure
+            document.getElementById(`label-${side==='l'?'left':'right'}`).innerText = formatText(s, side==='l'?'l':'r');
+            
+            // Re-render blocks (simplified management)
+            const oldBlocks = pan.querySelectorAll('.block');
+            oldBlocks.forEach(b => b.remove());
+            
+            ['X', 'Y', 'C'].forEach(type => {
+                ['', 'N'].forEach(p => {
+                    for(let i=0; i<s[side+p+type]; i++) {
+                        const b = document.createElement('div'); b.className = `block ${type.toLowerCase()} ${p==='N'?'neg':''}`;
+                        b.innerText = (p==='N'?'-':'') + (type === 'C' ? '1' : type.toLowerCase());
+                        b.onclick = (e) => { e.stopPropagation(); s[side+p+type]--; render(); }; pan.appendChild(b);
+                    }
+                });
+            });
+        });
+        updatePhysics();
+    }
+
+    function updatePhysics() {
+        const s = states[currentEq];
+        const calc = (p) => ((s[p+'X']-s[p+'NX'])*solutions.x) + ((s[p+'Y']-s[p+'NY'])*solutions.y) + (s[p+'C']-s[p+'NC']);
+        const lM = calc('l'), rM = calc('r'), tilt = Math.max(-20, Math.min(20, (rM - lM) * 3));
+        document.getElementById('beam').style.transform = `rotate(${tilt}deg)`;
+        document.getElementById('beam').style.background = (lM === rM && lM !== 0) ? "#2ed573" : "#94a3b8";
+    }
+
+    // This replaces your old checkSystem
+function checkSystem() {
+    const val = (n) => {
+        const s = states[n], m = missions[n];
+        // Check if the scale correctly represents the mission equation
+        return (s.lX-s.lNX === m.a && s.lY-s.lNY === m.b && s.rC-s.rNC === m.c && s.rX-s.rNX === 0 && s.rY-s.rNY === 0 && s.lC-s.lNC === 0);
+    };
+
+    if (val(1) && val(2)) {
+        // Success! Now move to the solving phase
+        document.getElementById('solve-modal').style.display = 'flex';
+    } else {
+        alert("Both Equation A and Equation B must be perfectly balanced and set up first!");
+    }
+}
+
+function submitFinalGuess() {
+    const gx = parseInt(document.getElementById('guess-x').value);
+    const gy = parseInt(document.getElementById('guess-y').value);
+
+    if (gx === solutions.x && gy === solutions.y) {
+        alert(`🎯 BRILLIANT! You solved the system.\nx = ${solutions.x}\ny = ${solutions.y}`);
+        closeModal();
+        newSystem(); // Start a fresh challenge
+    } else {
+        alert("Those values don't quite fit... Look at the scales again. If x was that number, would the math work?");
+    }
+}
+
+function closeModal() {
+    document.getElementById('solve-modal').style.display = 'none';
+    document.getElementById('guess-x').value = '';
+    document.getElementById('guess-y').value = '';
+}
+    function resetStates() { Object.keys(states).forEach(k => Object.keys(states[k]).forEach(v => states[k][v] = 0)); }
+    newSystem();
+</script>
+</body>
+</html>
