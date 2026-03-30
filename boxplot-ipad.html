@@ -3,173 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Box Plot Challenge: Data Restored</title>
+    <title>Box Plot: Floating Cards Edition</title>
     <style>
-        :root { --p1: #38bdf8; --bg: #0f172a; --gold: #fbbf24; --green: #2ed573; --red: #fb7185; }
-        * { touch-action: none; -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
-        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: white; margin: 0; padding: 15px; overflow-x: hidden; }
+        :root { --p1: #38bdf8; --bg: #0f172a; --gold: #fbbf24; --green: #2ed573; }
+        * { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
         
-        .container { width: 100%; max-width: 900px; margin: auto; }
-        .panel { background: #1e293b; border-radius: 24px; padding: 25px; border: 1px solid #334155; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        body { font-family: system-ui, sans-serif; background: var(--bg); color: white; margin: 0; padding: 15px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        .header { display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 12px; border-radius: 15px; margin-bottom: 10px; z-index: 1000; }
+        button { padding: 12px 20px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; }
+        .btn-check { background: var(--green); color: #000; }
 
         /* Sort Area */
-        #sort-area { display: flex; justify-content: center; gap: 12px; margin-bottom: 20px; min-height: 70px; flex-wrap: wrap; padding: 15px; border: 2px dashed #334155; border-radius: 15px; }
-        .data-point { 
-            background: var(--p1); color: #000; font-weight: 800; padding: 15px 20px; 
-            border-radius: 10px; font-size: 1.3rem; box-shadow: 0 4px 0 #0369a1;
-            cursor: move;
+        #sort-area { 
+            display: flex; justify-content: center; gap: 10px; min-height: 80px; 
+            padding: 15px; border: 2px dashed #334155; border-radius: 15px; 
+            background: rgba(255,255,255,0.02); margin-bottom: 10px; position: relative;
         }
-        .data-point.dragging { opacity: 0.5; transform: scale(1.1); }
 
-        /* The Canvas */
-        #plot-space { 
-            width: 100%; height: 320px; background: #0b1222; border-radius: 20px; 
-            position: relative; margin-top: 60px; border: 2px solid #1e293b;
+        .data-card { 
+            background: var(--p1); color: #000; font-weight: 900; 
+            padding: 12px 18px; border-radius: 8px; font-size: 1.3rem; 
+            box-shadow: 0 4px 0 #0369a1; position: relative; z-index: 10;
+            transition: transform 0.1s;
         }
-        
+
+        /* This is the class applied when the card is "Floating" */
+        .dragging { 
+            position: fixed !important; 
+            z-index: 9999 !important; 
+            pointer-events: none; 
+            transform: scale(1.1); 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5); 
+            opacity: 0.9;
+        }
+
+        .placeholder { 
+            width: 50px; height: 50px; background: rgba(255,255,255,0.1); 
+            border-radius: 8px; border: 2px dashed #38bdf8; 
+        }
+
+        /* Plot Area */
+        #plot-space { flex: 1; background: #0b1222; border-radius: 20px; position: relative; border: 2px solid #1e293b; margin-top: 20px; }
         #number-line { position: absolute; bottom: 60px; left: 40px; right: 40px; height: 4px; background: rgba(255,255,255,0.3); }
-        .tick { position: absolute; width: 2px; height: 18px; background: white; bottom: -7px; }
-        .tick-label { position: absolute; bottom: -32px; font-size: 0.9rem; transform: translateX(-50%); color: #94a3b8; }
+        .tick { position: absolute; width: 2px; height: 15px; background: white; bottom: -6px; }
+        .tick-label { position: absolute; bottom: -30px; font-size: 1rem; transform: translateX(-50%); color: #94a3b8; }
 
-        /* Draggable Markers */
-        .plot-element { position: absolute; will-change: left, width; }
-        #the-box { height: 90px; top: 100px; background: rgba(56, 189, 248, 0.15); border: 3px solid #fff; border-radius: 6px; z-index: 10; }
-        
-        .q-handle { position: absolute; width: 44px; height: 130px; top: -20px; z-index: 15; display: flex; justify-content: center; align-items: center; }
-        .q-handle::after { content: ''; width: 5px; height: 90px; background: white; border-radius: 10px; }
-
-        #the-median { width: 10px; height: 130px; top: 80px; background: var(--gold); transform: translateX(-50%); z-index: 20; border-radius: 5px; }
-        .whisker-dot { width: 34px; height: 34px; top: 145px; transform: translate(-50%, -50%); background: white; border-radius: 50%; border: 5px solid var(--gold); z-index: 30; }
-
-        /* Floating Labels */
-        .val-label { position: absolute; top: -45px; left: 50%; transform: translateX(-50%); background: var(--gold); color: #000; padding: 4px 8px; border-radius: 6px; font-weight: 900; font-size: 1.1rem; pointer-events: none; }
-        .marker-title { position: absolute; top: -65px; left: 50%; transform: translateX(-50%); font-size: 0.7rem; color: var(--p1); font-weight: bold; text-transform: uppercase; white-space: nowrap; }
-
-        button { width: 100%; padding: 18px; border-radius: 15px; border: none; font-weight: bold; font-size: 1.2rem; cursor: pointer; margin-top: 15px; transition: 0.1s; }
-        .btn-check { background: var(--green); color: #0f172a; }
-        .btn-new { background: #334155; color: white; }
+        .marker { position: absolute; touch-action: none; }
+        #the-box { height: 80px; top: 100px; background: rgba(56, 189, 248, 0.2); border: 2px solid #fff; z-index: 5; pointer-events: none; }
+        .handle { position: absolute; width: 80px; height: 160px; top: 60px; display: flex; justify-content: center; align-items: center; z-index: 50; transform: translateX(-50%); }
+        .handle::after { content: ''; width: 8px; height: 80px; background: white; border-radius: 4px; box-shadow: 0 0 15px rgba(255,255,255,0.4); }
+        #the-median { width: 50px; height: 160px; top: 60px; display: flex; justify-content: center; align-items: center; transform: translateX(-50%); z-index: 40; }
+        #the-median::after { content: ''; width: 10px; height: 100px; background: var(--gold); border-radius: 5px; }
+        .whisker-dot { width: 60px; height: 60px; top: 140px; transform: translate(-50%, -50%); display: flex; justify-content: center; align-items: center; z-index: 30; }
+        .whisker-dot::after { content: ''; width: 26px; height: 26px; background: white; border-radius: 50%; border: 4px solid var(--gold); }
+        .val-label { position: absolute; top: -45px; left: 50%; transform: translateX(-50%); background: var(--gold); color: #000; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 1rem; pointer-events: none; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="panel">
-        <h3 style="margin: 0 0 10px 0; color: var(--p1);">1. Sort the Data</h3>
-        <div id="sort-area"></div>
-        
-        <h3 style="margin: 20px 0 0 0; color: var(--p1);">2. Match the Plot</h3>
-        <div id="plot-space">
-            <div id="number-line"></div>
-            <div id="m-min" class="plot-element whisker-dot"><span class="marker-title">Min</span><span class="val-label">?</span></div>
-            <div id="the-box" class="plot-element">
-                <div id="h-q1" class="q-handle" style="left:-22px;"><span class="marker-title">Q1</span><span class="val-label">?</span></div>
-                <div id="h-q3" class="q-handle" style="right:-22px;"><span class="marker-title">Q3</span><span class="val-label">?</span></div>
-            </div>
-            <div id="the-median" class="plot-element"><span class="marker-title">Med</span><span class="val-label">?</span></div>
-            <div id="m-max" class="plot-element whisker-dot"><span class="marker-title">Max</span><span class="val-label">?</span></div>
-        </div>
-        
-        <button class="btn-check" onclick="checkAnswers()">SUBMIT PLOT</button>
-        <button class="btn-new" onclick="setupNewCase()">NEW CHALLENGE</button>
-        <div id="feedback" style="text-align: center; margin-top: 15px; font-weight: bold; font-size: 1.2rem;"></div>
-    </div>
+<div class="header">
+    <button class="btn-check" onclick="check()">SUBMIT</button>
+    <div id="streak">Streak: 0</div>
+    <button style="background:#334155; color:white;" onclick="setup()">NEW CASE</button>
+</div>
+
+<div id="sort-area"></div>
+
+<div id="plot-space">
+    <div id="number-line"></div>
+    <div id="the-box" class="marker" data-q1="8" data-q3="22"></div>
+    <div id="m-min" class="marker whisker-dot" data-val="2"><span class="val-label">2</span></div>
+    <div id="m-max" class="marker whisker-dot" data-val="28"><span class="val-label">28</span></div>
+    <div id="the-median" class="marker" data-val="15"><span class="val-label">15</span></div>
+    <div id="h-q1" class="marker handle" data-val="8"><span class="val-label">8</span></div>
+    <div id="h-q3" class="marker handle" data-val="22"><span class="val-label">22</span></div>
 </div>
 
 <script>
-    let stats = {}; const maxRange = 50; const padding = 40;
+    let stats = {}; let streak = 0; const maxV = 30; const pad = 40;
     let activeId = null;
 
-    function setupNewCase() {
-        const raw = Array.from({length: 8}, () => Math.floor(Math.random() * 41) + 4);
+    function setup() {
+        const raw = Array.from({length: 8}, () => Math.floor(Math.random() * 25) + 2);
         const sorted = [...raw].sort((a,b)=>a-b);
         const getM = (a) => a.length % 2 === 0 ? (a[a.length/2-1]+a[a.length/2])/2 : a[Math.floor(a.length/2)];
-        
         stats = { min: sorted[0], max: sorted[7], med: getM(sorted), q1: getM(sorted.slice(0, 4)), q3: getM(sorted.slice(4)) };
 
         const area = document.getElementById('sort-area'); area.innerHTML = '';
         raw.forEach(n => {
-            const el = document.createElement('div'); el.className = 'data-point'; el.innerText = n;
-            el.onpointerdown = (e) => {
-                el.setPointerCapture(e.pointerId); el.classList.add('dragging');
-                el.onpointermove = (em) => {
-                    const after = [...area.querySelectorAll('.data-point:not(.dragging)')].find(c => em.clientX < c.getBoundingClientRect().left + c.offsetWidth/2);
-                    area.insertBefore(el, after || null);
+            const card = document.createElement('div');
+            card.className = 'data-card'; card.innerText = n;
+
+            card.onpointerdown = (e) => {
+                const rect = card.getBoundingClientRect();
+                const offsetX = e.clientX - rect.left;
+                const offsetY = e.clientY - rect.top;
+                
+                // Create the placeholder
+                const placeholder = document.createElement('div');
+                placeholder.className = 'placeholder';
+                card.after(placeholder);
+
+                card.classList.add('dragging');
+                card.style.left = rect.left + 'px';
+                card.style.top = rect.top + 'px';
+                card.style.width = rect.width + 'px';
+
+                card.setPointerCapture(e.pointerId);
+
+                card.onpointermove = (em) => {
+                    // Follow finger
+                    card.style.left = (em.clientX - offsetX) + 'px';
+                    card.style.top = (em.clientY - offsetY) + 'px';
+
+                    // Find nearest spot
+                    const others = [...area.querySelectorAll('.data-card:not(.dragging), .placeholder')];
+                    const next = others.find(c => em.clientX < c.getBoundingClientRect().left + c.offsetWidth/2);
+                    if (next !== placeholder) area.insertBefore(placeholder, next || null);
                 };
-                el.onpointerup = () => { el.onpointermove = null; el.classList.remove('dragging'); };
+
+                card.onpointerup = () => {
+                    card.classList.remove('dragging');
+                    card.style.position = ''; card.style.left = ''; card.style.top = ''; card.style.width = '';
+                    placeholder.replaceWith(card);
+                    card.onpointermove = null;
+                };
             };
-            area.appendChild(el);
+            area.appendChild(card);
         });
-        resetPositions();
-        document.getElementById('feedback').innerText = "";
     }
 
-    function pxToVal(px) {
-        const rect = document.getElementById('plot-space').getBoundingClientRect();
-        const w = rect.width - (padding * 2);
-        return Math.round((((px - rect.left - padding) / w) * maxRange) * 2) / 2;
+    // Plot Logic
+    function pxToV(px) {
+        const r = document.getElementById('plot-space').getBoundingClientRect();
+        return Math.round((((px - r.left - pad) / (r.width - pad*2)) * maxV) * 2) / 2;
     }
-
-    function valToPx(val) {
-        const w = document.getElementById('plot-space').clientWidth - (padding * 2);
-        return ((val / maxRange) * w) + padding;
-    }
-
-    function resetPositions() {
-        ['m-min','m-max','the-median'].forEach(id => document.getElementById(id).setAttribute('data-val', id==='m-min'?2:id==='m-max'?48:25));
-        document.getElementById('the-box').setAttribute('data-q1', 10);
-        document.getElementById('the-box').setAttribute('data-q3', 40);
-    }
-
-    function renderLoop() {
-        const box = document.getElementById('the-box');
-        const q1 = parseFloat(box.getAttribute('data-q1'));
-        const q3 = parseFloat(box.getAttribute('data-q3'));
-        box.style.left = valToPx(q1) + "px";
-        box.style.width = (valToPx(q3) - valToPx(q1)) + "px";
-        document.querySelector('#h-q1 .val-label').innerText = q1;
-        document.querySelector('#h-q3 .val-label').innerText = q3;
-
-        ['m-min', 'm-max', 'the-median'].forEach(id => {
-            const el = document.getElementById(id);
-            const v = parseFloat(el.getAttribute('data-val'));
-            el.style.left = valToPx(v) + "px";
-            el.querySelector('.val-label').innerText = v;
-        });
-        requestAnimationFrame(renderLoop);
+    function vToPx(v) {
+        const w = document.getElementById('plot-space').clientWidth - pad*2;
+        return ((v / maxV) * w) + pad;
     }
 
     window.onpointerdown = (e) => {
-        const target = e.target.closest('.plot-element') || e.target;
-        if(['m-min','m-max','the-median','h-q1','h-q3'].includes(target.id)) {
-            activeId = target.id; target.setPointerCapture(e.pointerId);
+        const t = e.target.closest('.marker');
+        if(t && t.id !== 'the-box') {
+            activeId = t.id;
+            t.setPointerCapture(e.pointerId);
+            e.preventDefault();
         }
     };
 
     window.onpointermove = (e) => {
         if(!activeId) return;
-        let v = Math.max(0, Math.min(maxRange, pxToVal(e.clientX)));
-        if(['m-min','m-max','the-median'].includes(activeId)) document.getElementById(activeId).setAttribute('data-val', v);
-        else if(activeId === 'h-q1') document.getElementById('the-box').setAttribute('data-q1', Math.min(v, parseFloat(document.getElementById('the-box').getAttribute('data-q3')) - 0.5));
-        else if(activeId === 'h-q3') document.getElementById('the-box').setAttribute('data-q3', Math.max(v, parseFloat(document.getElementById('the-box').getAttribute('data-q1')) + 0.5));
+        let v = Math.max(0, Math.min(maxV, pxToV(e.clientX)));
+        document.getElementById(activeId).setAttribute('data-val', v);
     };
 
     window.onpointerup = () => activeId = null;
 
-    function checkAnswers() {
-        const user = { min: parseFloat(document.getElementById('m-min').getAttribute('data-val')), max: parseFloat(document.getElementById('m-max').getAttribute('data-val')), med: parseFloat(document.getElementById('the-median').getAttribute('data-val')), q1: parseFloat(document.getElementById('the-box').getAttribute('data-q1')), q3: parseFloat(document.getElementById('the-box').getAttribute('data-q3')) };
-        const isCorrect = (user.min === stats.min && user.max === stats.max && user.med === stats.med && user.q1 === stats.q1 && user.q3 === stats.q3);
-        const fb = document.getElementById('feedback');
-        if(isCorrect) { fb.innerText = "🌟 PERFECT! You're a Data Pro!"; fb.style.color = "var(--green)"; }
-        else { fb.innerText = "Keep digging! Something is slightly off."; fb.style.color = "var(--red)"; }
+    function sync() {
+        ['m-min', 'm-max', 'the-median', 'h-q1', 'h-q3'].forEach(id => {
+            const el = document.getElementById(id);
+            if(!el) return;
+            const v = el.getAttribute('data-val');
+            el.style.left = vToPx(v) + "px";
+            el.querySelector('.val-label').innerText = v;
+        });
+
+        const q1 = document.getElementById('h-q1').getAttribute('data-val');
+        const q3 = document.getElementById('h-q3').getAttribute('data-val');
+        const box = document.getElementById('the-box');
+        box.style.left = vToPx(q1) + "px";
+        box.style.width = Math.max(0, vToPx(q3) - vToPx(q1)) + "px";
+        requestAnimationFrame(sync);
+    }
+
+    function check() {
+        const u = {
+            min: parseFloat(document.getElementById('m-min').getAttribute('data-val')),
+            max: parseFloat(document.getElementById('m-max').getAttribute('data-val')),
+            med: parseFloat(document.getElementById('the-median').getAttribute('data-val')),
+            q1: parseFloat(document.getElementById('h-q1').getAttribute('data-val')),
+            q3: parseFloat(document.getElementById('h-q3').getAttribute('data-val'))
+        };
+        if(u.min===stats.min && u.max===stats.max && u.med===stats.med && u.q1===stats.q1 && u.q3===stats.q3) {
+            streak++; document.getElementById('streak').innerText = "Streak: " + streak;
+            alert("Correct!"); setup();
+        } else { alert("Try again!"); }
     }
 
     const nl = document.getElementById('number-line');
-    for(let i=0; i<=maxRange; i+=10) {
-        nl.innerHTML += `<div class="tick" style="left:${(i/maxRange)*100}%"></div><div class="tick-label" style="left:${(i/maxRange)*100}%">${i}</div>`;
-    }
+    for(let i=0; i<=maxV; i+=5) nl.innerHTML += `<div class="tick" style="left:${(i/maxV)*100}%"></div><div class="tick-label" style="left:${(i/maxV)*100}%">${i}</div>`;
 
-    setupNewCase();
-    requestAnimationFrame(renderLoop);
+    setup(); sync();
 </script>
 </body>
 </html>
