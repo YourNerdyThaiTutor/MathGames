@@ -2,123 +2,92 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
-    <title>Box Plot Challenge: iPad Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Box Plot Challenge: Data Restored</title>
     <style>
         :root { --p1: #38bdf8; --bg: #0f172a; --gold: #fbbf24; --green: #2ed573; --red: #fb7185; }
+        * { touch-action: none; -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: white; margin: 0; padding: 15px; overflow-x: hidden; }
         
-        /* Prevent iPad scrolling/zooming while playing */
-        * { touch-action: manipulation; -webkit-user-select: none; user-select: none; box-sizing: border-box; }
-        
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: white; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
-        
-        .container { width: 100%; max-width: 1000px; display: grid; grid-template-columns: 1fr 280px; gap: 20px; }
-        @media (max-width: 850px) { .container { grid-template-columns: 1fr; } }
+        .container { width: 100%; max-width: 900px; margin: auto; }
+        .panel { background: #1e293b; border-radius: 24px; padding: 25px; border: 1px solid #334155; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
 
-        .panel { background: #1e293b; border-radius: 20px; padding: 20px; border: 1px solid #334155; }
-
-        /* Sort Area (Touch-Friendly) */
-        #sort-area { 
-            background: #0f172a; padding: 15px; border-radius: 12px; border: 2px dashed var(--p1); 
-            display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; min-height: 80px; flex-wrap: wrap;
-            touch-action: none; 
-        }
+        /* Sort Area */
+        #sort-area { display: flex; justify-content: center; gap: 12px; margin-bottom: 20px; min-height: 70px; flex-wrap: wrap; padding: 15px; border: 2px dashed #334155; border-radius: 15px; }
         .data-point { 
-            background: var(--p1); color: #000; font-weight: bold; padding: 15px 20px; 
-            border-radius: 10px; font-size: 1.4rem; cursor: move; touch-action: none;
-            box-shadow: 0 4px 0 #0369a1;
+            background: var(--p1); color: #000; font-weight: 800; padding: 15px 20px; 
+            border-radius: 10px; font-size: 1.3rem; box-shadow: 0 4px 0 #0369a1;
+            cursor: move;
         }
-        .data-point.dragging { opacity: 0.5; transform: scale(1.1); border: 2px solid white; }
+        .data-point.dragging { opacity: 0.5; transform: scale(1.1); }
 
-        /* Plot Canvas */
+        /* The Canvas */
         #plot-space { 
-            width: 100%; height: 350px; background: #0f172a; border-radius: 15px; 
-            border: 2px solid #334155; position: relative; margin-top: 50px; touch-action: none;
+            width: 100%; height: 320px; background: #0b1222; border-radius: 20px; 
+            position: relative; margin-top: 60px; border: 2px solid #1e293b;
         }
         
-        #number-line { position: absolute; bottom: 50px; left: 40px; right: 40px; height: 4px; background: white; pointer-events: none; }
-        .tick { position: absolute; width: 2px; height: 20px; background: white; bottom: -8px; }
-        .tick-label { position: absolute; bottom: -35px; font-size: 1rem; transform: translateX(-50%); color: #cbd5e1; }
+        #number-line { position: absolute; bottom: 60px; left: 40px; right: 40px; height: 4px; background: rgba(255,255,255,0.3); }
+        .tick { position: absolute; width: 2px; height: 18px; background: white; bottom: -7px; }
+        .tick-label { position: absolute; bottom: -32px; font-size: 0.9rem; transform: translateX(-50%); color: #94a3b8; }
 
-        /* Draggable Markers - Larger for Fingers */
-        .plot-element { position: absolute; touch-action: none; }
+        /* Draggable Markers */
+        .plot-element { position: absolute; will-change: left, width; }
+        #the-box { height: 90px; top: 100px; background: rgba(56, 189, 248, 0.15); border: 3px solid #fff; border-radius: 6px; z-index: 10; }
         
-        #the-box { height: 90px; top: 110px; background: rgba(56, 189, 248, 0.2); border: 3px solid #cbd5e1; z-index: 10; border-radius: 6px; }
-        
-        .q-handle { position: absolute; width: 35px; height: 100%; top: 0; background: rgba(255,255,255,0.1); cursor: ew-resize; z-index: 15; display: flex; align-items: center; justify-content: center; }
-        .q-handle::after { content: ''; width: 4px; height: 40%; background: white; border-radius: 2px; }
+        .q-handle { position: absolute; width: 44px; height: 130px; top: -20px; z-index: 15; display: flex; justify-content: center; align-items: center; }
+        .q-handle::after { content: ''; width: 5px; height: 90px; background: white; border-radius: 10px; }
 
-        #the-median { width: 10px; height: 120px; top: 95px; background: var(--gold); cursor: grab; transform: translateX(-50%); z-index: 20; border-radius: 5px; box-shadow: 0 0 10px rgba(251, 191, 36, 0.3); }
-        
-        .whisker-dot { width: 30px; height: 30px; top: 155px; transform: translateY(-50%) translateX(-50%); background: white; border-radius: 50%; border: 5px solid var(--gold); cursor: grab; z-index: 30; }
+        #the-median { width: 10px; height: 130px; top: 80px; background: var(--gold); transform: translateX(-50%); z-index: 20; border-radius: 5px; }
+        .whisker-dot { width: 34px; height: 34px; top: 145px; transform: translate(-50%, -50%); background: white; border-radius: 50%; border: 5px solid var(--gold); z-index: 30; }
 
-        /* Labels */
+        /* Floating Labels */
         .val-label { position: absolute; top: -45px; left: 50%; transform: translateX(-50%); background: var(--gold); color: #000; padding: 4px 8px; border-radius: 6px; font-weight: 900; font-size: 1.1rem; pointer-events: none; }
-        .marker-title { position: absolute; top: -70px; left: 50%; transform: translateX(-50%); font-size: 0.75rem; color: var(--p1); text-transform: uppercase; font-weight: bold; white-space: nowrap; }
+        .marker-title { position: absolute; top: -65px; left: 50%; transform: translateX(-50%); font-size: 0.7rem; color: var(--p1); font-weight: bold; text-transform: uppercase; white-space: nowrap; }
 
-        /* Buttons */
-        button { width: 100%; padding: 20px; border-radius: 12px; border: none; font-weight: bold; font-size: 1.2rem; cursor: pointer; margin-bottom: 15px; }
+        button { width: 100%; padding: 18px; border-radius: 15px; border: none; font-weight: bold; font-size: 1.2rem; cursor: pointer; margin-top: 15px; transition: 0.1s; }
         .btn-check { background: var(--green); color: #0f172a; }
         .btn-new { background: #334155; color: white; }
     </style>
 </head>
 <body>
 
-<h2 style="color:var(--gold); margin: 0 0 10px 0;">📱 iPad Box Plot Challenge</h2>
-
 <div class="container">
     <div class="panel">
-        <h3 style="margin-top:0">1. Sort the Evidence</h3>
+        <h3 style="margin: 0 0 10px 0; color: var(--p1);">1. Sort the Data</h3>
         <div id="sort-area"></div>
         
-        <h3 style="margin-bottom: 5px;">2. Plot the Summary</h3>
+        <h3 style="margin: 20px 0 0 0; color: var(--p1);">2. Match the Plot</h3>
         <div id="plot-space">
             <div id="number-line"></div>
-            
-            <div id="m-min" class="plot-element whisker-dot" data-val="5">
-                <span class="marker-title">Min</span><span class="val-label">5</span>
+            <div id="m-min" class="plot-element whisker-dot"><span class="marker-title">Min</span><span class="val-label">?</span></div>
+            <div id="the-box" class="plot-element">
+                <div id="h-q1" class="q-handle" style="left:-22px;"><span class="marker-title">Q1</span><span class="val-label">?</span></div>
+                <div id="h-q3" class="q-handle" style="right:-22px;"><span class="marker-title">Q3</span><span class="val-label">?</span></div>
             </div>
-            
-            <div id="the-box" class="plot-element" data-q1="10" data-q3="30">
-                <div id="h-q1" class="q-handle" style="left:-17px;"><span class="marker-title">Q1</span><span class="val-label">10</span></div>
-                <div id="h-q3" class="q-handle" style="right:-17px;"><span class="marker-title">Q3</span><span class="val-label">30</span></div>
-            </div>
-
-            <div id="the-median" class="plot-element" data-val="20">
-                <span class="marker-title">Med</span><span class="val-label">20</span>
-            </div>
-
-            <div id="m-max" class="plot-element whisker-dot" data-val="45">
-                <span class="marker-title">Max</span><span class="val-label">45</span>
-            </div>
+            <div id="the-median" class="plot-element"><span class="marker-title">Med</span><span class="val-label">?</span></div>
+            <div id="m-max" class="plot-element whisker-dot"><span class="marker-title">Max</span><span class="val-label">?</span></div>
         </div>
-    </div>
-
-    <div class="panel" style="text-align: center;">
-        <div style="color:#94a3b8; font-size: 0.9rem;">SCORE</div>
-        <div id="score" style="font-size: 4rem; font-weight: bold; color: var(--green); margin-bottom: 20px;">0</div>
         
         <button class="btn-check" onclick="checkAnswers()">SUBMIT PLOT</button>
-        <button class="btn-new" onclick="setupGame()">NEW DATA</button>
-        
-        <div id="feedback" style="font-weight: bold; min-height: 50px;"></div>
+        <button class="btn-new" onclick="setupNewCase()">NEW CHALLENGE</button>
+        <div id="feedback" style="text-align: center; margin-top: 15px; font-weight: bold; font-size: 1.2rem;"></div>
     </div>
 </div>
 
 <script>
-    let currentStats = {}; let score = 0; const maxRange = 50; const padding = 40;
-    let activeElement = null;
+    let stats = {}; const maxRange = 50; const padding = 40;
+    let activeId = null;
 
-    function setupGame() {
-        const size = 8;
-        const rawData = Array.from({length: size}, () => Math.floor(Math.random() * 41) + 4);
-        const sorted = [...rawData].sort((a,b)=>a-b);
-        
+    function setupNewCase() {
+        const raw = Array.from({length: 8}, () => Math.floor(Math.random() * 41) + 4);
+        const sorted = [...raw].sort((a,b)=>a-b);
         const getM = (a) => a.length % 2 === 0 ? (a[a.length/2-1]+a[a.length/2])/2 : a[Math.floor(a.length/2)];
-        currentStats = { min: sorted[0], max: sorted[7], med: getM(sorted), q1: getM(sorted.slice(0, 4)), q3: getM(sorted.slice(4)) };
+        
+        stats = { min: sorted[0], max: sorted[7], med: getM(sorted), q1: getM(sorted.slice(0, 4)), q3: getM(sorted.slice(4)) };
 
         const area = document.getElementById('sort-area'); area.innerHTML = '';
-        rawData.forEach(n => {
+        raw.forEach(n => {
             const el = document.createElement('div'); el.className = 'data-point'; el.innerText = n;
             el.onpointerdown = (e) => {
                 el.setPointerCapture(e.pointerId); el.classList.add('dragging');
@@ -130,60 +99,77 @@
             };
             area.appendChild(el);
         });
+        resetPositions();
         document.getElementById('feedback').innerText = "";
-        resetPlot();
     }
 
     function pxToVal(px) {
         const rect = document.getElementById('plot-space').getBoundingClientRect();
         const w = rect.width - (padding * 2);
-        let val = ((px - rect.left - padding) / w) * maxRange;
-        return Math.round(val * 2) / 2; // Snap to 0.5
+        return Math.round((((px - rect.left - padding) / w) * maxRange) * 2) / 2;
     }
 
-    function updatePos(id, val) {
-        const el = document.getElementById(id); const w = document.getElementById('plot-space').clientWidth - (padding*2);
-        el.style.left = (((val/maxRange)*w)+padding)+"px"; el.setAttribute('data-val', val);
-        el.querySelector('.val-label').innerText = val;
+    function valToPx(val) {
+        const w = document.getElementById('plot-space').clientWidth - (padding * 2);
+        return ((val / maxRange) * w) + padding;
     }
 
-    function updateBox(q1, q3) {
-        const b = document.getElementById('the-box'); const w = document.getElementById('plot-space').clientWidth - (padding*2);
-        b.style.left = (((q1/maxRange)*w)+padding)+"px"; b.style.width = Math.max(10, (((q3-q1)/maxRange)*w))+"px";
-        b.setAttribute('data-q1', q1); b.setAttribute('data-q3', q3);
-        document.querySelector('#h-q1 .val-label').innerText = q1; document.querySelector('#h-q3 .val-label').innerText = q3;
+    function resetPositions() {
+        ['m-min','m-max','the-median'].forEach(id => document.getElementById(id).setAttribute('data-val', id==='m-min'?2:id==='m-max'?48:25));
+        document.getElementById('the-box').setAttribute('data-q1', 10);
+        document.getElementById('the-box').setAttribute('data-q3', 40);
     }
 
-    function resetPlot() { updatePos('m-min', 5); updatePos('m-max', 45); updatePos('the-median', 25); updateBox(15, 35); }
+    function renderLoop() {
+        const box = document.getElementById('the-box');
+        const q1 = parseFloat(box.getAttribute('data-q1'));
+        const q3 = parseFloat(box.getAttribute('data-q3'));
+        box.style.left = valToPx(q1) + "px";
+        box.style.width = (valToPx(q3) - valToPx(q1)) + "px";
+        document.querySelector('#h-q1 .val-label').innerText = q1;
+        document.querySelector('#h-q3 .val-label').innerText = q3;
 
-    const plot = document.getElementById('plot-space');
-    plot.onpointerdown = (e) => {
+        ['m-min', 'm-max', 'the-median'].forEach(id => {
+            const el = document.getElementById(id);
+            const v = parseFloat(el.getAttribute('data-val'));
+            el.style.left = valToPx(v) + "px";
+            el.querySelector('.val-label').innerText = v;
+        });
+        requestAnimationFrame(renderLoop);
+    }
+
+    window.onpointerdown = (e) => {
         const target = e.target.closest('.plot-element') || e.target;
         if(['m-min','m-max','the-median','h-q1','h-q3'].includes(target.id)) {
-            activeElement = target.id; target.setPointerCapture(e.pointerId);
+            activeId = target.id; target.setPointerCapture(e.pointerId);
         }
     };
-    plot.onpointermove = (e) => {
-        if(!activeElement) return;
+
+    window.onpointermove = (e) => {
+        if(!activeId) return;
         let v = Math.max(0, Math.min(maxRange, pxToVal(e.clientX)));
-        if(['m-min','m-max','the-median'].includes(activeElement)) updatePos(activeElement, v);
-        else if(activeElement === 'h-q1') updateBox(v, parseFloat(document.getElementById('the-box').getAttribute('data-q3')));
-        else if(activeElement === 'h-q3') updateBox(parseFloat(document.getElementById('the-box').getAttribute('data-q1')), v);
+        if(['m-min','m-max','the-median'].includes(activeId)) document.getElementById(activeId).setAttribute('data-val', v);
+        else if(activeId === 'h-q1') document.getElementById('the-box').setAttribute('data-q1', Math.min(v, parseFloat(document.getElementById('the-box').getAttribute('data-q3')) - 0.5));
+        else if(activeId === 'h-q3') document.getElementById('the-box').setAttribute('data-q3', Math.max(v, parseFloat(document.getElementById('the-box').getAttribute('data-q1')) + 0.5));
     };
-    plot.onpointerup = () => activeElement = null;
+
+    window.onpointerup = () => activeId = null;
 
     function checkAnswers() {
         const user = { min: parseFloat(document.getElementById('m-min').getAttribute('data-val')), max: parseFloat(document.getElementById('m-max').getAttribute('data-val')), med: parseFloat(document.getElementById('the-median').getAttribute('data-val')), q1: parseFloat(document.getElementById('the-box').getAttribute('data-q1')), q3: parseFloat(document.getElementById('the-box').getAttribute('data-q3')) };
-        const correct = (user.min === currentStats.min && user.max === currentStats.max && user.med === currentStats.med && user.q1 === currentStats.q1 && user.q3 === currentStats.q3);
-        if(correct) { score += 500; document.getElementById('score').innerText = score; document.getElementById('feedback').innerText = "🎉 PERFECT! Plot Master!"; document.getElementById('feedback').style.color = "var(--green)"; setTimeout(setupGame, 2000); }
-        else { document.getElementById('feedback').innerText = "Keep investigating! Check your medians."; document.getElementById('feedback').style.color = "var(--red)"; }
+        const isCorrect = (user.min === stats.min && user.max === stats.max && user.med === stats.med && user.q1 === stats.q1 && user.q3 === stats.q3);
+        const fb = document.getElementById('feedback');
+        if(isCorrect) { fb.innerText = "🌟 PERFECT! You're a Data Pro!"; fb.style.color = "var(--green)"; }
+        else { fb.innerText = "Keep digging! Something is slightly off."; fb.style.color = "var(--red)"; }
     }
 
     const nl = document.getElementById('number-line');
     for(let i=0; i<=maxRange; i+=10) {
         nl.innerHTML += `<div class="tick" style="left:${(i/maxRange)*100}%"></div><div class="tick-label" style="left:${(i/maxRange)*100}%">${i}</div>`;
     }
-    setupGame();
+
+    setupNewCase();
+    requestAnimationFrame(renderLoop);
 </script>
 </body>
 </html>
