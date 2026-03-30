@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Box Plot Sandbox: Touch Enabled</title>
+    <style>
+        :root { --p1: #38bdf8; --bg: #0f172a; --gold: #fbbf24; --green: #2ed573; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; display: flex; flex-direction: column; align-items: center; padding: 20px; -webkit-user-select: none; user-select: none; }
+        .container { width: 100%; max-width: 1100px; display: grid; grid-template-columns: 1fr 320px; gap: 20px; }
+        .panel { background: #1e293b; border-radius: 15px; padding: 20px; border: 1px solid #334155; }
+        
+        textarea { width: 100%; height: 60px; background: #0f172a; color: var(--p1); border: 1px solid #475569; border-radius: 8px; padding: 10px; font-size: 1rem; margin-bottom: 10px; }
+        .config-row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        
+        /* Draggable Sort Area - Now uses pointer-events */
+        #sort-area { background: #0f172a; padding: 15px; border-radius: 12px; border: 2px dashed var(--p1); display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; min-height: 60px; flex-wrap: wrap; touch-action: none; }
+        .data-point { background: var(--p1); color: #000; font-weight: bold; padding: 12px 18px; border-radius: 8px; font-size: 1.2rem; cursor: move; touch-action: none; }
+        .data-point.active-drag { opacity: 0.5; border: 2px solid white; }
+
+        /* Canvas - touch-action: none is key for tablets */
+        #plot-space { width: 100%; height: 300px; background: #0f172a; border-radius: 12px; border: 2px solid #334155; position: relative; margin-top: 40px; padding: 0 40px; touch-action: none; }
+        #number-line { position: absolute; bottom: 40px; left: 40px; right: 40px; height: 4px; background: white; pointer-events: none; }
+        .tick { position: absolute; width: 2px; height: 15px; background: white; bottom: -6px; }
+        .tick-label { position: absolute; bottom: -28px; font-size: 0.75rem; transform: translateX(-50%); color: #cbd5e1; }
+
+        /* Markers */
+        .plot-element { position: absolute; touch-action: none; }
+        #the-box { height: 70px; top: 100px; background: rgba(56, 189, 248, 0.2); border: 2px solid #cbd5e1; z-index: 10; border-radius: 4px; }
+        .q-handle { position: absolute; width: 24px; height: 100%; top: 0; background: rgba(255,255,255,0.2); cursor: ew-resize; z-index: 15; border-left: 2px solid white; border-right: 2px solid white; }
+        #the-median { width: 8px; height: 100px; top: 85px; background: var(--gold); cursor: grab; transform: translateX(-50%); z-index: 20; border-radius: 4px; }
+        .whisker-dot { width: 24px; height: 24px; top: 135px; transform: translateY(-50%) translateX(-50%); background: white; border-radius: 50%; border: 4px solid var(--gold); cursor: grab; z-index: 30; }
+        
+        .val-label { position: absolute; top: -35px; left: 50%; transform: translateX(-50%); background: var(--gold); color: #000; padding: 2px 5px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; }
+        .marker-title { position: absolute; top: -52px; left: 50%; transform: translateX(-50%); font-size: 0.65rem; color: #94a3b8; text-transform: uppercase; }
+
+        button { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; background: var(--green); color: #0f172a; }
+        @media (max-width: 768px) { .container { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<h1 style="color:var(--gold);">🛠️ Tablet-Friendly Sandbox</h1>
+
+<div class="container">
+    <div class="panel">
+        <textarea id="data-input">4, 8, 15, 16, 23, 42</textarea>
+        <div class="config-row">
+            <input type="number" id="max-val" value="50" style="width:60px; background:#0f172a; color:white; border:1px solid #475569; padding:5px;">
+            <select id="precision-select" style="background:#0f172a; color:white; border:1px solid #475569; padding:5px;">
+                <option value="1">Whole</option>
+                <option value="0.5" selected>0.5</option>
+                <option value="0.1">0.1</option>
+            </select>
+            <button onclick="updateSandbox()" style="width:auto;">LOAD</button>
+        </div>
+
+        <div id="sort-area"></div>
+        
+        <div id="plot-space">
+            <div id="number-line"></div>
+            <div id="m-min" class="plot-element whisker-dot" data-val="5"><span class="marker-title">Min</span><span class="val-label">5</span></div>
+            <div id="the-box" class="plot-element" data-q1="10" data-q3="30">
+                <div id="h-q1" class="q-handle" style="left:-12px;"><span class="marker-title">Q1</span><span class="val-label">10</span></div>
+                <div id="h-q3" class="q-handle" style="right:-12px;"><span class="marker-title">Q3</span><span class="val-label">30</span></div>
+            </div>
+            <div id="the-median" class="plot-element" data-val="20"><span class="marker-title">Med</span><span class="val-label">20</span></div>
+            <div id="m-max" class="plot-element whisker-dot" data-val="45"><span class="marker-title">Max</span><span class="val-label">45</span></div>
+        </div>
+    </div>
+
+    <div class="panel" id="analysis-output">
+        <h3 style="color:var(--gold)">Stats</h3>
+        Load data to see analysis.
+    </div>
+</div>
+
+<script>
+    let snap = 0.5; let maxRange = 50; const padding = 40;
+    let activeElement = null;
+
+    function updateSandbox() {
+        const input = document.getElementById('data-input').value;
+        const data = input.split(',').map(n => parseFloat(n.trim())).filter(n => !isNaN(n));
+        maxRange = parseFloat(document.getElementById('max-val').value) || 50;
+        snap = parseFloat(document.getElementById('precision-select').value);
+
+        const nl = document.getElementById('number-line'); nl.innerHTML = '';
+        let step = maxRange <= 20 ? 2 : (maxRange <= 100 ? 10 : 20);
+        for(let i=0; i<=maxRange; i+=step) {
+            nl.innerHTML += `<div class="tick" style="left:${(i/maxRange)*100}%"></div><div class="tick-label" style="left:${(i/maxRange)*100}%">${i}</div>`;
+        }
+
+        const area = document.getElementById('sort-area'); area.innerHTML = '';
+        data.forEach(n => {
+            const el = document.createElement('div'); el.className = 'data-point'; el.innerText = n;
+            el.onpointerdown = (e) => startPointDrag(e, el);
+            area.appendChild(el);
+        });
+
+        const sorted = [...data].sort((a,b)=>a-b);
+        const getM = (a) => a.length % 2 === 0 ? (a[a.length/2-1]+a[a.length/2])/2 : a[Math.floor(a.length/2)];
+        document.getElementById('analysis-output').innerHTML = `Sorted: ${sorted.join(', ')}<br>Min: ${sorted[0]}<br>Q1: ${getM(sorted.slice(0, Math.floor(sorted.length/2)))}<br>Med: ${getM(sorted)}<br>Q3: ${getM(sorted.slice(Math.ceil(sorted.length/2)))}<br>Max: ${sorted[sorted.length-1]}`;
+    }
+
+    // New "Pointer" logic for data points (Tablets)
+    function startPointDrag(e, el) {
+        el.setPointerCapture(e.pointerId);
+        el.classList.add('active-drag');
+        el.onpointermove = (moveE) => {
+            const area = document.getElementById('sort-area');
+            const afterElement = [...area.querySelectorAll('.data-point:not(.active-drag)')].find(child => moveE.clientX < child.getBoundingClientRect().left + child.offsetWidth/2);
+            if (!afterElement) area.appendChild(el); else area.insertBefore(el, afterElement);
+        };
+        el.onpointerup = () => { el.onpointermove = null; el.classList.remove('active-drag'); };
+    }
+
+    // Pointer logic for Plot Elements
+    function pxToVal(px) {
+        const rect = document.getElementById('plot-space').getBoundingClientRect();
+        const w = rect.width - (padding * 2);
+        let val = ((px - rect.left - padding) / w) * maxRange;
+        return Math.round(val * (1/snap)) / (1/snap);
+    }
+    function updatePos(id, val) {
+        const el = document.getElementById(id); const w = document.getElementById('plot-space').clientWidth - (padding*2);
+        el.style.left = (((val/maxRange)*w)+padding)+"px"; el.setAttribute('data-val', val);
+        if(el.querySelector('.val-label')) el.querySelector('.val-label').innerText = val;
+    }
+    function updateBox(q1, q3) {
+        const b = document.getElementById('the-box'); const w = document.getElementById('plot-space').clientWidth - (padding*2);
+        b.style.left = (((q1/maxRange)*w)+padding)+"px"; b.style.width = ((((q3-q1)/maxRange)*w))+"px";
+        b.setAttribute('data-q1', q1); b.setAttribute('data-q3', q3);
+        document.querySelector('#h-q1 .val-label').innerText = q1; document.querySelector('#h-q3 .val-label').innerText = q3;
+    }
+
+    document.getElementById('plot-space').onpointerdown = (e) => {
+        const target = e.target.closest('.plot-element') || e.target;
+        if(['m-min','m-max','the-median','h-q1','h-q3'].includes(target.id)) {
+            activeElement = target.id; target.setPointerCapture(e.pointerId);
+        }
+    };
+    document.getElementById('plot-space').onpointermove = (e) => {
+        if(!activeElement) return;
+        let v = Math.max(0, Math.min(maxRange, pxToVal(e.clientX)));
+        if(['m-min','m-max','the-median'].includes(activeElement)) updatePos(activeElement, v);
+        else if(activeElement === 'h-q1') updateBox(v, parseFloat(document.getElementById('the-box').getAttribute('data-q3')));
+        else if(activeElement === 'h-q3') updateBox(parseFloat(document.getElementById('the-box').getAttribute('data-q1')), v);
+    };
+    document.getElementById('plot-space').onpointerup = (e) => activeElement = null;
+
+    updateSandbox();
+</script>
+</body>
+</html>
