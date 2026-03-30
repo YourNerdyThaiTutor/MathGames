@@ -45,17 +45,17 @@
 
         /* Plot Area */
         #plot-space { flex: 1; background: #0b1222; border-radius: 20px; position: relative; border: 2px solid #1e293b; margin-top: 20px; }
-        #number-line { position: absolute; bottom: 60px; left: 40px; right: 40px; height: 4px; background: rgba(255,255,255,0.3); }
+        #number-line { position: absolute; bottom: 140px; left: 40px; right: 40px; height: 4px; background: rgba(255,255,255,0.3); }
         .tick { position: absolute; width: 2px; height: 15px; background: white; bottom: -6px; }
         .tick-label { position: absolute; bottom: -30px; font-size: 1rem; transform: translateX(-50%); color: #94a3b8; }
 
         .marker { position: absolute; touch-action: none; }
-        #the-box { height: 80px; top: 100px; background: rgba(56, 189, 248, 0.2); border: 2px solid #fff; z-index: 5; pointer-events: none; }
-        .handle { position: absolute; width: 80px; height: 160px; top: 60px; display: flex; justify-content: center; align-items: center; z-index: 50; transform: translateX(-50%); }
+        #the-box { height: 80px; top: 140px; background: rgba(56, 189, 248, 0.2); border: 2px solid #fff; z-index: 5; pointer-events: none; }
+        .handle { position: absolute; width: 80px; height: 160px; top: 100px; display: flex; justify-content: center; align-items: center; z-index: 50; transform: translateX(-50%); }
         .handle::after { content: ''; width: 8px; height: 80px; background: white; border-radius: 4px; box-shadow: 0 0 15px rgba(255,255,255,0.4); }
-        #the-median { width: 50px; height: 160px; top: 60px; display: flex; justify-content: center; align-items: center; transform: translateX(-50%); z-index: 40; }
+        #the-median { width: 50px; height: 160px; top: 100px; display: flex; justify-content: center; align-items: center; transform: translateX(-50%); z-index: 40; }
         #the-median::after { content: ''; width: 10px; height: 100px; background: var(--gold); border-radius: 5px; }
-        .whisker-dot { width: 60px; height: 60px; top: 140px; transform: translate(-50%, -50%); display: flex; justify-content: center; align-items: center; z-index: 30; }
+        .whisker-dot { width: 60px; height: 60px; top: 180px; transform: translate(-50%, -50%); display: flex; justify-content: center; align-items: center; z-index: 30; }
         .whisker-dot::after { content: ''; width: 26px; height: 26px; background: white; border-radius: 50%; border: 4px solid var(--gold); }
         .val-label { position: absolute; top: -45px; left: 50%; transform: translateX(-50%); background: var(--gold); color: #000; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 1rem; pointer-events: none; }
     </style>

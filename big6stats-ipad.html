@@ -3,204 +3,206 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Data Detective: Slot-Box Edition</title>
+    <title>Data Detective: Smooth iPad Edition</title>
     <style>
         :root { --p1: #38bdf8; --bg: #0f172a; --gold: #fbbf24; --green: #2ed573; --red: #fb7185; }
         
-        * { touch-action: none; -webkit-user-select: none; user-select: none; box-sizing: border-box; }
-        
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: white; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
-        
-        .container { width: 100%; max-width: 1100px; display: grid; grid-template-columns: 1fr 320px; gap: 20px; }
-        .panel { background: #1e293b; border-radius: 15px; padding: 25px; border: 1px solid #334155; }
-        
-        /* Slot-Box Area */
-        #sort-area { 
-            background: #0f172a; padding: 25px; border-radius: 12px; border: 2px solid #334155; 
-            display: flex; justify-content: center; gap: 12px; margin-bottom: 25px; min-height: 110px;
-            flex-wrap: wrap; position: relative;
+        /* THE FIX: Disables all system gestures so ONLY the cards move */
+        * { 
+            touch-action: none; 
+            -webkit-user-select: none; 
+            user-select: none; 
+            -webkit-tap-highlight-color: transparent;
+            box-sizing: border-box;
         }
 
-        /* The "Empty" Boxes */
+        body { 
+            font-family: system-ui, -apple-system, sans-serif; 
+            background: var(--bg); color: white; margin: 0; padding: 15px; 
+            height: 100vh; display: flex; flex-direction: column; overflow: hidden; 
+        }
+
+        .container { width: 100%; max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; flex: 1; }
+        .panel { background: #1e293b; border-radius: 20px; padding: 20px; border: 1px solid #334155; }
+
+        /* SLOT AREA */
+        #sort-area { 
+            display: flex; justify-content: center; gap: 10px; min-height: 80px; 
+            padding: 15px; border: 2px dashed #334155; border-radius: 15px; 
+            background: rgba(255,255,255,0.02); margin-bottom: 10px; position: relative;
+        }
+
         .slot {
-            width: 70px; height: 75px; border: 2px dashed rgba(56, 189, 248, 0.2);
-            border-radius: 12px; display: flex; justify-content: center; align-items: center;
-            position: relative;
+            width: 65px; height: 75px; border: 2px dashed rgba(56, 189, 248, 0.2);
+            border-radius: 12px; position: relative; display: flex; justify-content: center; align-items: center;
         }
 
         .data-card { 
-            width: 60px; height: 65px; background: var(--p1); color: #0f172a; 
-            font-weight: 900; border-radius: 10px; font-size: 1.6rem; 
+            width: 55px; height: 65px; background: var(--p1); color: #0f172a; 
+            font-weight: 900; border-radius: 10px; font-size: 1.4rem; 
             display: flex; justify-content: center; align-items: center;
-            box-shadow: 0 5px 0 #0369a1; cursor: grab; z-index: 10;
+            box-shadow: 0 4px 0 #0369a1; cursor: grab; position: relative; z-index: 10;
         }
 
-        .floating {
-            position: fixed !important; z-index: 9999 !important;
-            pointer-events: none; transform: scale(1.15);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.6); opacity: 0.95;
+        .dragging { 
+            position: fixed !important; z-index: 9999 !important; 
+            opacity: 0.9; transform: scale(1.1); pointer-events: none;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
         }
 
-        /* Stats Grid */
-        .input-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-        .stat-input { display: flex; flex-direction: column; gap: 5px; }
-        input { padding: 10px; border-radius: 8px; border: 2px solid #475569; background: #0f172a; color: white; font-size: 1.1rem; outline: none; width: 100%; }
-        label { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; font-weight: bold; }
+        /* INPUTS */
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
+        .box-input { display: flex; flex-direction: column; gap: 4px; }
+        label { font-size: 0.7rem; color: #94a3b8; font-weight: bold; text-transform: uppercase; }
+        input { 
+            padding: 10px; border-radius: 10px; border: 2px solid #475569; 
+            background: #0f172a; color: white; font-size: 1.1rem; width: 100%;
+        }
+
+        .iqr-highlight { border: 2px solid var(--gold); background: rgba(251, 191, 36, 0.05); padding: 15px; border-radius: 15px; margin-top: 15px; }
         
-        button { width: 100%; padding: 15px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; transition: 0.1s; }
-        .btn-check { background: var(--green); color: #0f172a; font-size: 1.1rem; margin-top: 15px; }
-        .btn-new { background: #334155; color: white; margin-top: 10px; }
+        button { 
+            width: 100%; padding: 16px; border-radius: 12px; border: none; 
+            font-weight: 900; font-size: 1.1rem; cursor: pointer; margin-top: 10px;
+        }
+        .btn-check { background: var(--green); color: #0f172a; }
+        .btn-new { background: #334155; color: white; }
 
-        .iqr-box { background: rgba(251, 191, 36, 0.08); border: 2px solid var(--gold); padding: 15px; border-radius: 12px; margin-top: 15px; }
-        #feedback { margin-top: 20px; font-weight: bold; text-align: center; font-size: 1.1rem; min-height: 1.5em; }
-
-        @media (max-width: 800px) { .container { grid-template-columns: 1fr; } }
+        #msg { text-align: center; font-weight: bold; margin-top: 10px; min-height: 1.2em; }
     </style>
 </head>
 <body>
 
-<h1 style="color:var(--gold)">🔍 Data Detective: Slot-Box IQR</h1>
-
 <div class="container">
     <div class="panel">
-        <h3>1. Evidence Locker (Fill the Boxes In Order)</h3>
+        <h3 style="margin:0 0 10px 0; color:var(--gold)">1. Evidence Slots</h3>
         <div id="sort-area"></div>
-        
-        <h3>2. Analysis Report</h3>
-        <div class="input-grid">
-            <div class="stat-input"><label>Mean</label><input type="number" id="ans-mean" step="0.1"></div>
-            <div class="stat-input"><label>Median</label><input type="number" id="ans-median" step="0.1"></div>
-            <div class="stat-input"><label>Mode</label><input type="text" id="ans-mode"></div>
-            <div class="stat-input"><label>Range</label><input type="number" id="ans-range"></div>
-            <div class="stat-input"><label>Q1</label><input type="number" id="ans-q1" step="0.1"></div>
-            <div class="stat-input"><label>Q3</label><input type="number" id="ans-q3" step="0.1"></div>
-        </div>
-
-        <div class="iqr-box">
-            <div class="stat-input">
-                <label style="color:var(--gold)">⚡ THE INTERQUARTILE RANGE (Q3 - Q1)</label>
-                <input type="number" id="ans-iqr" step="0.1" style="border-color: var(--gold); font-size: 1.4rem;">
-            </div>
-        </div>
-        <div id="feedback"></div>
     </div>
 
-    <div class="panel">
-        <div style="text-align: center; margin-bottom: 20px;">
-            <div style="color:#94a3b8; font-weight: bold;">XP POINTS</div>
-            <div id="score" style="font-size: 3.5rem; font-weight: 900; color: var(--green)">0</div>
+    <div class="panel" style="flex: 1; overflow-y: auto;">
+        <h3 style="margin:0 0 10px 0;">2. Stats Analysis</h3>
+        <div class="grid">
+            <div class="box-input"><label>Mean (nearest tenth)</label><input type="number" id="ans-mean" step="0.1"></div>
+            <div class="box-input"><label>Median</label><input type="number" id="ans-median" step="0.1"></div>
+            <div class="box-input"><label>Range</label><input type="number" id="ans-range"></div>
+            <div class="box-input"><label>Q1</label><input type="number" id="ans-q1" step="0.1"></div>
+            <div class="box-input"><label>Q3</label><input type="number" id="ans-q3" step="0.1"></div>
+            <div class="box-input" style="text-align: center;"><label>XP</label><div id="score" style="font-size:1.5rem; color:var(--green); font-weight:900">0</div></div>
         </div>
-        
-        <button class="btn-check" onclick="checkAnswers()">SUBMIT ANALYSIS</button>
-        <button class="btn-new" onclick="generateData()">NEW CASE FILE</button>
+
+        <div class="iqr-highlight">
+            <label style="color:var(--gold)">⚡ INTERQUARTILE RANGE (Q3 - Q1)</label>
+            <input type="number" id="ans-iqr" step="0.1" style="border-color: var(--gold); margin-top:5px;">
+        </div>
+
+        <div id="msg"></div>
+
+        <button class="btn-check" onclick="check()">SUBMIT REPORT</button>
+        <button class="btn-new" onclick="setup()">NEW CASE</button>
     </div>
 </div>
 
 <script>
-    let score = 0; let rawData = [];
+    let stats = {}; let score = 0;
 
-    function generateData() {
-        const size = 8; // Locked to 8 for clear box structure
-        rawData = Array.from({length: size}, () => Math.floor(Math.random() * 25) + 1);
-        const area = document.getElementById('sort-area');
-        area.innerHTML = '';
-        
-        rawData.forEach(num => {
-            const slot = document.createElement('div');
-            slot.className = 'slot';
-            
+    function setup() {
+        const raw = Array.from({length: 8}, () => Math.floor(Math.random() * 25) + 2);
+        const sorted = [...raw].sort((a,b)=>a-b);
+        const getM = (a) => a.length % 2 === 0 ? (a[a.length/2-1]+a[a.length/2])/2 : a[Math.floor(a.length/2)];
+        stats = { min: sorted[0], max: sorted[7], med: getM(sorted), q1: getM(sorted.slice(0, 4)), q3: getM(sorted.slice(4)) };
+
+        const area = document.getElementById('sort-area'); area.innerHTML = '';
+        raw.forEach(n => {
             const card = document.createElement('div');
-            card.className = 'data-card';
-            card.innerText = num;
-            
+            card.className = 'data-card'; card.innerText = n;
+
             card.onpointerdown = (e) => {
                 const rect = card.getBoundingClientRect();
                 const offsetX = e.clientX - rect.left;
                 const offsetY = e.clientY - rect.top;
                 
-                card.classList.add('floating');
+                // Create the placeholder
+                const placeholder = document.createElement('div');
+                placeholder.className = 'placeholder';
+                card.after(placeholder);
+
+                card.classList.add('dragging');
                 card.style.left = rect.left + 'px';
                 card.style.top = rect.top + 'px';
+                card.style.width = rect.width + 'px';
+
                 card.setPointerCapture(e.pointerId);
 
                 card.onpointermove = (em) => {
+                    // Follow finger
                     card.style.left = (em.clientX - offsetX) + 'px';
                     card.style.top = (em.clientY - offsetY) + 'px';
 
-                    // Find closest slot
-                    const allSlots = [...document.querySelectorAll('.slot')];
-                    const closest = allSlots.reduce((prev, curr) => {
-                        const d = Math.hypot(em.clientX - curr.getBoundingClientRect().left, em.clientY - curr.getBoundingClientRect().top);
-                        return d < prev.d ? {d, el: curr} : prev;
-                    }, {d: 9999}).el;
-
-                    if (closest && closest !== slot) {
-                        const targetCard = closest.querySelector('.data-card');
-                        if (targetCard) slot.appendChild(targetCard);
-                        closest.appendChild(card);
-                    }
+                    // Find nearest spot
+                    const others = [...area.querySelectorAll('.data-card:not(.dragging), .placeholder')];
+                    const next = others.find(c => em.clientX < c.getBoundingClientRect().left + c.offsetWidth/2);
+                    if (next !== placeholder) area.insertBefore(placeholder, next || null);
                 };
 
                 card.onpointerup = () => {
-                    card.classList.remove('floating');
-                    card.style.position = ''; card.style.left = ''; card.style.top = '';
+                    card.classList.remove('dragging');
+                    card.style.position = ''; card.style.left = ''; card.style.top = ''; card.style.width = '';
+                    placeholder.replaceWith(card);
                     card.onpointermove = null;
                 };
             };
-            
-            slot.appendChild(card);
-            area.appendChild(slot);
+            area.appendChild(card);
         });
-
-        document.querySelectorAll('input').forEach(i => { i.value = ''; i.style.borderColor = '#475569'; });
-        document.getElementById('feedback').innerText = '';
     }
 
-    function checkAnswers() {
-        const currentOrder = [...document.querySelectorAll('.data-card')].map(el => parseInt(el.innerText));
-        const sorted = [...currentOrder].sort((a,b) => a-b);
-        const isSorted = JSON.stringify(currentOrder) === JSON.stringify(sorted);
+    function check() {
+        const nums = [...document.querySelectorAll('.data-card')].map(c => parseInt(c.innerText));
+        const sorted = [...nums].sort((a,b) => a-b);
+        const isSorted = JSON.stringify(nums) === JSON.stringify(sorted);
         
-        const getMed = (arr) => arr.length % 2 !== 0 ? arr[Math.floor(arr.length/2)] : (arr[arr.length/2-1] + arr[arr.length/2]) / 2;
+        const getM = (a) => (a[Math.floor((a.length-1)/2)] + a[Math.ceil((a.length-1)/2)]) / 2;
 
-        const checks = {
-            'ans-mean': parseFloat((sorted.reduce((a,b)=>a+b,0)/8).toFixed(1)),
-            'ans-median': getMed(sorted),
-            'ans-mode': "na", // Simplified for this version
-            'ans-range': Math.max(...sorted) - Math.min(...sorted),
-            'ans-q1': getMed(sorted.slice(0, 4)),
-            'ans-q3': getMed(sorted.slice(4)),
-            'ans-iqr': getMed(sorted.slice(4)) - getMed(sorted.slice(0, 4))
+        const ans = {
+            mean: parseFloat((sorted.reduce((a,b)=>a+b,0)/8).toFixed(1)),
+            med: getM(sorted),
+            range: Math.max(...sorted) - Math.min(...sorted),
+            q1: getM(sorted.slice(0, 4)),
+            q3: getM(sorted.slice(4)),
+            iqr: getM(sorted.slice(4)) - getM(sorted.slice(0, 4))
         };
 
-        let correct = 0;
-        for (let id in checks) {
-            const input = document.getElementById(id);
-            if (id === 'ans-mode') continue; // Skip mode for now
-            if (parseFloat(input.value) === checks[id]) {
-                input.style.borderColor = 'var(--green)';
-                correct++;
+        const inputs = {
+            'ans-mean': ans.mean, 'ans-median': ans.med, 'ans-range': ans.range,
+            'ans-q1': ans.q1, 'ans-q3': ans.q3, 'ans-iqr': ans.iqr
+        };
+
+        let correctCount = 0;
+        for (let id in inputs) {
+            const el = document.getElementById(id);
+            if (parseFloat(el.value) === inputs[id]) {
+                el.style.borderColor = 'var(--green)';
+                correctCount++;
             } else {
-                input.style.borderColor = 'var(--red)';
+                el.style.borderColor = 'var(--red)';
             }
         }
 
-        const feedback = document.getElementById('feedback');
+        const msg = document.getElementById('msg');
         if (!isSorted) {
-            feedback.innerText = "⚠️ Evidence is not in order! (Smallest to Largest)";
-            feedback.style.color = "var(--gold)";
-        } else if (correct === 6) {
-            score += 150;
+            msg.innerText = "❌ Evidence out of order!";
+            msg.style.color = "var(--gold)";
+        } else if (correctCount === 6) {
+            score += 100;
             document.getElementById('score').innerText = score;
-            feedback.innerText = "🌟 CASE CLOSED! Perfect Analysis.";
-            feedback.style.color = "var(--green)";
+            msg.innerText = "✅ Case Solved! +100 XP";
+            msg.style.color = "var(--green)";
         } else {
-            feedback.innerText = "Keep checking those stats!";
-            feedback.style.color = "var(--red)";
+            msg.innerText = "Check your calculations!";
+            msg.style.color = "var(--red)";
         }
     }
 
-    generateData();
+    setup();
 </script>
 </body>
 </html>
