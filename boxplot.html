@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Box Plot: Sort & Precision Snap</title>
+    <style>
+        :root { --p1: #38bdf8; --bg: #0f172a; --gold: #fbbf24; --green: #2ed573; --red: #fb7185; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .container { width: 100%; max-width: 1100px; display: grid; grid-template-columns: 1fr 300px; gap: 20px; }
+        .panel { background: #1e293b; border-radius: 15px; padding: 25px; border: 1px solid #334155; }
+        
+        /* Draggable Sort Area */
+        #sort-area { background: #0f172a; padding: 20px; border-radius: 12px; border: 2px dashed var(--p1); display: flex; justify-content: center; gap: 10px; margin-bottom: 25px; min-height: 80px; flex-wrap: wrap; }
+        .data-point { background: var(--p1); color: #000; font-weight: bold; padding: 12px 18px; border-radius: 8px; font-size: 1.3rem; cursor: grab; user-select: none; box-shadow: 0 4px 0 #0369a1; }
+        .data-point.dragging { opacity: 0.3; transform: scale(0.9); }
+
+        /* Plot Canvas */
+        #plot-space { width: 100%; height: 320px; background: #0f172a; border-radius: 12px; border: 2px solid #334155; position: relative; margin-top: 40px; padding: 0 40px; touch-action: none; }
+        #number-line { position: absolute; bottom: 40px; left: 40px; right: 40px; height: 4px; background: white; }
+        .tick { position: absolute; width: 2px; height: 20px; background: white; bottom: -8px; }
+        .tick-label { position: absolute; bottom: -30px; font-size: 0.85rem; transform: translateX(-50%); color: #cbd5e1; }
+
+        /* Draggable Plot Elements */
+        .plot-element { position: absolute; }
+        #the-box { height: 80px; top: 100px; background: rgba(56, 189, 248, 0.2); border: 3px solid #cbd5e1; border-radius: 4px; z-index: 10; }
+        .q-handle { position: absolute; width: 14px; height: 100%; top: 0; background: white; cursor: ew-resize; z-index: 15; border: 1px solid #000; }
+        #the-median { width: 6px; height: 110px; top: 85px; background: var(--gold); cursor: grab; transform: translateX(-50%); z-index: 20; border-radius: 3px; }
+        .whisker-dot { width: 20px; height: 20px; top: 140px; transform: translateY(-50%) translateX(-50%); background: white; border-radius: 50%; border: 4px solid var(--gold); cursor: grab; z-index: 30; }
+
+        .val-label { position: absolute; top: -35px; left: 50%; transform: translateX(-50%); background: var(--gold); color: #000; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; pointer-events: none; }
+        .marker-title { position: absolute; top: -55px; left: 50%; transform: translateX(-50%); font-size: 0.65rem; color: #94a3b8; text-transform: uppercase; white-space: nowrap; }
+
+        button { width: 100%; padding: 15px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-check { background: var(--green); color: #0f172a; font-size: 1.1rem; }
+        #answer-display { background: #0f172a; padding: 15px; border-radius: 10px; border: 1px solid var(--gold); margin-top: 15px; display: none; font-size: 0.9rem; line-height: 1.5; }
+    </style>
+</head>
+<body>
+
+<h1 style="color:var(--gold); margin-bottom: 5px;">📊 Precision Detective: Sort & Plot</h1>
+<p style="color: #94a3b8; margin-bottom: 20px;">1. Drag numbers to sort. 2. Drag markers to plot (snaps to 0.5).</p>
+
+<div class="container">
+    <div class="panel">
+        <h3>1. Evidence Locker (Drag to Sort)</h3>
+        <div id="sort-area"></div>
+        
+        <h3>2. Box Plot Builder</h3>
+        <div id="plot-space">
+            <div id="number-line"></div>
+            
+            <div id="m-min" class="plot-element whisker-dot" data-val="2"><span class="marker-title">Min</span><span class="val-label">2</span></div>
+            <div id="the-box" class="plot-element" data-q1="8" data-q3="22">
+                <div id="h-q1" class="q-handle" style="left:-7px;"><span class="marker-title">Q1</span><span class="val-label">8</span></div>
+                <div id="h-q3" class="q-handle" style="right:-7px;"><span class="marker-title">Q3</span><span class="val-label">22</span></div>
+            </div>
+            <div id="the-median" class="plot-element" data-val="15"><span class="marker-title">Med</span><span class="val-label">15</span></div>
+            <div id="m-max" class="plot-element whisker-dot" data-val="28"><span class="marker-title">Max</span><span class="val-label">28</span></div>
+        </div>
+        <div id="answer-display"></div>
+    </div>
+
+    <div class="panel" style="text-align: center;">
+        <div style="color:#94a3b8; font-size: 0.8rem;">TOTAL XP</div>
+        <div id="score" style="font-size: 3.5rem; font-weight: bold; color: var(--green); margin-bottom: 20px;">0</div>
+        
+        <button class="btn-check" onclick="checkAnswers()">SUBMIT PLOT</button>
+        <button style="background:var(--gold); color:#000;" onclick="toggleAnswers()">REVEAL ANSWERS</button>
+        <button style="background:#334155; color:white;" onclick="setupGame()">NEW CASE</button>
+    </div>
+</div>
+
+<script>
+    let currentStats = {}; let rawData = []; let score = 0; const maxRange = 30; const padding = 40;
+
+    function setupGame() {
+        const size = 8; // Even number ensures potential for .5 medians
+        rawData = Array.from({length: size}, () => Math.floor(Math.random() * 25) + 2);
+        
+        // Calculate true stats from sorted data
+        const sorted = [...rawData].sort((a,b)=>a-b);
+        const getMed = (arr) => {
+            const m = Math.floor(arr.length / 2);
+            return arr.length % 2 !== 0 ? arr[m] : (arr[m-1] + arr[m]) / 2;
+        };
+
+        currentStats = {
+            min: sorted[0], max: sorted[7], med: getMed(sorted),
+            q1: getMed(sorted.slice(0, 4)), q3: getMed(sorted.slice(4))
+        };
+
+        // Render Draggable Data Points
+        const area = document.getElementById('sort-area'); area.innerHTML = '';
+        rawData.forEach(n => {
+            const el = document.createElement('div');
+            el.className = 'data-point'; el.draggable = true; el.innerText = n;
+            el.addEventListener('dragstart', () => el.classList.add('dragging'));
+            el.addEventListener('dragend', () => el.classList.remove('dragging'));
+            area.appendChild(el);
+        });
+
+        // Answer Display setup
+        document.getElementById('answer-display').style.display = 'none';
+        document.getElementById('answer-display').innerHTML = `
+            <b>Correct Analysis:</b><br>
+            Sorted: ${sorted.join(', ')}<br>
+            Min: ${currentStats.min} | Q1: ${currentStats.q1} | Med: ${currentStats.med} | Q3: ${currentStats.q3} | Max: ${currentStats.max}
+        `;
+        resetPlot();
+    }
+
+    // Drag-to-Sort Logic for Data Points
+    document.getElementById('sort-area').addEventListener('dragover', e => {
+        e.preventDefault();
+        const area = document.getElementById('sort-area');
+        const dragging = document.querySelector('.dragging');
+        const afterElement = [...area.querySelectorAll('.data-point:not(.dragging)')].reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = e.clientX - box.left - box.width / 2;
+            if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
+            else return closest;
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+        if (!afterElement) area.appendChild(dragging);
+        else area.insertBefore(dragging, afterElement);
+    });
+
+    // Helper functions for plotting
+    function valToPx(val) {
+        const w = document.getElementById('plot-space').clientWidth - (padding * 2);
+        return ((val / maxRange) * w) + padding;
+    }
+    function pxToVal(px) {
+        const rect = document.getElementById('plot-space').getBoundingClientRect();
+        const w = rect.width - (padding * 2);
+        let val = ((px - rect.left - padding) / w) * maxRange;
+        return Math.round(val * 2) / 2; // SNAP TO 0.5
+    }
+
+    function updateMarker(id, val) {
+        const el = document.getElementById(id);
+        el.style.left = valToPx(val) + "px";
+        el.setAttribute('data-val', val);
+        el.querySelector('.val-label').innerText = val;
+    }
+    function updateBox(q1, q3) {
+        const box = document.getElementById('the-box');
+        box.style.left = valToPx(q1) + "px";
+        box.style.width = (valToPx(q3) - valToPx(q1)) + "px";
+        box.setAttribute('data-q1', q1); box.setAttribute('data-q3', q3);
+        document.querySelector('#h-q1 .val-label').innerText = q1;
+        document.querySelector('#h-q3 .val-label').innerText = q3;
+    }
+    function resetPlot() { updateMarker('m-min', 2); updateMarker('m-max', 28); updateMarker('the-median', 15); updateBox(8, 22); }
+
+    // Plot Element Dragging
+    let activePlotEl = null;
+    document.addEventListener('mousedown', e => { 
+        if(e.target.closest('.plot-element') || e.target.classList.contains('q-handle')) 
+            activePlotEl = e.target.id || e.target.parentElement.id; 
+    });
+    window.addEventListener('mousemove', e => {
+        if(!activePlotEl) return;
+        let val = Math.max(0, Math.min(maxRange, pxToVal(e.clientX)));
+        if(['m-min', 'm-max', 'the-median'].includes(activePlotEl)) updateMarker(activePlotEl, val);
+        if(activePlotEl === 'h-q1' || activePlotEl === 'the-box') {
+            let q3 = parseFloat(document.getElementById('the-box').getAttribute('data-q3'));
+            updateBox(Math.min(val, q3 - 0.5), q3);
+        }
+        if(activePlotEl === 'h-q3') {
+            let q1 = parseFloat(document.getElementById('the-box').getAttribute('data-q1'));
+            updateBox(q1, Math.max(val, q1 + 0.5));
+        }
+    });
+    window.addEventListener('mouseup', () => activePlotEl = null);
+
+    function checkAnswers() {
+        const user = {
+            min: parseFloat(document.getElementById('m-min').getAttribute('data-val')),
+            max: parseFloat(document.getElementById('m-max').getAttribute('data-val')),
+            med: parseFloat(document.getElementById('the-median').getAttribute('data-val')),
+            q1: parseFloat(document.getElementById('the-box').getAttribute('data-q1')),
+            q3: parseFloat(document.getElementById('the-box').getAttribute('data-q3'))
+        };
+        let correct = 0;
+        if(user.min === currentStats.min) correct++;
+        if(user.max === currentStats.max) correct++;
+        if(user.med === currentStats.med) correct++;
+        if(user.q1 === currentStats.q1) correct++;
+        if(user.q3 === currentStats.q3) correct++;
+
+        if(correct === 5) { score += 250; alert("Excellent Plotting! Score +250"); setupGame(); }
+        else alert(`Close! You have ${correct}/5 points correct. Check the sorted data again.`);
+        document.getElementById('score').innerText = score;
+    }
+
+    function toggleAnswers() {
+        const ad = document.getElementById('answer-display');
+        ad.style.display = ad.style.display === 'none' ? 'block' : 'none';
+    }
+
+    const nl = document.getElementById('number-line');
+    for(let i=0; i<=maxRange; i+=5) {
+        nl.innerHTML += `<div class="tick" style="left:${(i/maxRange)*100}%"></div><div class="tick-label" style="left:${(i/maxRange)*100}%">${i}</div>`;
+    }
+    setupGame();
+</script>
+</body>
+</html>

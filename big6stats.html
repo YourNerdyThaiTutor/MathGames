@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Data Detective: IQR Edition</title>
+    <style>
+        :root { --p1: #38bdf8; --bg: #0f172a; --gold: #fbbf24; --green: #2ed573; --red: #fb7185; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        
+        .container { width: 100%; max-width: 1100px; display: grid; grid-template-columns: 1fr 320px; gap: 20px; }
+        .panel { background: #1e293b; border-radius: 15px; padding: 25px; border: 1px solid #334155; }
+        
+        /* Draggable Area */
+        #sort-area { 
+            background: #0f172a; padding: 25px; border-radius: 12px; border: 2px dashed var(--p1); 
+            display: flex; justify-content: center; gap: 10px; margin-bottom: 25px; min-height: 80px;
+            flex-wrap: wrap;
+        }
+        .data-point { 
+            background: var(--p1); color: #0f172a; font-weight: bold; padding: 12px 18px; 
+            border-radius: 8px; font-size: 1.4rem; cursor: grab; user-select: none;
+            box-shadow: 0 4px 0 #0369a1;
+        }
+        .data-point:active { cursor: grabbing; }
+        .dragging { opacity: 0.3; }
+
+        /* Input Grid - 3 columns for better fit */
+        .input-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .stat-input { display: flex; flex-direction: column; gap: 5px; }
+        input { padding: 1px; border-radius: 8px; border: 2px solid #475569; background: #0f172a; color: white; font-size: 1.1rem; outline: none; width: 100%; }
+        label { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; font-weight: bold; }
+        
+        button { width: 100%; padding: 15px; margin-top: 10px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; }
+        .btn-check { background: var(--green); color: #0f172a; font-size: 1.1rem; }
+        .btn-new { background: #334155; color: white; margin-top: 10px; }
+
+        #feedback { margin-top: 20px; font-weight: bold; text-align: center; font-size: 1.2rem; }
+        .iqr-box { background: rgba(251, 191, 36, 0.1); border: 1px solid var(--gold); padding: 10px; border-radius: 8px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<h1 style="color:var(--gold)">🔍 Data Detective: The IQR Challenge</h1>
+
+<div class="container">
+    <div class="panel">
+        <h3>1. Evidence Locker (Sort Smallest to Largest)</h3>
+        <div id="sort-area"></div>
+        
+        <h3>2. Stat Report</h3>
+        <div class="input-grid">
+            <div class="stat-input"><label>Mean</label><input type="number" id="ans-mean" step="0.1"></div>
+            <div class="stat-input"><label>Median</label><input type="number" id="ans-median" step="0.1"></div>
+            <div class="stat-input"><label>Mode</label><input type="text" id="ans-mode"></div>
+            
+            <div class="stat-input"><label>Range</label><input type="number" id="ans-range"></div>
+            <div class="stat-input"><label>Q1</label><input type="number" id="ans-q1" step="0.1"></div>
+            <div class="stat-input"><label>Q3</label><input type="number" id="ans-q3" step="0.1"></div>
+        </div>
+
+        <div class="iqr-box">
+            <div class="stat-input">
+                <label style="color:var(--gold)">⚡ THE IQR (Q3 - Q1)</label>
+                <input type="number" id="ans-iqr" step="0.1" style="border-color: var(--gold)">
+            </div>
+        </div>
+        <div id="feedback"></div>
+    </div>
+
+    <div class="panel">
+        <div style="text-align: center; margin-bottom: 25px;">
+            <div style="color:#94a3b8">XP POINTS</div>
+            <div id="score" style="font-size: 3.5rem; font-weight: bold; color: var(--green)">0</div>
+        </div>
+        
+        <button class="btn-check" onclick="checkAnswers()">SUBMIT ANALYSIS</button>
+        <button class="btn-new" onclick="generateData()">NEW DATA SET</button>
+
+        <div style="margin-top: 30px; font-size: 0.85rem; color: #cbd5e1; line-height: 1.6;">
+            <b style="color:var(--p1)">HOW TO FIND IQR:</b><br>
+            1. Find the Median of the <b>bottom half</b> (Q1).<br>
+            2. Find the Median of the <b>top half</b> (Q3).<br>
+            3. Subtract them: $Q3 - Q1 = IQR$.<br><br>
+            <i>It's the width of the box in a Box Plot!</i>
+        </div>
+    </div>
+</div>
+
+<script>
+    let score = 0;
+    let rawData = [];
+
+    function generateData() {
+        const size = Math.floor(Math.random() * 3) + 7; 
+        rawData = Array.from({length: size}, () => Math.floor(Math.random() * 25) + 1);
+        const area = document.getElementById('sort-area');
+        area.innerHTML = '';
+        
+        rawData.forEach(num => {
+            const el = document.createElement('div');
+            el.className = 'data-point';
+            el.draggable = true;
+            el.innerText = num;
+            el.addEventListener('dragstart', () => el.classList.add('dragging'));
+            el.addEventListener('dragend', () => el.classList.remove('dragging'));
+            area.appendChild(el);
+        });
+
+        area.addEventListener('dragover', e => {
+            e.preventDefault();
+            const dragging = document.querySelector('.dragging');
+            const afterElement = getDragAfterElement(area, e.clientX);
+            if (!afterElement) area.appendChild(dragging);
+            else area.insertBefore(dragging, afterElement);
+        });
+
+        document.querySelectorAll('input').forEach(i => { i.value = ''; i.style.borderColor = '#475569'; });
+        document.getElementById('feedback').innerText = '';
+    }
+
+    function getDragAfterElement(container, x) {
+        const draggables = [...container.querySelectorAll('.data-point:not(.dragging)')];
+        return draggables.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = x - box.left - box.width / 2;
+            if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
+            else return closest;
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    function checkAnswers() {
+        const sorted = [...rawData].sort((a,b) => a-b);
+        const mean = (sorted.reduce((a,b) => a+b, 0) / sorted.length).toFixed(1);
+        
+        const getMed = (arr) => {
+            const m = Math.floor(arr.length / 2);
+            return arr.length % 2 !== 0 ? arr[m] : (arr[m-1] + arr[m]) / 2;
+        };
+
+        const median = getMed(sorted);
+        const range = Math.max(...sorted) - Math.min(...sorted);
+        
+        const q1 = getMed(sorted.slice(0, Math.floor(sorted.length / 2)));
+        const q3 = getMed(sorted.slice(Math.ceil(sorted.length / 2)));
+        const iqr = q3 - q1;
+
+        const counts = {};
+        sorted.forEach(n => counts[n] = (counts[n] || 0) + 1);
+        let maxC = 0; let modes = [];
+        for(let n in counts) {
+            if(counts[n] > maxC) { maxC = counts[n]; modes = [n]; }
+            else if(counts[n] === maxC && maxC > 1) { modes.push(n); }
+        }
+        const modeStr = maxC > 1 ? modes.sort((a,b)=>a-b).join(',') : "none";
+
+        const checks = {
+            'ans-mean': parseFloat(mean),
+            'ans-median': median,
+            'ans-mode': modeStr.toLowerCase().replace(/\s/g, ''),
+            'ans-range': range,
+            'ans-q1': q1,
+            'ans-q3': q3,
+            'ans-iqr': iqr
+        };
+
+        let correct = 0;
+        for (let id in checks) {
+            const input = document.getElementById(id);
+            if (input.value.toString().toLowerCase().replace(/\s/g, '') == checks[id].toString()) {
+                input.style.borderColor = 'var(--green)';
+                correct++;
+            } else {
+                input.style.borderColor = 'var(--red)';
+            }
+        }
+
+        if (correct === 7) {
+            score += 150;
+            document.getElementById('score').innerText = score;
+            document.getElementById('feedback').innerText = "🌟 ELITE ANALYST! All stats are perfect.";
+            document.getElementById('feedback').style.color = "var(--green)";
+        } else {
+            document.getElementById('feedback').innerText = `You have ${correct}/7 correct. Keep checking!`;
+            document.getElementById('feedback').style.color = "var(--red)";
+        }
+    }
+
+    generateData();
+</script>
+</body>
+</html>

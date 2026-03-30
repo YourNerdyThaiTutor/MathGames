@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Box Plot Manipulative: Sandbox Mode</title>
+    <style>
+        :root { --p1: #38bdf8; --bg: #0f172a; --gold: #fbbf24; --green: #2ed573; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .container { width: 100%; max-width: 1100px; display: grid; grid-template-columns: 1fr 320px; gap: 20px; }
+        .panel { background: #1e293b; border-radius: 15px; padding: 20px; border: 1px solid #334155; }
+        
+        /* Input Styling */
+        textarea { width: 100%; height: 60px; background: #0f172a; color: var(--p1); border: 1px solid #475569; border-radius: 8px; padding: 10px; font-size: 1rem; resize: none; margin-bottom: 10px; }
+        .config-row { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; }
+        select, input[type="number"] { background: #0f172a; color: white; border: 1px solid #475569; padding: 8px; border-radius: 5px; }
+
+        /* Draggable Sort Area */
+        #sort-area { background: #0f172a; padding: 15px; border-radius: 12px; border: 2px dashed var(--p1); display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; min-height: 60px; flex-wrap: wrap; }
+        .data-point { background: var(--p1); color: #000; font-weight: bold; padding: 8px 12px; border-radius: 6px; font-size: 1.1rem; cursor: grab; }
+        .data-point.dragging { opacity: 0.3; }
+
+        /* Canvas */
+        #plot-space { width: 100%; height: 300px; background: #0f172a; border-radius: 12px; border: 2px solid #334155; position: relative; margin-top: 40px; padding: 0 40px; touch-action: none; }
+        #number-line { position: absolute; bottom: 40px; left: 40px; right: 40px; height: 4px; background: white; }
+        .tick { position: absolute; width: 2px; height: 15px; background: white; bottom: -6px; }
+        .tick-label { position: absolute; bottom: -28px; font-size: 0.75rem; transform: translateX(-50%); color: #cbd5e1; }
+
+        /* Markers */
+        .plot-element { position: absolute; }
+        #the-box { height: 70px; top: 100px; background: rgba(56, 189, 248, 0.2); border: 2px solid #cbd5e1; z-index: 10; border-radius: 4px; }
+        .q-handle { position: absolute; width: 12px; height: 100%; top: 0; background: white; cursor: ew-resize; z-index: 15; }
+        #the-median { width: 5px; height: 100px; top: 85px; background: var(--gold); cursor: grab; transform: translateX(-50%); z-index: 20; }
+        .whisker-dot { width: 18px; height: 18px; top: 135px; transform: translateY(-50%) translateX(-50%); background: white; border-radius: 50%; border: 3px solid var(--gold); cursor: grab; z-index: 30; }
+        
+        .val-label { position: absolute; top: -35px; left: 50%; transform: translateX(-50%); background: var(--gold); color: #000; padding: 2px 5px; border-radius: 4px; font-weight: bold; font-size: 0.75rem; }
+        .marker-title { position: absolute; top: -52px; left: 50%; transform: translateX(-50%); font-size: 0.6rem; color: #94a3b8; text-transform: uppercase; white-space: nowrap; }
+
+        button { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.2s; }
+        .btn-update { background: var(--green); color: #0f172a; }
+        .btn-update:hover { filter: brightness(1.1); }
+    </style>
+</head>
+<body>
+
+<h1 style="color:var(--gold); margin-bottom: 5px;">🛠️ Box Plot Sandbox</h1>
+<p style="color: #94a3b8; margin-bottom: 20px;">Input your own data and customize the grid precision.</p>
+
+<div class="container">
+    <div class="panel">
+        <label style="font-size: 0.8rem; font-weight: bold; color: #94a3b8;">ENTER DATA (comma separated):</label>
+        <textarea id="data-input">5, 12, 18, 22, 25, 29, 3, 10</textarea>
+        
+        <div class="config-row">
+            <div>
+                <label>Max Range:</label>
+                <input type="number" id="max-val" value="30" style="width:60px;">
+            </div>
+            <div>
+                <label>Snap Precision:</label>
+                <select id="precision-select">
+                    <option value="1">1 (Whole)</option>
+                    <option value="0.5" selected>0.5 (Half)</option>
+                    <option value="0.1">0.1 (Decimals)</option>
+                </select>
+            </div>
+            <button class="btn-update" onclick="updateSandbox()" style="width:auto; margin-top:0; padding: 8px 20px;">LOAD DATA</button>
+        </div>
+
+        <div id="sort-area"></div>
+        
+        <div id="plot-space">
+            <div id="number-line"></div>
+            <div id="m-min" class="plot-element whisker-dot" data-val="2"><span class="marker-title">Min</span><span class="val-label">2</span></div>
+            <div id="the-box" class="plot-element" data-q1="8" data-q3="22">
+                <div id="h-q1" class="q-handle" style="left:-6px;"><span class="marker-title">Q1</span><span class="val-label">8</span></div>
+                <div id="h-q3" class="q-handle" style="right:-6px;"><span class="marker-title">Q3</span><span class="val-label">22</span></div>
+            </div>
+            <div id="the-median" class="plot-element" data-val="15"><span class="marker-title">Med</span><span class="val-label">15</span></div>
+            <div id="m-max" class="plot-element whisker-dot" data-val="28"><span class="marker-title">Max</span><span class="val-label">28</span></div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h3 style="margin-top:0; color:var(--gold)">Automated Analysis</h3>
+        <div id="analysis-output" style="font-size: 0.9rem; line-height: 1.8; color: #cbd5e1;">
+            Load data to see stats...
+        </div>
+        <hr style="border:0; border-top:1px solid #334155; margin: 20px 0;">
+        <p style="font-size: 0.75rem; color: #94a3b8;">
+            <b>TIP:</b> Drag the numbers in the blue box to find the median manually, then compare with the "Automated Analysis" to see if you're right!
+        </p>
+    </div>
+</div>
+
+<script>
+    let snap = 0.5; let maxRange = 30; const padding = 40;
+
+    function updateSandbox() {
+        const input = document.getElementById('data-input').value;
+        const data = input.split(',').map(n => parseFloat(n.trim())).filter(n => !isNaN(n));
+        maxRange = parseFloat(document.getElementById('max-val').value) || 30;
+        snap = parseFloat(document.getElementById('precision-select').value);
+
+        if(data.length < 2) { alert("Please enter at least 2 numbers!"); return; }
+
+        // Update Number Line
+        const nl = document.getElementById('number-line'); nl.innerHTML = '';
+        const step = maxRange > 50 ? 10 : 5;
+        for(let i=0; i<=maxRange; i+=step) {
+            nl.innerHTML += `<div class="tick" style="left:${(i/maxRange)*100}%"></div><div class="tick-label" style="left:${(i/maxRange)*100}%">${i}</div>`;
+        }
+
+        // Update Sort Area
+        const area = document.getElementById('sort-area'); area.innerHTML = '';
+        data.forEach(n => {
+            const el = document.createElement('div');
+            el.className = 'data-point'; el.draggable = true; el.innerText = n;
+            el.addEventListener('dragstart', () => el.classList.add('dragging'));
+            el.addEventListener('dragend', () => el.classList.remove('dragging'));
+            area.appendChild(el);
+        });
+
+        // Automated Calculation
+        const sorted = [...data].sort((a,b)=>a-b);
+        const getMed = (arr) => {
+            const m = Math.floor(arr.length / 2);
+            return arr.length % 2 !== 0 ? arr[m] : (arr[m-1] + arr[m]) / 2;
+        };
+        const med = getMed(sorted);
+        const q1 = getMed(sorted.slice(0, Math.floor(sorted.length / 2)));
+        const q3 = getMed(sorted.slice(Math.ceil(sorted.length / 2)));
+
+        document.getElementById('analysis-output').innerHTML = `
+            <b>Sorted:</b> ${sorted.join(', ')}<br>
+            <b>Min:</b> ${sorted[0]}<br>
+            <b>Q1:</b> ${q1}<br>
+            <b>Median:</b> ${med}<br>
+            <b>Q3:</b> ${q3}<br>
+            <b>Max:</b> ${sorted[sorted.length-1]}<br>
+            <b>IQR:</b> ${q3 - q1}
+        `;
+    }
+
+    // Drag to Sort
+    document.getElementById('sort-area').addEventListener('dragover', e => {
+        e.preventDefault();
+        const dragging = document.querySelector('.dragging');
+        const area = document.getElementById('sort-area');
+        const afterElement = [...area.querySelectorAll('.data-point:not(.dragging)')].reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = e.clientX - box.left - box.width / 2;
+            return (offset < 0 && offset > closest.offset) ? {offset: offset, element: child} : closest;
+        }, {offset: Number.NEGATIVE_INFINITY}).element;
+        if (!afterElement) area.appendChild(dragging); else area.insertBefore(dragging, afterElement);
+    });
+
+    // Plotting Logic
+    function valToPx(val) {
+        const w = document.getElementById('plot-space').clientWidth - (padding * 2);
+        return ((val / maxRange) * w) + padding;
+    }
+    function pxToVal(px) {
+        const rect = document.getElementById('plot-space').getBoundingClientRect();
+        const w = rect.width - (padding * 2);
+        let val = ((px - rect.left - padding) / w) * maxRange;
+        return Math.round(val * (1/snap)) / (1/snap); 
+    }
+    function updateMarker(id, val) {
+        const el = document.getElementById(id);
+        el.style.left = valToPx(val) + "px"; el.setAttribute('data-val', val);
+        el.querySelector('.val-label').innerText = val;
+    }
+    function updateBox(q1, q3) {
+        const box = document.getElementById('the-box');
+        box.style.left = valToPx(q1) + "px"; box.style.width = (valToPx(q3) - valToPx(q1)) + "px";
+        box.setAttribute('data-q1', q1); box.setAttribute('data-q3', q3);
+        document.querySelector('#h-q1 .val-label').innerText = q1;
+        document.querySelector('#h-q3 .val-label').innerText = q3;
+    }
+
+    let active = null;
+    document.addEventListener('mousedown', e => { if(e.target.closest('.plot-element') || e.target.classList.contains('q-handle')) active = e.target.id || e.target.parentElement.id; });
+    window.addEventListener('mousemove', e => {
+        if(!active) return;
+        let val = Math.max(0, Math.min(maxRange, pxToVal(e.clientX)));
+        if(['m-min', 'm-max', 'the-median'].includes(active)) updateMarker(active, val);
+        else if(active === 'h-q1' || active === 'the-box') { let q3 = parseFloat(document.getElementById('the-box').getAttribute('data-q3')); updateBox(Math.min(val, q3 - snap), q3); }
+        else if(active === 'h-q3') { let q1 = parseFloat(document.getElementById('the-box').getAttribute('data-q1')); updateBox(q1, Math.max(val, q1 + snap)); }
+    });
+    window.addEventListener('mouseup', () => active = null);
+
+    updateSandbox();
+</script>
+</body>
+</html>
