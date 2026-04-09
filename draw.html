@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Sketchpad</title>
+    <style>
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; overflow: hidden; background: #f0f0f0; }
+        
+        #menuToggle {
+            position: fixed; top: 20px; left: 20px; z-index: 101;
+            padding: 10px 15px; border-radius: 50px; border: none;
+            background: #333; color: white; cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        #controls {
+            position: fixed; top: 75px; left: 20px; z-index: 100;
+            background: white; padding: 20px; border-radius: 12px;
+            display: flex; flex-direction: column; gap: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            transition: 0.3s ease; width: 200px;
+        }
+
+        #controls.hidden { transform: translateX(-150%); opacity: 0; pointer-events: none; }
+
+        .control-group { display: flex; flex-direction: column; gap: 5px; }
+        label { font-size: 12px; font-weight: bold; color: #666; }
+
+        canvas { position: absolute; top: 0; left: 0; touch-action: none; background: white; }
+        
+        button { padding: 8px; cursor: pointer; border: 1px solid #ddd; border-radius: 6px; background: #fff; }
+        button.active { background: #007bff; color: white; }
+        input[type="range"] { cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <button id="menuToggle">⚙️ Menu</button>
+
+    <div id="controls">
+        <button id="toggleDraw" class="active">Mode: Drawing</button>
+        
+        <div class="control-group">
+            <label>Color</label>
+            <input type="color" id="colorPicker" value="#000000" style="width: 100%; height: 30px;">
+        </div>
+
+        <div class="control-group">
+            <label>Brush Size: <span id="sizeValue">5</span>px</label>
+            <input type="range" id="sizeSlider" min="1" max="50" value="5">
+        </div>
+
+        <button id="eraserBtn">🧽 Eraser: OFF</button>
+        <button id="clearCanvas" style="color: red;">Clear Everything</button>
+    </div>
+
+    <canvas id="drawCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('drawCanvas');
+        const ctx = canvas.getContext('2d');
+        const sizeSlider = document.getElementById('sizeSlider');
+        const sizeValueLabel = document.getElementById('sizeValue');
+        // ... other selectors (controls, menuToggle, etc.)
+        const controls = document.getElementById('controls');
+        const menuToggle = document.getElementById('menuToggle');
+        const toggleDrawBtn = document.getElementById('toggleDraw');
+        const eraserBtn = document.getElementById('eraserBtn');
+        const colorPicker = document.getElementById('colorPicker');
+        const clearBtn = document.getElementById('clearCanvas');
+
+        let drawing = false;
+        let isEnabled = true;
+        let isEraser = false;
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Update size label when sliding
+        sizeSlider.addEventListener('input', () => {
+            sizeValueLabel.textContent = sizeSlider.value;
+        });
+
+        menuToggle.addEventListener('click', () => controls.classList.toggle('hidden'));
+        
+        toggleDrawBtn.addEventListener('click', () => {
+            isEnabled = !isEnabled;
+            toggleDrawBtn.textContent = isEnabled ? 'Mode: Drawing' : 'Mode: Off';
+            toggleDrawBtn.classList.toggle('active');
+        });
+
+        eraserBtn.addEventListener('click', () => {
+            isEraser = !isEraser;
+            eraserBtn.textContent = isEraser ? '🧽 Eraser: ON' : '🧽 Eraser: OFF';
+            eraserBtn.classList.toggle('active');
+        });
+
+        clearBtn.addEventListener('click', () => {
+            if(confirm("Clear drawing?")) ctx.clearRect(0, 0, canvas.width, canvas.height);
+        });
+
+        function start(e) { if (isEnabled) { drawing = true; draw(e); } }
+        function stop() { drawing = false; ctx.beginPath(); }
+
+        function draw(e) {
+            if (!drawing || !isEnabled) return;
+
+            const baseSize = parseInt(sizeSlider.value);
+            const usingWacomEraser = e.pointerType === 'pen' && (e.buttons === 32);
+
+            if (isEraser || usingWacomEraser) {
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.lineWidth = baseSize * 2; // Eraser is usually double the pen size
+            } else {
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.strokeStyle = colorPicker.value;
+                // If using a Wacom pen, multiply the slider size by pressure
+                // If using a mouse, just use the slider size
+                ctx.lineWidth = e.pressure > 0 ? e.pressure * (baseSize * 2) : baseSize;
+            }
+
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.lineTo(e.clientX, e.clientY);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(e.clientX, e.clientY);
+        }
+
+        canvas.addEventListener('pointerdown', start);
+        canvas.addEventListener('pointermove', draw);
+        canvas.addEventListener('pointerup', stop);
+        canvas.addEventListener('pointerout', stop);
+    </script>
+</body>
+</html>

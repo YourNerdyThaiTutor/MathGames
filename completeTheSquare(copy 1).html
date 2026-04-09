@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Square Solver: Fixed Edition</title>
+    <style>
+        :root { --p1: #38bdf8; --bg: #0f172a; --gold: #fbbf24; --green: #2ed573; --red: #fb7185; }
+        * { box-sizing: border-box; touch-action: manipulation; }
+        body { font-family: system-ui, sans-serif; background: var(--bg); color: white; display: flex; flex-direction: column; align-items: center; padding: 15px; margin: 0; min-height: 100vh; }
+        
+        /* Balance */
+        .scale { width: 150px; height: 40px; position: relative; margin-bottom: 10px; flex-shrink: 0; }
+        .beam { width: 100%; height: 5px; background: #64748b; position: absolute; top: 50%; transition: 0.4s; transform-origin: center; }
+        .base { width: 6px; height: 12px; background: #475569; position: absolute; left: 50%; bottom: 5px; transform: translateX(-50%); }
+
+        .card { background: #1e293b; padding: 20px; border-radius: 20px; width: 100%; max-width: 450px; border: 1px solid #334155; display: flex; flex-direction: column; gap: 15px; }
+
+        /* Hint System */
+        .hint-box { background: rgba(56, 189, 248, 0.1); border-left: 4px solid var(--p1); padding: 12px; border-radius: 8px; font-size: 0.9rem; display: none; }
+        .hint-btn { background: #334155; color: var(--p1); border: none; padding: 8px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.8rem; align-self: flex-start; }
+
+        /* Geometry */
+        .viz { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 160px; }
+        .grid-container { display: grid; gap: 4px; border: 2px solid transparent; border-radius: 8px; padding: 4px; transition: 0.4s; }
+        .perfect { border-color: var(--green); background: rgba(46, 213, 115, 0.1); }
+        .tile { border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.8rem; color: white; }
+        .x2 { background: var(--p1); width: 60px; height: 60px; }
+        .xb { background: #6366f1; }
+        .unit-gap { background: rgba(251, 191, 36, 0.05); border: 2px dashed var(--gold); display: grid; gap: 1px; }
+        .dot { background: var(--gold); border-radius: 1px; opacity: 0; transition: 0.1s; }
+        .dot.active { opacity: 1; }
+
+        .eqn-view { font-size: 1.2rem; text-align: center; font-family: monospace; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 10px; }
+        input { background: #0f172a; border: 2px solid #475569; color: white; padding: 8px; border-radius: 8px; width: 60px; text-align: center; font-size: 1.1rem; -webkit-appearance: none; }
+        input:focus { border-color: var(--p1); outline: none; }
+
+        .btn-submit { width: 100%; padding: 18px; border-radius: 15px; border: none; background: var(--green); color: #0f172a; font-weight: 900; font-size: 1.1rem; cursor: pointer; box-shadow: 0 4px 0 #26ae60; }
+        .btn-submit:active { transform: translateY(2px); box-shadow: none; }
+        
+        .split { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .branch { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px; text-align: center; border: 1px solid #475569; }
+    </style>
+    <link rel="stylesheet" href="assets/css/draw.css">
+</head>
+<body>
+    <button id="gemini-draw-menuToggle">⚙️ Menu</button>
+
+<div id="gemini-draw-controls" class="gemini-draw-hidden">
+    <button id="gemini-draw-toggleBtn" class="gemini-draw-btn gemini-draw-active">Mode: Drawing</button>
+    
+    <div class="gemini-draw-group">
+        <label class="gemini-draw-label">Color</label>
+        <input type="color" id="gemini-draw-colorPicker" value="#000000" class="gemini-draw-input">
+    </div>
+
+    <div class="gemini-draw-group">
+        <label class="gemini-draw-label">Brush Size: <span id="gemini-draw-sizeValue">5</span>px</label>
+        <input type="range" id="gemini-draw-sizeSlider" min="1" max="20" value="5" class="gemini-draw-slider">
+    </div>
+
+    <button id="gemini-draw-eraserBtn" class="gemini-draw-btn">🧽 Eraser: OFF</button>
+    <button id="gemini-draw-clearBtn" class="gemini-draw-btn gemini-draw-danger">Clear Everything</button>
+</div>
+
+<canvas id="gemini-draw-canvas"></canvas>
+    <div class="scale"><div class="base"></div><div id="beam" class="beam"></div></div>
+
+    <div class="card">
+        <button class="hint-btn" onclick="toggleHint()">💡 NEED A HINT?</button>
+        <div id="hint-text" class="hint-box"></div>
+        <h3 id="eq" style="text-align: center"></h3>
+
+        <div class="viz" id="viz-box">
+            <div id="grid" class="grid-container">
+                <div class="tile x2">x²</div>
+                <div id="tile-h" class="tile xb"></div>
+                <div id="tile-v" class="tile xb"></div>
+                <div id="gap" class="unit-gap"></div>
+            </div>
+            <div id="label-btm" style="color:#94a3b8; font-weight:bold; margin-top:8px; font-size:0.9rem;">x + ?</div>
+        </div>
+
+        <div id="interface"></div>
+        
+        <button id="btn-main" class="btn-submit" onclick="validateStep()">SUBMIT STEP</button>
+        <button id="btn-reset" class="btn-submit" style="display:none; background:var(--p1); color:white;" onclick="setup()">NEW PROBLEM</button>
+    </div>
+<script src="draw.js"></script>
+<script>
+    let b, c, h, r, step, needed;
+
+    function toggleHint() {
+        const hBox = document.getElementById('hint-text');
+        hBox.style.display = (hBox.style.display === 'block') ? 'none' : 'block';
+    }
+
+    function setup() {
+        h = Math.floor(Math.random() * 3) + 2; // h is 2, 3, or 4 (keeps dots manageable)
+        b = h * 2;
+        let root = h + Math.floor(Math.random() * 3) + 1;
+        r = root * root;
+        c = r - (h * h);
+        needed = h * h;
+        step = 1;
+
+        document.getElementById('grid').classList.remove('perfect');
+        document.getElementById('viz-box').style.display = 'flex';
+        document.getElementById('label-btm').innerText = `Width: (x + ${h})`;
+        document.getElementById('tile-h').innerText = `${h}x`;
+        document.getElementById('tile-v').innerText = `${h}x`;
+        
+        const size = h * 15;
+        document.getElementById('grid').style.gridTemplateColumns = `60px ${size}px`;
+        document.getElementById('grid').style.gridTemplateRows = `60px ${size}px`;
+        
+        const gap = document.getElementById('gap');
+        gap.style.gridTemplateColumns = `repeat(${h}, 1fr)`;
+        gap.innerHTML = '';
+        for(let i=0; i<needed; i++) gap.innerHTML += '<div class="dot"></div>';
+
+        document.getElementById('btn-main').style.display = 'block';
+        document.getElementById('btn-reset').style.display = 'none';
+        
+        renderUI();
+    }
+
+    function renderUI() {
+        const ui = document.getElementById('interface');
+        const hint = document.getElementById('hint-text');
+        const eq = document.getElementById('eq');
+        hint.style.display = 'none';
+
+        if(step === 1) {
+            hint.innerHTML = `<b>Rule:</b> Take half of ${b} (which is ${h}), then square it. ${h}² = <b>${needed}</b>. Add ${needed} to both boxes!`;
+            eq.innerHTML = `x² + ${b}x = ${c}`;
+            ui.innerHTML = `<div class="eqn-view">x² + ${b}x + <input type="number" id="L"> = ${c} + <input type="number" id="R"></div>`;
+        } else if(step === 2) {
+            hint.innerHTML = `<b>Rule:</b> The left side becomes <b>(x + ${h})²</b>. Now just add the right side: ${c} + ${needed} = <b>${r}</b>.`;
+            eq.innerHTML = `x² + ${b}x + ${needed} = ${c} + ${needed}`;
+            ui.innerHTML = `<div class="eqn-view">(x + ${h})² = <input type="number" id="S2"></div>`;
+        } else if(step === 3) {
+            hint.innerHTML = `<b>Rule:</b> Square root both sides! What is the √ of ${r}?`;
+            eq.innerHTML = `(x + ${h})² = ${r}`;
+            ui.innerHTML = `<div class="eqn-view">x + ${h} = ± <input type="number" id="S3"></div>`;
+        } else if(step === 4) {
+            let rt = Math.sqrt(r);
+            hint.innerHTML = `<b>Rule:</b> Subtract ${h} from ${rt} AND from -${rt}.`;
+            eq.innerHTML = `x + ${h} = ±${rt}`;
+            ui.innerHTML = `<div class="split">
+                <div class="branch">Path (+)<br>x + ${h} = ${rt} <br><input type="number" id="A1"></div>
+                <div class="branch">Path (-)<br>x + ${h} = -${rt} <br><input type="number" id="A2"></div>
+            </div>`;
+        }
+    }
+
+    function validateStep() {
+        if(step === 1) {
+            const l = document.getElementById('L').value;
+            const rVal = document.getElementById('R').value;
+            if(l == needed && rVal == needed) { step = 2; document.getElementById('grid').classList.add('perfect'); }
+            else { alert("Balance the scale! Add " + needed + " to both sides."); }
+        } else if(step === 2) {
+            if(document.getElementById('S2').value == r) step = 3;
+            else { alert("Add the right side numbers together!"); }
+        } else if(step === 3) {
+            if(document.getElementById('S3').value == Math.sqrt(r)) { step = 4; document.getElementById('viz-box').style.display='none'; }
+            else { alert("What is the square root of " + r + "?"); }
+        } else if(step === 4) {
+            const root = Math.sqrt(r);
+            if(document.getElementById('A1').value == (root-h) && document.getElementById('A2').value == (-root-h)) {
+                document.getElementById('interface').innerHTML = `<h2 style="text-align:center;color:var(--green);">x = {${root-h}, ${-root-h}}</h2>`;
+                document.getElementById('btn-main').style.display = 'none';
+                document.getElementById('btn-reset').style.display = 'block';
+                return;
+            } else { alert("Check your subtraction!"); }
+        }
+        renderUI();
+    }
+
+    document.addEventListener('input', (e) => {
+        const l = parseFloat(document.getElementById('L')?.value) || 0;
+        const rVal = parseFloat(document.getElementById('R')?.value) || 0;
+        document.getElementById('beam').style.transform = `rotate(${Math.max(-15, Math.min(15, (rVal-l)*5))}deg)`;
+        document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i < l));
+    });
+
+    setup();
+</script>
+</body>
+</html>
