@@ -18,6 +18,12 @@
             touch-action: none; 
         }
 
+        #qtn {
+            font-size: 4rem;
+            margin: 10px 0;
+            color: #33691E;
+        }
+
         #game-container {
             background: white;
             padding: 20px;
@@ -48,7 +54,7 @@
             border-radius: 25px;
             margin-bottom: 15px;
             border: 3px dashed #81C784;
-            min-height: 100px; /* Slightly taller to fit more berries */
+            min-height: 100px;
         }
 
         .berry {
@@ -73,13 +79,13 @@
         }
 
         .drop-box {
-            width: 160px; /* Wider box */
+            width: 160px;
             min-height: 140px;
             border: 4px solid #AFB42B;
             border-radius: 20px;
             background-color: #FFFDE7;
             display: flex;
-            flex-wrap: wrap; /* This makes berries wrap to the next line */
+            flex-wrap: wrap;
             justify-content: center;
             align-content: flex-start;
             padding: 10px;
@@ -134,9 +140,8 @@
 
 <script>
     let target1 = 0, target2 = 0;
-    let box1Count = 0, box2Count = 0;
-    let finalCounter = 0;
     let mode = 'DRAG';
+    let finalCounter = 0;
     let selectedVoice = null;
 
     function loadVoices() {
@@ -173,22 +178,16 @@
         let active = false;
         let startX, startY;
 
-        el.addEventListener("pointerdown", dragStart);
-
         function dragStart(e) {
             if (mode !== 'DRAG') {
                 if (mode === 'COUNT') handleTap(el);
                 return;
             }
-            
             active = true;
             el.setPointerCapture(e.pointerId);
-            
-            // FIX: Calculate the offset so the berry centers on the finger/mouse
             const rect = el.getBoundingClientRect();
             startX = rect.width / 2;
             startY = rect.height / 2;
-
             el.style.position = 'fixed';
             el.style.zIndex = '1000';
             moveAt(e.clientX, e.clientY);
@@ -214,26 +213,28 @@
             el.style.display = 'inline-block';
 
             const box = dropTarget ? dropTarget.closest('.drop-box') : null;
-
             el.style.position = 'static';
-            el.style.zIndex = '10';
 
             if (box) {
                 box.appendChild(el);
+                // Speak the box count immediately
                 speak(box.children.length);
             } else {
                 document.getElementById('berry-source').appendChild(el);
             }
             
+            // Trigger recount for iPad safety
             checkDragCompletion();
         }
 
+        el.addEventListener("pointerdown", dragStart);
         el.addEventListener("pointermove", onPointerMove);
         el.addEventListener("pointerup", onPointerUp);
+        el.addEventListener("pointercancel", onPointerUp); // Handles iPad gesture interruptions
     }
 
     function handleTap(el) {
-        if (!el.classList.contains('counted')) {
+        if (!el.classList.contains('counted') && el.parentElement.classList.contains('drop-box')) {
             finalCounter++;
             el.classList.add('counted');
             const totalGoal = target1 + target2;
@@ -253,35 +254,45 @@
     }
 
     function checkDragCompletion() {
-        box1Count = document.getElementById('box1').children.length;
-        box2Count = document.getElementById('box2').children.length;
+        const b1 = document.getElementById('box1').children.length;
+        const b2 = document.getElementById('box2').children.length;
 
-        if (box1Count === target1 && box2Count === target2) {
-            mode = 'COUNT';
-            const msg = "Perfect! Now tap the berries to count them!";
-            document.getElementById('mission-text').innerText = msg;
-            speak(msg);
+        if (b1 === target1 && b2 === target2) {
+            // Use a small timeout to ensure the voice finish speaking the last berry drop
+            setTimeout(() => {
+                if (mode === 'DRAG') { // Prevent double-triggering
+                    mode = 'COUNT';
+                    const msg = "Perfect! Now tap the berries to count them!";
+                    document.getElementById('mission-text').innerText = msg;
+                    speak(msg);
+                }
+            }, 500);
         }
     }
 
     function nextMission() {
+        window.speechSynthesis.cancel();
         createBerries();
-        target1 = Math.floor(Math.random() * 3) + 2; // Missions between 2-4
+        target1 = Math.floor(Math.random() * 3) + 2; 
         target2 = Math.floor(Math.random() * 3) + 2; 
-        box1Count = 0; box2Count = 0; finalCounter = 0;
+        finalCounter = 0;
         mode = 'DRAG';
         document.getElementById('box1').innerHTML = '';
         document.getElementById('box2').innerHTML = '';
         document.getElementById('total-display').innerText = "?";
         document.getElementById('nextBtn').style.display = 'none';
+        
+        const question = `${target1} + ${target2}`;
+        document.getElementById('qtn').innerText = question;
+        
         const msg = `Put ${target1} in Box 1 and ${target2} in Box 2!`;
         document.getElementById('mission-text').innerText = msg;
-        const question = `${target1} + ${target2}`
-        document.getElementById('qtn').innerText = question;
-        speak(msg);
+        
+        // Delay speech slightly for iPad loading
+        setTimeout(() => speak(msg), 200);
     }
 
-    window.onload = () => setTimeout(nextMission, 600);
+    window.onload = () => setTimeout(nextMission, 800);
 </script>
 
 </body>
