@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Base Ten Step-by-Step (Fixed)</title>
+    <style>
+        :root {
+            --hundred: #3498db;
+            --ten: #2ecc71;
+            --one: #e74c3c;
+            --highlight: #f1c40f;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f0f4f8;
+            margin: 0;
+            padding: 10px;
+            text-align: center;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #header {
+            background: white;
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        #instruction {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+            min-height: 1.8em;
+        }
+
+        .equation-display {
+            font-size: 3rem;
+            font-weight: bold;
+            letter-spacing: 5px;
+        }
+
+        .active-part {
+            background-color: var(--highlight);
+            padding: 0 10px;
+            border-radius: 8px;
+            border: 2px solid #d4ac0d;
+        }
+
+        #workspace {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            flex-grow: 1;
+            padding: 10px;
+        }
+
+        .column {
+            background: white;
+            border-radius: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            padding: 10px;
+            gap: 5px;
+            border: 4px solid #eee;
+            transition: all 0.3s;
+            overflow-y: auto;
+        }
+
+        .column.active {
+            border-color: var(--highlight);
+            box-shadow: 0 0 15px rgba(241, 196, 15, 0.4);
+            background-color: #fffdf0;
+        }
+
+        .label {
+            width: 100%;
+            font-size: 14px;
+            font-weight: bold;
+            color: #95a5a6;
+            margin-bottom: 10px;
+        }
+
+        /* Blocks */
+        .block-hundred {
+            width: 65px; height: 65px;
+            background-color: var(--hundred);
+            border: 2px solid #2980b9;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='65' height='65' viewBox='0 0 65 65'%3E%3Cpath d='M6.5 0v65M13 0v65M19.5 0v65M26 0v65M32.5 0v65M39 0v65M45.5 0v65M52 0v65M58.5 0v65M0 6.5h65M0 13h65M0 19.5h65M0 26h65M0 32.5h65M0 39h65M0 45.5h65M0 52h65M0 58.5h65' fill='none' stroke='white' stroke-width='1' stroke-opacity='0.4'/%3E%3C/svg%3E");
+        }
+
+        .block-ten {
+            width: 13px; height: 65px;
+            background-color: var(--ten);
+            border: 2px solid #27ae60;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='65' viewBox='0 0 13 65'%3E%3Cpath d='M0 6.5h13M0 13h13M0 19.5h13M0 26h13M0 32.5h13M0 39h13M0 45.5h13M0 52h13M0 58.5h13' fill='none' stroke='white' stroke-width='1' stroke-opacity='0.5'/%3E%3C/svg%3E");
+        }
+
+        .block-one {
+            width: 13px; height: 13px;
+            background-color: var(--one);
+            border: 1px solid #c0392b;
+        }
+
+        #controls {
+            padding: 20px;
+            background: white;
+            display: flex;
+            justify-content: center;
+            min-height: 100px;
+        }
+
+        .btn {
+            padding: 20px 40px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 15px;
+            color: white;
+            min-width: 200px;
+        }
+        .btn:active { transform: scale(0.95); }
+        .btn-add { background: #2ecc71; }
+        .btn-next { background: var(--highlight); color: #333; }
+
+        #msg { font-size: 1.5rem; font-weight: bold; height: 40px; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+<div id="header">
+    <div id="instruction">Loading...</div>
+    <div class="equation-display" id="equation">
+        <span id="part-h">0</span><span id="part-t">0</span><span id="part-o">0</span>
+    </div>
+</div>
+
+<div id="workspace">
+    <div class="column" id="col-h"><div class="label">Hundreds</div></div>
+    <div class="column" id="col-t"><div class="label">Tens</div></div>
+    <div class="column" id="col-o"><div class="label">Ones</div></div>
+</div>
+
+<div id="controls">
+    <button id="main-btn" class="btn btn-add" onclick="handleAdd()">+ ADD BLOCK</button>
+    <button id="next-btn" class="btn btn-next" onclick="nextStep()" style="display:none;">NEXT STEP ➔</button>
+</div>
+
+<div id="msg"></div>
+
+<script>
+    const steps = ['h', 't', 'o'];
+    let currentStepIndex = 0;
+    let targetDigits = { h: 0, t: 0, o: 0 };
+    let currentCounts = { h: 0, t: 0, o: 0 };
+
+    function init() {
+        // Generate a 3-digit number (e.g., 305)
+        const val = Math.floor(Math.random() * 899) + 100;
+        const str = val.toString();
+        
+        targetDigits.h = parseInt(str[0]);
+        targetDigits.t = parseInt(str[1]);
+        targetDigits.o = parseInt(str[2]);
+        
+        document.getElementById('part-h').innerText = str[0];
+        document.getElementById('part-t').innerText = str[1];
+        document.getElementById('part-o').innerText = str[2];
+        
+        currentStepIndex = 0;
+        currentCounts = { h: 0, t: 0, o: 0 };
+        
+        document.querySelectorAll('.column').forEach(c => {
+            const label = c.querySelector('.label');
+            c.innerHTML = '';
+            c.appendChild(label);
+        });
+        
+        updateUI();
+    }
+
+    function updateUI() {
+        const step = steps[currentStepIndex];
+        const names = { h: 'Hundreds', t: 'Tens', o: 'Ones' };
+        
+        // HIGHLIGHTS
+        document.getElementById('part-h').className = (step === 'h' ? 'active-part' : '');
+        document.getElementById('part-t').className = (step === 't' ? 'active-part' : '');
+        document.getElementById('part-o').className = (step === 'o' ? 'active-part' : '');
+        
+        document.querySelectorAll('.column').forEach(c => c.classList.remove('active'));
+        document.getElementById(`col-${step}`).classList.add('active');
+
+        // BUG FIX: If the target is 0, skip straight to the "Next" state
+        if (targetDigits[step] === 0) {
+            document.getElementById('instruction').innerText = `Step ${currentStepIndex + 1}: There are 0 ${names[step]}`;
+            document.getElementById('main-btn').style.display = 'none';
+            document.getElementById('next-btn').style.display = 'block';
+            document.getElementById('msg').innerText = "Look! This digit is zero, so we don't add any blocks.";
+            document.getElementById('msg').style.color = "#7f8c8d";
+        } else {
+            document.getElementById('instruction').innerText = `Step ${currentStepIndex + 1}: Make the ${names[step]}`;
+            document.getElementById('main-btn').style.display = 'block';
+            document.getElementById('next-btn').style.display = 'none';
+            document.getElementById('msg').innerText = "";
+        }
+    }
+
+    function handleAdd() {
+        const step = steps[currentStepIndex];
+        
+        if (currentCounts[step] < targetDigits[step]) {
+            currentCounts[step]++;
+            const div = document.createElement('div');
+            const typeClass = (step === 'h' ? 'hundred' : (step === 't' ? 'ten' : 'one'));
+            div.className = `block-${typeClass}`;
+            document.getElementById(`col-${step}`).appendChild(div);
+            
+            if (currentCounts[step] === targetDigits[step]) {
+                document.getElementById('msg').innerText = "Perfect! Ready for the next step?";
+                document.getElementById('msg').style.color = "green";
+                document.getElementById('main-btn').style.display = 'none';
+                document.getElementById('next-btn').style.display = 'block';
+            }
+        }
+    }
+
+    function nextStep() {
+        if (currentStepIndex < 2) {
+            currentStepIndex++;
+            updateUI();
+        } else {
+            document.getElementById('instruction').innerText = "ALL DONE!";
+            document.getElementById('msg').innerText = "🌟 Great Math Work! 🌟";
+            document.getElementById('next-btn').style.display = 'none';
+            setTimeout(init, 3000);
+        }
+    }
+
+    init();
+</script>
+
+</body>
+</html>

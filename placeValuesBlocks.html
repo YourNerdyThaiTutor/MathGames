@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base Ten Place Value Table</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            text-align: center;
+            background-color: #f0f4f8;
+            margin: 0;
+            padding: 20px;
+        }
+
+        #game-board {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border: 5px solid #3498db;
+        }
+
+        .goal-container {
+            background: #fff3e0;
+            padding: 10px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            border: 2px solid #f39c12;
+        }
+
+        .goal-number { font-size: 3.5rem; color: #d35400; font-weight: bold; margin: 0; }
+
+        /* Supply Section */
+        .supply-section {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            padding: 15px;
+            background: #eef2f3;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        .supply-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: white;
+            padding: 10px;
+            border-radius: 10px;
+            border: 2px solid #bdc3c7;
+        }
+
+        /* Place Value Table */
+        .pv-table {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            border: 4px solid #2c3e50;
+            border-radius: 15px;
+            overflow: hidden;
+            background: white;
+            min-height: 400px;
+        }
+
+        .pv-column {
+            border-right: 2px solid #bdc3c7;
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            padding: 15px;
+            gap: 10px;
+            transition: background 0.3s;
+        }
+
+        .pv-column:last-child { border-right: none; }
+
+        .pv-header {
+            grid-column: span 1;
+            background: #2c3e50;
+            color: white;
+            padding: 10px;
+            font-size: 1.5rem;
+            text-transform: uppercase;
+        }
+
+        /* Blocks with Grids */
+        .block { cursor: grab; transition: transform 0.1s; }
+        .block:active { cursor: grabbing; }
+
+        .block-hundred { 
+            width: 80px; height: 80px; 
+            background: #3498db; 
+            background-image: linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px);
+            background-size: 8px 8px;
+            border: 2px solid #2980b9; 
+        }
+
+        .block-ten { 
+            width: 12px; height: 80px; 
+            background: #2ecc71; 
+            background-image: linear-gradient(white 1px, transparent 1px);
+            background-size: 8px 8px;
+            border: 1px solid #27ae60; 
+        }
+
+        .block-one { 
+            width: 12px; height: 12px; 
+            background: #e74c3c; 
+            border: 1px solid #c0392b; 
+        }
+
+        /* Drop Zone Highlighting */
+        .hover { background-color: #d1f2eb !important; }
+
+        /* Action Buttons */
+        .footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .trash {
+            width: 100px; height: 100px;
+            border: 3px dashed #e74c3c;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .btn-check {
+            background: #f1c40f;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px #d4ac0d;
+        }
+        .btn-check:active { box-shadow: 0 2px #d4ac0d; transform: translateY(3px); }
+
+        .message { font-size: 1.4rem; font-weight: bold; margin-top: 15px; min-height: 30px; }
+    </style>
+</head>
+<body>
+
+<div id="game-board">
+    <div class="goal-container">
+        <p style="margin:0; font-weight:bold;">CAN YOU SHOW THIS NUMBER?</p>
+        <div class="goal-number" id="target">0</div>
+    </div>
+
+    <div class="supply-section">
+        <div class="supply-item">
+            <div class="block block-hundred" draggable="true" id="src-100"></div>
+            <span>Hundred</span>
+        </div>
+        <div class="supply-item">
+            <div class="block block-ten" draggable="true" id="src-10"></div>
+            <span>Ten</span>
+        </div>
+        <div class="supply-item">
+            <div class="block block-one" draggable="true" id="src-1"></div>
+            <span>One</span>
+        </div>
+    </div>
+
+    <div class="pv-table">
+        <div class="pv-header" style="background:#2980b9">Hundreds</div>
+        <div class="pv-header" style="background:#27ae60">Tens</div>
+        <div class="pv-header" style="background:#c0392b">Ones</div>
+        
+        <div class="pv-column" id="col-100" ondrop="drop(event)" ondragover="allowDrop(event)" ondragenter="enter(event)" ondragleave="leave(event)"></div>
+        <div class="pv-column" id="col-10" ondrop="drop(event)" ondragover="allowDrop(event)" ondragenter="enter(event)" ondragleave="leave(event)"></div>
+        <div class="pv-column" id="col-1" ondrop="drop(event)" ondragover="allowDrop(event)" ondragenter="enter(event)" ondragleave="leave(event)"></div>
+    </div>
+
+    <div class="footer">
+        <div class="trash" id="trash" ondrop="dropTrash(event)" ondragover="allowDrop(event)">
+            <span style="font-size: 2rem;">🗑️</span>
+            TRASH
+        </div>
+        <button class="btn-check" onclick="checkAnswer()">CHECK ANSWER</button>
+        <div style="width:100px"></div> </div>
+
+    <div class="message" id="msg"></div>
+</div>
+
+<script>
+    let targetNum = 0;
+
+    function init() {
+        targetNum = Math.floor(Math.random() * 450) + 15;
+        document.getElementById('target').innerText = targetNum;
+        document.getElementById('col-100').innerHTML = '';
+        document.getElementById('col-10').innerHTML = '';
+        document.getElementById('col-1').innerHTML = '';
+        document.getElementById('msg').innerText = '';
+    }
+
+    // Drag Logic
+    function allowDrop(e) { e.preventDefault(); }
+    function enter(e) { if(e.target.classList.contains('pv-column')) e.target.classList.add('hover'); }
+    function leave(e) { e.target.classList.remove('hover'); }
+
+    // Start dragging from supply or from table
+    document.querySelectorAll('.block').forEach(b => {
+        b.addEventListener('dragstart', e => {
+            e.dataTransfer.setData("text", e.target.id);
+        });
+    });
+
+    function drop(e) {
+        e.preventDefault();
+        const col = e.target.closest('.pv-column');
+        if (!col) return;
+        col.classList.remove('hover');
+
+        const id = e.dataTransfer.getData("text");
+        
+        // If it's a new block from supply
+        if (id.startsWith('src-')) {
+            const type = id.split('-')[1];
+            // Check if dropped in correct column (optional, but good for learning)
+            if (col.id !== `col-${type}`) {
+                document.getElementById('msg').innerText = "Try putting it in the right column!";
+                document.getElementById('msg').style.color = "red";
+                return;
+            }
+            const newBlock = document.getElementById(id).cloneNode(true);
+            newBlock.id = "block-" + Date.now();
+            newBlock.addEventListener('dragstart', ev => ev.dataTransfer.setData("text", ev.target.id));
+            col.appendChild(newBlock);
+        } else {
+            // If moving an existing block to a new column
+            const existing = document.getElementById(id);
+            col.appendChild(existing);
+        }
+        document.getElementById('msg').innerText = "";
+    }
+
+    function dropTrash(e) {
+        e.preventDefault();
+        const id = e.dataTransfer.getData("text");
+        if (!id.startsWith('src-')) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+    }
+
+    function checkAnswer() {
+        const h = document.getElementById('col-100').children.length;
+        const t = document.getElementById('col-10').children.length;
+        const o = document.getElementById('col-1').children.length;
+        const total = (h * 100) + (t * 10) + o;
+
+        const msg = document.getElementById('msg');
+        if (total === targetNum) {
+            msg.innerText = "🌟 Perfect! You built " + total + "! 🌟";
+            msg.style.color = "green";
+            setTimeout(init, 3000);
+        } else {
+            msg.style.color = "#e67e22";
+            msg.innerText = "You have " + total + ". Try again!";
+        }
+    }
+
+    init();
+</script>
+</body>
+</html>

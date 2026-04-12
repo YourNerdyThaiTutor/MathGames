@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Base Ten Challenge: Grid Edition</title>
+    <style>
+        :root {
+            --hundred: #3498db;
+            --ten: #2ecc71;
+            --one: #e74c3c;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f7f9fc;
+            margin: 0;
+            padding: 10px;
+            text-align: center;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Display */
+        #header {
+            background: white;
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        #equation { font-size: 36px; font-weight: bold; margin-bottom: 5px; }
+        #live-total { font-size: 18px; color: #7f8c8d; font-weight: bold; }
+
+        /* Workspace Grid */
+        #workspace {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            flex-grow: 1;
+            padding: 10px;
+            background: #ecf0f1;
+            border-radius: 12px;
+        }
+
+        .column {
+            background: white;
+            border-radius: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            padding: 10px;
+            gap: 5px;
+            border: 2px solid #bdc3c7;
+            overflow-y: auto;
+        }
+
+        .label {
+            width: 100%;
+            font-size: 12px;
+            font-weight: bold;
+            color: #95a5a6;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        /* BLOCKS WITH SVG GRIDS (Stronger Visibility) */
+        .block-hundred {
+            width: 80px; height: 80px;
+            background-color: var(--hundred);
+            border: 2px solid #2980b9;
+            /* SVG 10x10 Grid */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cpath d='M8 0v80M16 0v80M24 0v80M32 0v80M40 0v80M48 0v80M56 0v80M64 0v80M72 0v80M0 8h80M0 16h80M0 24h80M0 32h80M0 40h80M0 48h80M0 56h80M0 64h80M0 72h80' fill='none' stroke='white' stroke-width='1' stroke-opacity='0.4'/%3E%3C/svg%3E");
+        }
+
+        .block-ten {
+            width: 16px; height: 80px;
+            background-color: var(--ten);
+            border: 2px solid #27ae60;
+            /* SVG 1x10 Grid */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='80' viewBox='0 0 16 80'%3E%3Cpath d='M0 8h16M0 16h16M0 24h16M0 32h16M0 40h16M0 48h16M0 56h16M0 64h16M0 72h16' fill='none' stroke='white' stroke-width='1' stroke-opacity='0.5'/%3E%3C/svg%3E");
+        }
+
+        .block-one {
+            width: 16px; height: 16px;
+            background-color: var(--one);
+            border: 2px solid #c0392b;
+        }
+
+        /* Buttons */
+        #controls {
+            padding: 15px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            background: white;
+        }
+
+        .btn {
+            padding: 18px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 12px;
+            color: white;
+            transition: transform 0.1s;
+        }
+        .btn:active { transform: scale(0.95); }
+        .btn-h { background: var(--hundred); }
+        .btn-t { background: var(--ten); }
+        .btn-o { background: var(--one); }
+        .btn-check { background: #f1c40f; color: #333; grid-column: span 3; margin-top: 10px; }
+
+        #msg { height: 30px; margin-top: 5px; font-weight: bold; font-size: 1.2rem; }
+    </style>
+</head>
+<body>
+
+<div id="header">
+    <div id="equation">Loading...</div>
+    <div id="live-total">You have: 0</div>
+</div>
+
+<div id="workspace">
+    <div class="column" id="col-h" onclick="remove('h')"><div class="label">Hundreds</div></div>
+    <div class="column" id="col-t" onclick="remove('t')"><div class="label">Tens</div></div>
+    <div class="column" id="col-o" onclick="remove('o')"><div class="label">Ones</div></div>
+</div>
+
+<div id="controls">
+    <button class="btn btn-h" onclick="add('h')">+100</button>
+    <button class="btn btn-t" onclick="add('t')">+10</button>
+    <button class="btn btn-o" onclick="add('o')">+1</button>
+    <button class="btn btn-check" onclick="check()">CHECK ANSWER</button>
+</div>
+
+<div id="msg"></div>
+
+<script>
+    let ans = 0;
+    let counts = { h: 0, t: 0, o: 0 };
+
+    function start() {
+        const n1 = Math.floor(Math.random() * 200) + 100;
+        const n2 = Math.floor(Math.random() * 90) + 10;
+        const isAdd = Math.random() > 0.5;
+        
+        if (isAdd) {
+            ans = n1 + n2;
+            document.getElementById('equation').innerText = n1 + " + " + n2;
+        } else {
+            ans = n1 - n2;
+            document.getElementById('equation').innerText = n1 + " - " + n2;
+        }
+        
+        counts = { h: 0, t: 0, o: 0 };
+        document.getElementById('col-h').innerHTML = '<div class="label">Hundreds</div>';
+        document.getElementById('col-t').innerHTML = '<div class="label">Tens</div>';
+        document.getElementById('col-o').innerHTML = '<div class="label">Ones</div>';
+        document.getElementById('msg').innerText = "";
+        updateDisplay();
+    }
+
+    function add(type) {
+        counts[type]++;
+        const div = document.createElement('div');
+        div.className = 'block-' + (type === 'h' ? 'hundred' : (type === 't' ? 'ten' : 'one'));
+        document.getElementById('col-' + type).appendChild(div);
+        updateDisplay();
+    }
+
+    function remove(type) {
+        if (counts[type] > 0) {
+            counts[type]--;
+            const col = document.getElementById('col-' + type);
+            // Don't remove the label!
+            const blocks = col.querySelectorAll('[class^="block-"]');
+            if (blocks.length > 0) {
+                col.removeChild(blocks[blocks.length - 1]);
+            }
+            updateDisplay();
+        }
+    }
+
+    function updateDisplay() {
+        const total = (counts.h * 100) + (counts.t * 10) + counts.o;
+        document.getElementById('live-total').innerText = "You have: " + total;
+    }
+
+    function check() {
+        const total = (counts.h * 100) + (counts.t * 10) + counts.o;
+        const msg = document.getElementById('msg');
+        if (total === ans) {
+            msg.innerText = "🌟 YOU GOT IT! 🌟";
+            msg.style.color = "green";
+            setTimeout(start, 2500);
+        } else {
+            msg.innerText = "Not yet! Keep trying.";
+            msg.style.color = "orange";
+        }
+    }
+
+    start();
+</script>
+
+</body>
+</html>
