@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Monster Subtraction: Count the Rest!</title>
+    <title>iPad-Fixed Monster Math</title>
     <style>
         body {
             font-family: 'Comic Sans MS', cursive, sans-serif;
@@ -27,14 +27,13 @@
             border: 8px solid #FFA000;
             width: 95%;
             max-width: 600px;
-            position: relative;
         }
 
         #mission-text {
-            font-size: 1.6rem;
+            font-size: 1.5rem;
             color: #BF360C;
             margin-bottom: 10px;
-            min-height: 60px;
+            min-height: 70px;
         }
 
         #berry-source {
@@ -80,7 +79,7 @@
         }
 
         #equation-display {
-            font-size: 3.5rem;
+            font-size: 3rem;
             margin: 15px 0;
             color: #E64A19;
             font-weight: bold;
@@ -102,7 +101,7 @@
             transform: scale(0);
             opacity: 0;
             pointer-events: none;
-            position: absolute; /* Remove from flex flow */
+            position: absolute;
         }
 
         .berry.counted {
@@ -126,7 +125,7 @@
     let berriesInBox = 0;
     let berriesEaten = 0;
     let leftCount = 0;
-    let mode = 'SETUP'; // SETUP -> EAT -> FINAL_COUNT -> DONE
+    let mode = 'SETUP'; 
     let selectedVoice = null;
 
     function loadVoices() {
@@ -163,13 +162,11 @@
         let active = false;
         let startX, startY;
 
-        el.addEventListener("pointerdown", (e) => {
-            // Handle Tapping in EAT mode
+        function dragStart(e) {
             if (mode === 'EAT' && el.parentElement.id === 'main-box') {
                 handleEat(el);
                 return;
             }
-            // Handle Tapping in FINAL_COUNT mode
             if (mode === 'FINAL_COUNT' && el.parentElement.id === 'main-box') {
                 handleFinalCount(el);
                 return;
@@ -184,42 +181,59 @@
             el.style.position = 'fixed';
             el.style.zIndex = '1000';
             moveAt(e.clientX, e.clientY);
-        });
+        }
 
         function moveAt(pageX, pageY) {
             el.style.left = (pageX - startX) + 'px';
             el.style.top = (pageY - startY) + 'px';
         }
 
-        el.addEventListener("pointermove", (e) => {
+        function dragMove(e) {
             if (!active) return;
             moveAt(e.clientX, e.clientY);
-        });
+        }
 
-        el.addEventListener("pointerup", (e) => {
+        function dragEnd(e) {
             if (!active) return;
             active = false;
             el.releasePointerCapture(e.pointerId);
+            
             el.style.display = 'none';
             const dropTarget = document.elementFromPoint(e.clientX, e.clientY);
             el.style.display = 'inline-block';
+            
             const box = dropTarget ? dropTarget.closest('#main-box') : null;
-
             el.style.position = 'static';
+
             if (box) {
                 box.appendChild(el);
-                berriesInBox = box.children.length;
-                updateEquation();
-
-                if (berriesInBox === num1) {
-                    speak(berriesInBox, () => setTimeout(startEatPhase, 400));
-                } else {
-                    speak(berriesInBox);
-                }
+                checkSetupProgress();
             } else {
                 document.getElementById('berry-source').appendChild(el);
             }
-        });
+        }
+
+        el.addEventListener("pointerdown", dragStart);
+        el.addEventListener("pointermove", dragMove);
+        el.addEventListener("pointerup", dragEnd);
+        el.addEventListener("pointercancel", dragEnd);
+    }
+
+    function checkSetupProgress() {
+        const box = document.getElementById('main-box');
+        berriesInBox = box.children.length;
+        updateEquation();
+
+        if (berriesInBox === num1) {
+            speak(berriesInBox, () => {
+                // Double check we are still at target before switching
+                if (document.getElementById('main-box').children.length === num1) {
+                    setTimeout(startEatPhase, 400);
+                }
+            });
+        } else {
+            speak(berriesInBox);
+        }
     }
 
     function updateEquation() {
@@ -228,8 +242,9 @@
     }
 
     function startEatPhase() {
+        if (mode !== 'SETUP') return;
         mode = 'EAT';
-        const msg = `Perfect! Now the monster is hungry. Tap to eat ${num2} berries!`;
+        const msg = `Good job! Now the monster is hungry. Tap to eat ${num2} berries!`;
         document.getElementById('mission-text').innerText = msg;
         speak(msg);
     }
@@ -249,7 +264,7 @@
 
     function startFinalCountPhase() {
         mode = 'FINAL_COUNT';
-        const msg = `Yum! Now, how many berries are left in the box? Tap them to count!`;
+        const msg = `Yum! How many are left? Tap the berries in the box to count them!`;
         document.getElementById('mission-text').innerText = msg;
         speak(msg);
     }
@@ -264,7 +279,7 @@
                 speak(leftCount, () => {
                     setTimeout(() => {
                         document.getElementById('equation-display').innerText = `${num1} - ${num2} = ${actualLeft}`;
-                        speak(`That's right! ${num1} minus ${num2} is ${actualLeft}!`);
+                        speak(`Correct! ${num1} minus ${num2} is ${actualLeft}!`);
                         document.getElementById('nextBtn').style.display = 'inline-block';
                         mode = 'DONE';
                     }, 400);
@@ -277,8 +292,8 @@
 
     function nextMission() {
         window.speechSynthesis.cancel();
-        num1 = Math.floor(Math.random() * 3) + 5; // 5 to 7
-        num2 = Math.floor(Math.random() * 3) + 1; // 1 to 3
+        num1 = Math.floor(Math.random() * 3) + 4; 
+        num2 = Math.floor(Math.random() * 3) + 1; 
         berriesInBox = 0;
         berriesEaten = 0;
         leftCount = 0;
@@ -293,7 +308,7 @@
             const msg = `Put ${num1} berries in the box!`;
             document.getElementById('mission-text').innerText = msg;
             speak(msg);
-        }, 100);
+        }, 200);
     }
 
     window.onload = () => setTimeout(nextMission, 800);
