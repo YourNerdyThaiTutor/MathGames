@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>High-Five Counting Game!</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background-color: #FFDE59;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #game-container {
+            background: white;
+            padding: 30px;
+            border-radius: 50px;
+            box-shadow: 0 10px 0 #FF914D;
+            text-align: center;
+            border: 8px solid #5CE1E6;
+        }
+
+        h1 {
+            color: #FF5757;
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        .number-display {
+            font-size: 8rem;
+            color: #7ED957;
+            margin: 20px 0;
+            text-shadow: 3px 3px 0 #000;
+        }
+
+        .instruction {
+            font-size: 1.5rem;
+            color: #545454;
+        }
+
+        .btn {
+            background-color: #5CE1E6;
+            border: none;
+            color: white;
+            padding: 20px 40px;
+            font-size: 2rem;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 8px 0 #36AEB2;
+            transition: transform 0.1s;
+        }
+
+        .btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 4px 0 #36AEB2;
+        }
+
+        #win-message {
+            display: none;
+            color: #FF3131;
+            font-size: 2.5rem;
+            font-weight: bold;
+        }
+
+        .celebration {
+            font-size: 4rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <h1>Count by 5s!</h1>
+        <p class="instruction">Tap the hand to count!</p>
+        
+        <div id="display" class="number-display">0</div>
+
+        <button class="btn" id="countBtn">✋ Tap Me!</button>
+
+        <div id="win-message">
+            <div class="celebration">🎉⭐🎈</div>
+            YOU DID IT! <br>
+            <button class="btn" onclick="resetGame()" style="background-color: #7ED957; box-shadow: 0 8px 0 #5B9E3F;">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+    let count = 0;
+    const display = document.getElementById('display');
+    const btn = document.getElementById('countBtn');
+    const winMessage = document.getElementById('win-message');
+    
+    let voices = [];
+    let selectedVoice = null;
+
+    // 1. This function looks for a high-quality female voice
+    function loadVoices() {
+        voices = window.speechSynthesis.getVoices();
+        
+        // Let's try to find a natural-sounding female voice
+        // We look for names like 'Google', 'Samantha', or 'Female'
+        selectedVoice = voices.find(v => 
+            v.name.includes('Google') && v.lang.includes('en-US') || 
+            v.name.includes('Samantha') || 
+            v.name.includes('Female')
+        ) || voices[0]; // Fallback to first voice if others aren't found
+    }
+
+    // Voices load asynchronously, so we need this event
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+    loadVoices();
+
+    function speak(text) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        if (selectedVoice) utterance.voice = selectedVoice;
+        
+        utterance.rate = 1.0; 
+        utterance.pitch = 1.1; // Slightly higher pitch for a friendly, warm tone
+        window.speechSynthesis.speak(utterance);
+    }
+
+    btn.addEventListener('click', () => {
+        if (count < 100) {
+            count += 5;
+            display.innerText = count;
+            speak(count);
+            
+            display.style.transform = "scale(1.2)";
+            setTimeout(() => display.style.transform = "scale(1)", 100);
+
+            if (count === 100) {
+                setTimeout(() => {
+                    speak("You did it! Way to go!");
+                    showWin();
+                }, 600);
+            }
+        }
+    });
+
+    function showWin() {
+        btn.style.display = 'none';
+        winMessage.style.display = 'block';
+        display.style.color = '#FFD700';
+    }
+
+    function resetGame() {
+        count = 0;
+        display.innerText = "0";
+        display.style.color = '#7ED957';
+        btn.style.display = 'inline-block';
+        winMessage.style.display = 'none';
+        speak("Let's try again!");
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boxed Algebra: Like Terms</title>
+    <link rel="stylesheet" href="assets/css/draw.css">
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 40px; }
+        .container { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-width: 850px; width: 100%; text-align: center; }
+        .expression-box { font-size: 1.8rem; font-weight: bold; color: #2d3436; margin: 20px 0; padding: 20px; background: #dfe6e9; border-radius: 12px; min-height: 40px; }
+        
+        .fruit-display { 
+            display: flex; 
+            flex-wrap: wrap; 
+            justify-content: center; 
+            gap: 15px; 
+            margin: 20px 0; 
+            padding: 20px; 
+            border: 3px dashed #b2bec3; 
+            border-radius: 15px; 
+            min-height: 150px; 
+        }
+
+        /* Grouping Boxes */
+        .term-group {
+            padding: 10px;
+            border-radius: 12px;
+            border: 3px solid transparent;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.4s ease;
+        }
+
+        .type-a { border-color: #ff7675; background: rgba(255, 118, 117, 0.1); }
+        .type-b { border-color: #f1c40f; background: rgba(241, 196, 15, 0.1); }
+        .type-const { border-color: #27ae60; background: rgba(39, 174, 96, 0.1); }
+
+        .item { font-size: 2.2rem; display: inline-block; }
+        
+        .controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        button { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; font-size: 1rem; }
+        .btn-new { background: #6c5ce7; color: white; }
+        .btn-group { background: #0984e3; color: white; }
+        .btn-combine { background: #00b894; color: white; }
+        
+        .total-card { padding: 20px; border-radius: 15px; min-width: 100px; border: 4px solid; }
+        .total-counter { font-size: 1.5rem; font-weight: bold; margin-top: 10px; }
+        
+        #feedback { margin-top: 20px; color: #636e72; font-size: 1.1rem; }
+        .highlight { padding: 2px 8px; border-radius: 4px; color: white; }
+    </style>
+</head>
+<body>
+<button id="gemini-draw-menuToggle">🖍️</button>
+
+<div id="gemini-draw-controls" class="gemini-draw-hidden">
+    <button id="gemini-draw-toggleBtn" class="gemini-draw-btn gemini-draw-active">Mode: Drawing</button>
+    
+    <div class="gemini-draw-group">
+        <label class="gemini-draw-label">Color</label>
+        <input type="color" id="gemini-draw-colorPicker" value="#000000" class="gemini-draw-input">
+    </div>
+
+    <div class="gemini-draw-group">
+        <label class="gemini-draw-label">Brush Size: <span id="gemini-draw-sizeValue">5</span>px</label>
+        <input type="range" id="gemini-draw-sizeSlider" min="1" max="20" value="5" class="gemini-draw-slider">
+    </div>
+
+    <button id="gemini-draw-eraserBtn" class="gemini-draw-btn">🧽 Eraser: OFF</button>
+    <button id="gemini-draw-clearBtn" class="gemini-draw-btn gemini-draw-danger">Clear Everything</button>
+</div>
+
+<canvas id="gemini-draw-canvas"></canvas>
+<div class="container">
+    <h1>📦 Boxed Like Terms</h1>
+    <p>Terms with the same <b>variable</b> belong in the same <b>box</b>.</p>
+    
+    <div class="expression-box" id="equation">...</div>
+    
+    <div class="fruit-display" id="stage"></div>
+
+    <div class="controls">
+        <button class="btn-new" onclick="generateProblem()">New Problem</button>
+        <button class="btn-group" onclick="groupTerms()">Box & Sort</button>
+        <button class="btn-combine" onclick="combineTerms()">Combine Boxes</button>
+    </div>
+    
+    <div id="feedback"></div>
+</div>
+<script src="draw.js"></script>
+<script>
+    let currentData = [];
+
+    function generateProblem() {
+        const a1 = Math.floor(Math.random() * 3) + 1;
+        const b1 = Math.floor(Math.random() * 3) + 1;
+        const c1 = Math.floor(Math.random() * 4) + 1;
+        const a2 = Math.floor(Math.random() * 3) + 1;
+
+        // Randomized sequence to show the "messy" state
+        currentData = [
+            { type: 'a', count: a1, emoji: '🍎', class: 'type-a' },
+            { type: 'b', count: b1, emoji: '🍌', class: 'type-b' },
+            { type: 'const', count: c1, emoji: '💵', class: 'type-const' },
+            { type: 'a', count: a2, emoji: '🍎', class: 'type-a' }
+        ];
+
+        document.getElementById('equation').innerHTML = 
+            `<span style="color:#d63031">${a1}a</span> + <span style="color:#f39c12">${b1}b</span> + <span style="color:#27ae60">${c1}</span> + <span style="color:#d63031">${a2}a</span>`;
+        
+        document.getElementById('feedback').innerText = "Look at the colors in the equation and match them to the boxes!";
+        render(false);
+    }
+
+    function render(isSorted) {
+        const stage = document.getElementById('stage');
+        stage.innerHTML = '';
+        
+        let list = isSorted ? [...currentData].sort((x,y) => x.type.localeCompare(y.type)) : currentData;
+
+        // In messy mode, we put a box around every single term segment
+        list.forEach(term => {
+            const box = document.createElement('div');
+            box.className = `term-group ${term.class}`;
+            for(let i=0; i<term.count; i++) {
+                const s = document.createElement('span');
+                s.className = 'item';
+                s.innerText = term.emoji;
+                box.appendChild(s);
+            }
+            stage.appendChild(box);
+        });
+    }
+
+    function groupTerms() {
+        render(true);
+        document.getElementById('feedback').innerHTML = "Now the matching boxes are sitting next to each other!";
+    }
+
+    function combineTerms() {
+        const totals = currentData.reduce((acc, curr) => {
+            acc[curr.type] = (acc[curr.type] || 0) + curr.count;
+            return acc;
+        }, {});
+
+        const stage = document.getElementById('stage');
+        stage.innerHTML = '';
+
+        const results = [
+            { label: (totals.a || 0) + 'a', emoji: '🍎', class: 'type-a', color: '#ff7675' },
+            { label: (totals.b || 0) + 'b', emoji: '🍌', class: 'type-b', color: '#f1c40f' },
+            { label: '$' + (totals.const || 0), emoji: '💵', class: 'type-const', color: '#27ae60' }
+        ];
+
+        results.forEach(res => {
+            const card = document.createElement('div');
+            card.className = `total-card ${res.class}`;
+            card.innerHTML = `<div style="font-size:3rem">${res.emoji}</div><div class="total-counter">${res.label}</div>`;
+            stage.appendChild(card);
+        });
+
+        document.getElementById('equation').innerText = `${totals.a}a + ${totals.b}b + ${totals.const}`;
+        document.getElementById('feedback').innerHTML = "<b>Final Answer!</b> We merged the matching boxes into single totals.";
+    }
+
+    generateProblem();
+</script>
+
+</body>
+</html>

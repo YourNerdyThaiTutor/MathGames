@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Number Ladder!</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background-color: #FFDE59;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #game-container {
+            background: white;
+            padding: 30px;
+            border-radius: 50px;
+            box-shadow: 0 10px 0 #FF914D;
+            text-align: center;
+            border: 8px solid #5CE1E6;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .screen { display: none; }
+        .active { display: block; }
+
+        h1 { color: #FF5757; font-size: 2.5rem; margin-top: 0; }
+        .number-display { font-size: 6rem; color: #7ED957; margin: 10px 0; text-shadow: 2px 2px 0 #000; }
+        
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+
+        .btn {
+            background-color: #5CE1E6;
+            border: none;
+            color: white;
+            padding: 20px;
+            font-size: 2rem;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #36AEB2;
+            transition: 0.1s;
+        }
+
+        .btn:active { transform: translateY(3px); box-shadow: 0 3px 0 #36AEB2; }
+        .btn.orange { background-color: #FF914D; box-shadow: 0 6px 0 #CC743D; }
+
+        #progress-text { font-size: 1.5rem; color: #545454; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div id="menu-screen" class="screen active">
+            <h1>Number Ladder!</h1>
+            <p>Can you count all the way to 100?</p>
+            <button class="btn orange" onclick="startSequence()" style="width:100%;">Start the Challenge!</button>
+        </div>
+
+        <div id="game-screen" class="screen">
+            <p id="progress-text">Keep going!</p>
+            <div id="current-number" class="number-display">0</div>
+            <p>What comes next?</p>
+            <div class="btn-grid" id="option-buttons">
+                </div>
+            <br>
+            <button onclick="showMenu()" style="border:none; background:none; cursor:pointer; color:gray;">Restart</button>
+        </div>
+
+        <div id="win-screen" class="screen">
+            <h1>🏆 AMAZING!</h1>
+            <div class="number-display" style="color:#FFD700">100</div>
+            <p>You counted by 5s like a pro!</p>
+            <button class="btn orange" onclick="showMenu()" style="width:100%;">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        let currentLevel = 0; // Starts at 0, next is 5
+        let selectedVoice = null;
+
+        function loadVoices() {
+            let voices = window.speechSynthesis.getVoices();
+            selectedVoice = voices.find(v => (v.name.includes('Google') || v.name.includes('Samantha')) && v.lang.includes('en')) || voices[0];
+        }
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+        loadVoices();
+
+        function speak(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            if (selectedVoice) utterance.voice = selectedVoice;
+            utterance.pitch = 1.1;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function showMenu() {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('menu-screen').classList.add('active');
+        }
+
+        function startSequence() {
+            currentLevel = 0;
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('game-screen').classList.add('active');
+            updateGame();
+            speak("Start at zero. What is five more?");
+        }
+
+        function updateGame() {
+            document.getElementById('current-number').innerText = currentLevel;
+            const correctAnswer = currentLevel + 5;
+            
+            // Create a "distractor" number (usually 1, 10, or current+2)
+            let wrongAnswer = correctAnswer + (Math.random() > 0.5 ? 5 : -2);
+            if (wrongAnswer === currentLevel || wrongAnswer === correctAnswer || wrongAnswer < 0) {
+                wrongAnswer = correctAnswer + 1;
+            }
+
+            let options = [correctAnswer, wrongAnswer];
+            options.sort(() => Math.random() - 0.5);
+
+            const container = document.getElementById('option-buttons');
+            container.innerHTML = '';
+
+            options.forEach(opt => {
+                const b = document.createElement('button');
+                b.className = 'btn';
+                b.innerText = opt;
+                b.onclick = () => handleChoice(opt, correctAnswer);
+                container.appendChild(b);
+            });
+        }
+
+        function handleChoice(chosen, correct) {
+            if (chosen === correct) {
+                currentLevel = correct;
+                if (currentLevel === 100) {
+                    speak("One hundred! You did it!");
+                    showWin();
+                } else {
+                    speak(currentLevel);
+                    updateGame();
+                }
+            } else {
+                speak("Oops! Try again.");
+                // Add a little shake effect
+                document.getElementById('game-container').style.borderColor = "#FF5757";
+                setTimeout(() => {
+                    document.getElementById('game-container').style.borderColor = "#5CE1E6";
+                }, 500);
+            }
+        }
+
+        function showWin() {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('win-screen').classList.add('active');
+        }
+    </script>
+</body>
+</html>

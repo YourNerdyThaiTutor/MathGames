@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solve It: Fruit Algebra</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; }
+        .container { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-width: 850px; width: 100%; text-align: center; }
+        .expression-box { font-size: 1.8rem; font-weight: bold; color: #2d3436; margin: 20px 0; padding: 20px; background: #dfe6e9; border-radius: 12px; }
+        
+        .fruit-display { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin: 20px 0; padding: 20px; border: 3px dashed #b2bec3; border-radius: 15px; min-height: 120px; }
+
+        .term-group { padding: 10px; border-radius: 12px; border: 3px solid; display: flex; flex-wrap: wrap; gap: 5px; align-items: center; justify-content: center; }
+        .type-a { border-color: #ff7675; background: rgba(255, 118, 117, 0.1); }
+        .type-b { border-color: #f1c40f; background: rgba(241, 196, 15, 0.1); }
+        .type-const { border-color: #27ae60; background: rgba(39, 174, 96, 0.1); }
+
+        .item { font-size: 2rem; }
+        
+        /* Input Area Styles */
+        .solve-area { background: #f9f9f9; padding: 20px; border-radius: 15px; margin-top: 20px; border: 2px solid #e0e0e0; }
+        .input-row { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 1.5rem; font-weight: bold; flex-wrap: wrap; }
+        input { width: 60px; padding: 10px; font-size: 1.2rem; text-align: center; border: 2px solid #ccc; border-radius: 8px; }
+        input:focus { border-color: #6c5ce7; outline: none; }
+        
+        .controls { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
+        button { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-check { background: #6c5ce7; color: white; }
+        .btn-new { background: #b2bec3; color: white; }
+        
+        #result-msg { margin-top: 15px; font-weight: bold; font-size: 1.2rem; }
+        .success { color: #27ae60; }
+        .error { color: #e74c3c; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📝 Solve the Equation</h1>
+    <p>Count the items in the boxes and simplify the expression below!</p>
+    
+    <div class="expression-box" id="equation">Generating...</div>
+    
+    <div class="fruit-display" id="stage"></div>
+
+    <div class="solve-area">
+        <h3>Your Answer:</h3>
+        <div class="input-row">
+            <input type="number" id="ans-a" placeholder="?"> <span style="color:#d63031">a</span>
+            <span>+</span>
+            <input type="number" id="ans-b" placeholder="?"> <span style="color:#f39c12">b</span>
+            <span>+</span>
+            <input type="number" id="ans-c" placeholder="?"> <span style="color:#27ae60">💵</span>
+        </div>
+        
+        <div id="result-msg"></div>
+
+        <div class="controls">
+            <button class="btn-check" onclick="checkAnswer()">Check Answer</button>
+            <button class="btn-new" onclick="generateProblem()">New Problem</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let totals = { a: 0, b: 0, const: 0 };
+
+    function generateProblem() {
+        // Clear previous state
+        document.getElementById('result-msg').innerText = "";
+        document.getElementById('ans-a').value = "";
+        document.getElementById('ans-b').value = "";
+        document.getElementById('ans-c').value = "";
+        document.getElementById('ans-a').style.borderColor = "#ccc";
+        document.getElementById('ans-b').style.borderColor = "#ccc";
+        document.getElementById('ans-c').style.borderColor = "#ccc";
+
+        const a1 = Math.floor(Math.random() * 4) + 1;
+        const b1 = Math.floor(Math.random() * 3) + 1;
+        const c1 = Math.floor(Math.random() * 5) + 1;
+        const a2 = Math.floor(Math.random() * 4) + 1;
+        const c2 = Math.floor(Math.random() * 5) + 1;
+
+        totals.a = a1 + a2;
+        totals.b = b1;
+        totals.const = c1 + c2;
+
+        const problemData = [
+            { type: 'a', count: a1, emoji: '🍎', class: 'type-a' },
+            { type: 'b', count: b1, emoji: '🍌', class: 'type-b' },
+            { type: 'const', count: c1, emoji: '💵', class: 'type-const' },
+            { type: 'a', count: a2, emoji: '🍎', class: 'type-a' },
+            { type: 'const', count: c2, emoji: '💵', class: 'type-const' }
+        ];
+
+        document.getElementById('equation').innerText = `${a1}a + ${b1}b + ${c1} + ${a2}a + ${c2}`;
+        
+        const stage = document.getElementById('stage');
+        stage.innerHTML = '';
+        
+        // Render messy boxes
+        problemData.forEach(term => {
+            const box = document.createElement('div');
+            box.className = `term-group ${term.class}`;
+            for(let i=0; i<term.count; i++) {
+                const s = document.createElement('span');
+                s.className = 'item';
+                s.innerText = term.emoji;
+                box.appendChild(s);
+            }
+            stage.appendChild(box);
+        });
+    }
+
+    function checkAnswer() {
+        const userA = parseInt(document.getElementById('ans-a').value);
+        const userB = parseInt(document.getElementById('ans-b').value);
+        const userC = parseInt(document.getElementById('ans-c').value);
+        const msg = document.getElementById('result-msg');
+
+        let isCorrect = true;
+
+        if (userA === totals.a) {
+            document.getElementById('ans-a').style.borderColor = "#27ae60";
+        } else {
+            document.getElementById('ans-a').style.borderColor = "#e74c3c";
+            isCorrect = false;
+        }
+
+        if (userB === totals.b) {
+            document.getElementById('ans-b').style.borderColor = "#27ae60";
+        } else {
+            document.getElementById('ans-b').style.borderColor = "#e74c3c";
+            isCorrect = false;
+        }
+
+        if (userC === totals.const) {
+            document.getElementById('ans-c').style.borderColor = "#27ae60";
+        } else {
+            document.getElementById('ans-c').style.borderColor = "#e74c3c";
+            isCorrect = false;
+        }
+
+        if (isCorrect) {
+            msg.innerHTML = "<span class='success'>🎉 Correct! You combined the like terms perfectly!</span>";
+        } else {
+            msg.innerHTML = "<span class='error'>❌ Not quite. Check the counts in the boxes again.</span>";
+        }
+    }
+
+    generateProblem();
+</script>
+
+</body>
+</html>

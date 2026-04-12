@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toggle Distributive Property</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; }
+        .container { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-width: 900px; width: 100%; text-align: center; }
+        .expression-box { font-size: 2rem; font-weight: bold; color: #2d3436; margin: 20px 0; padding: 20px; background: #dfe6e9; border-radius: 12px; }
+        
+        .visual-container { display: flex; flex-direction: column; align-items: center; gap: 20px; margin: 20px 0; min-height: 200px; justify-content: center; }
+        .bag-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; width: 100%; transition: all 0.3s ease; }
+        
+        .full-bag { display: flex; align-items: center; gap: 8px; background: #fff; padding: 12px; border-radius: 12px; border: 2px solid #8e44ad; position: relative; box-shadow: 4px 4px 0px rgba(142, 68, 173, 0.1); }
+        .full-bag::before { content: "🛍️"; font-size: 2.5rem; }
+
+        .term-group { padding: 5px; border-radius: 8px; border: 2px solid; display: flex; align-items: center; gap: 2px; }
+        .type-a { border-color: #ff7675; background: rgba(255, 118, 117, 0.1); }
+        .type-const { border-color: #27ae60; background: rgba(39, 174, 96, 0.1); }
+
+        .item { font-size: 1.4rem; }
+        .multiplier-tag { font-size: 2.5rem; font-weight: bold; color: #6c5ce7; align-self: center; margin-right: 10px; }
+        
+        .solve-area { background: #f9f9f9; padding: 20px; border-radius: 15px; border: 2px solid #e0e0e0; }
+        .input-row { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 1.5rem; font-weight: bold; }
+        input { width: 70px; padding: 10px; font-size: 1.2rem; text-align: center; border: 2px solid #ccc; border-radius: 8px; }
+        
+        .controls { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
+        button { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-toggle { background: #0984e3; color: white; width: 180px; }
+        .btn-check { background: #6c5ce7; color: white; }
+        .btn-new { background: #b2bec3; color: white; }
+        button:active { transform: scale(0.98); }
+        
+        #result-msg { margin-top: 15px; font-weight: bold; font-size: 1.1rem; }
+    </style>
+    <link rel="stylesheet" href="assets/css/draw.css">
+</head>
+<body>
+<button id="gemini-draw-menuToggle">🖍️</button>
+
+<div id="gemini-draw-controls" class="gemini-draw-hidden">
+    <button id="gemini-draw-toggleBtn" class="gemini-draw-btn gemini-draw-active">Mode: Off</button>
+    
+    <div class="gemini-draw-group">
+        <label class="gemini-draw-label">Color</label>
+        <input type="color" id="gemini-draw-colorPicker" value="#000000" class="gemini-draw-input">
+    </div>
+
+    <div class="gemini-draw-group">
+        <label class="gemini-draw-label">Brush Size: <span id="gemini-draw-sizeValue">5</span>px</label>
+        <input type="range" id="gemini-draw-sizeSlider" min="1" max="20" value="5" class="gemini-draw-slider">
+    </div>
+
+    <button id="gemini-draw-eraserBtn" class="gemini-draw-btn">🧽 Eraser: OFF</button>
+    <button id="gemini-draw-clearBtn" class="gemini-draw-btn gemini-draw-danger">Clear Everything</button>
+</div>
+
+<canvas id="gemini-draw-canvas"></canvas>
+<div class="container">
+    <h1>🔄 Distributive Toggle Tool</h1>
+    <p>Toggle between the <b>math shortcut</b> and the <b>full inventory</b>.</p>
+    
+    <div class="expression-box" id="equation">...</div>
+    
+    <div class="visual-container">
+        <div class="bag-row" id="bag-display"></div>
+    </div>
+
+    <div class="solve-area">
+        <div class="input-row">
+            <input type="number" id="ans-a" placeholder="?"> <span style="color:#d63031">a</span>
+            <span>+</span>
+            <input type="number" id="ans-c" placeholder="?"> <span style="color:#27ae60">💵</span>
+        </div>
+        <div id="result-msg"></div>
+        <div class="controls">
+            <button class="btn-toggle" id="toggle-btn" onclick="toggleView()">Show All Bags</button>
+            <button class="btn-check" onclick="checkAnswer()">Check Answer</button>
+            <button class="btn-new" onclick="generateProblem()">New Problem</button>
+        </div>
+    </div>
+</div>
+<script src="draw.js"></script>
+<script>
+    let prob = { m: 0, a: 0, c: 0 };
+    let isExpanded = false;
+
+    function generateProblem() {
+        prob.m = Math.floor(Math.random() * 3) + 2; 
+        prob.a = Math.floor(Math.random() * 3) + 1; 
+        prob.c = Math.floor(Math.random() * 4) + 1; 
+        
+        isExpanded = false;
+        document.getElementById('toggle-btn').innerText = "Show All Bags";
+        document.getElementById('result-msg').innerText = "";
+        document.getElementById('ans-a').value = "";
+        document.getElementById('ans-c').value = "";
+        
+        updateDisplay();
+    }
+
+    function createBagHTML() {
+        return `
+            <div class="full-bag">
+                <div class="term-group type-a">${Array(prob.a).fill('<span class="item">🍎</span>').join('')}</div>
+                <div class="term-group type-const">${Array(prob.c).fill('<span class="item">💵</span>').join('')}</div>
+            </div>
+        `;
+    }
+
+    function updateDisplay() {
+        const display = document.getElementById('bag-display');
+        const eq = document.getElementById('equation');
+        
+        if (!isExpanded) {
+            // Short View: Multiplier (Bag)
+            display.innerHTML = `<div class="multiplier-tag">${prob.m} ×</div>` + createBagHTML();
+            eq.innerHTML = `<span style="color:#6c5ce7">${prob.m}</span>(<span style="color:#d63031">${prob.a}a</span> + <span style="color:#27ae60">${prob.c}</span>)`;
+        } else {
+            // Expanded View: Bag + Bag + Bag
+            display.innerHTML = Array(prob.m).fill(createBagHTML()).join('');
+            // Show the long-form addition version of the equation
+            let longForm = Array(prob.m).fill(`(${prob.a}a + ${prob.c})`).join(' + ');
+            eq.innerHTML = `<small style="font-size:1.2rem">${longForm}</small>`;
+        }
+    }
+
+    function toggleView() {
+        isExpanded = !isExpanded;
+        document.getElementById('toggle-btn').innerText = isExpanded ? "Show Multiplier View" : "Show All Bags";
+        updateDisplay();
+    }
+
+    function checkAnswer() {
+        const ua = parseInt(document.getElementById('ans-a').value);
+        const uc = parseInt(document.getElementById('ans-c').value);
+        const correctA = prob.m * prob.a;
+        const correctC = prob.m * prob.c;
+        const msg = document.getElementById('result-msg');
+
+        if(ua === correctA && uc === correctC) {
+            msg.innerHTML = "<span style='color:green'>🎉 Correct! The multiplier applies to everything inside!</span>";
+        } else {
+            msg.innerHTML = "<span style='color:red'>❌ Not quite. Multiply the number outside by each item inside.</span>";
+        }
+    }
+
+    generateProblem();
+</script>
+</body>
+</html>
