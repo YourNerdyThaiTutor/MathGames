@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>iPad Stable Math</title>
+    <style>
+        :root {
+            --berry-size: 60px;
+        }
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background-color: #E3F2FD;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            touch-action: none; /* Prevents iPad from scrolling/zooming */
+        }
+
+        #equation { font-size: 4rem; color: #1565C0; margin-bottom: 10px; }
+
+        #game-board {
+            background: white;
+            padding: 20px;
+            border-radius: 30px;
+            box-shadow: 0 10px 0 #90CAF9;
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        #instruction { font-size: 1.4rem; min-height: 3em; color: #0D47A1; }
+
+        #source-tray {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            padding: 20px;
+            background: #BBDEFB;
+            border-radius: 20px;
+            margin-bottom: 20px;
+        }
+
+        .berry {
+            font-size: 3rem;
+            width: var(--berry-size);
+            height: var(--berry-size);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
+
+        /* The berry that follows the finger */
+        #drag-proxy {
+            position: fixed;
+            pointer-events: none;
+            display: none;
+            z-index: 9999;
+            font-size: 3.5rem;
+        }
+
+        .zones-container {
+            display: flex;
+            justify-content: space-around;
+            gap: 20px;
+        }
+
+        .drop-zone {
+            width: 150px;
+            min-height: 150px;
+            border: 4px dashed #64B5F6;
+            border-radius: 20px;
+            background: #F1F8E9;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            padding: 10px;
+            gap: 5px;
+            transition: transform 0.2s;
+        }
+
+        .drop-zone.active { transform: scale(1.05); border-color: #4CAF50; }
+
+        #total-btn {
+            margin-top: 20px;
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            display: none;
+            box-shadow: 0 5px 0 #2E7D32;
+        }
+
+        .counted { filter: grayscale(1) opacity(0.3); }
+    </style>
+</head>
+<body>
+
+<div id="equation">? + ?</div>
+
+<div id="game-board">
+    <div id="instruction">Loading...</div>
+
+    <div id="source-tray">
+        <div class="berry" id="master-berry">🍓</div>
+    </div>
+
+    <div class="zones-container">
+        <div id="zone1" class="drop-zone"></div>
+        <div id="zone2" class="drop-zone"></div>
+    </div>
+
+    <div id="total-display" style="font-size: 3rem; margin-top: 10px;">?</div>
+    <button id="total-btn" onclick="resetGame()">Next Level! ➔</button>
+</div>
+
+<div id="drag-proxy">🍓</div>
+
+<script>
+    let t1 = 0, t2 = 0;
+    let mode = 'DRAG';
+    let currentCount = 0;
+    const proxy = document.getElementById('drag-proxy');
+    const master = document.getElementById('master-berry');
+
+    // Speech Setup
+    function speak(text, callback) {
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.rate = 1.0;
+        if (callback) msg.onend = callback;
+        window.speechSynthesis.speak(msg);
+    }
+
+    // Drag Logic specifically for iPad Touch
+    master.addEventListener('touchstart', (e) => {
+        if (mode !== 'DRAG') return;
+        const touch = e.touches[0];
+        proxy.style.display = 'block';
+        updateProxyPos(touch.clientX, touch.clientY);
+    });
+
+    window.addEventListener('touchmove', (e) => {
+        if (proxy.style.display === 'block') {
+            const touch = e.touches[0];
+            updateProxyPos(touch.clientX, touch.clientY);
+            
+            // Visual feedback for zones
+            checkZones(touch.clientX, touch.clientY);
+        }
+    });
+
+    window.addEventListener('touchend', (e) => {
+        if (proxy.style.display !== 'block') return;
+        proxy.style.display = 'none';
+        
+        const touch = e.changedTouches[0];
+        const zone = getZoneAt(touch.clientX, touch.clientY);
+        
+        if (zone) {
+            addBerryToZone(zone);
+        }
+        
+        clearZoneFeedback();
+    });
+
+    function updateProxyPos(x, y) {
+        proxy.style.left = (x - 30) + 'px';
+        proxy.style.top = (y - 30) + 'px';
+    }
+
+    function checkZones(x, y) {
+        clearZoneFeedback();
+        const zone = getZoneAt(x, y);
+        if (zone) zone.classList.add('active');
+    }
+
+    function getZoneAt(x, y) {
+        const z1 = document.getElementById('zone1').getBoundingClientRect();
+        const z2 = document.getElementById('zone2').getBoundingClientRect();
+        
+        if (x > z1.left && x < z1.right && y > z1.top && y < z1.bottom) return document.getElementById('zone1');
+        if (x > z2.left && x < z2.right && y > z2.top && y < z2.bottom) return document.getElementById('zone2');
+        return null;
+    }
+
+    function clearZoneFeedback() {
+        document.querySelectorAll('.drop-zone').forEach(z => z.classList.remove('active'));
+    }
+
+    function addBerryToZone(zone) {
+        const b = document.createElement('div');
+        b.className = 'berry';
+        b.innerText = '🍓';
+        b.onclick = () => handleTap(b); // For counting phase
+        zone.appendChild(b);
+        
+        speak(zone.children.length);
+        checkProgress();
+    }
+
+    function checkProgress() {
+        const count1 = document.getElementById('zone1').children.length;
+        const count2 = document.getElementById('zone2').children.length;
+        
+        if (count1 === t1 && count2 === t2) {
+            mode = 'COUNT';
+            const msg = "Perfect! Now tap them all to count!";
+            document.getElementById('instruction').innerText = msg;
+            speak(msg);
+        }
+    }
+
+    function handleTap(el) {
+        if (mode === 'COUNT' && !el.classList.contains('counted')) {
+            currentCount++;
+            el.classList.add('counted');
+            document.getElementById('total-display').innerText = currentCount;
+            
+            if (currentCount === (t1 + t2)) {
+                speak(currentCount, () => {
+                    speak(`That's it! ${t1} plus ${t2} is ${currentCount}!`);
+                    document.getElementById('total-btn').style.display = 'inline-block';
+                });
+            } else {
+                speak(currentCount);
+            }
+        }
+    }
+
+    function resetGame() {
+        t1 = Math.floor(Math.random() * 3) + 2;
+        t2 = Math.floor(Math.random() * 3) + 2;
+        mode = 'DRAG';
+        currentCount = 0;
+        
+        document.getElementById('zone1').innerHTML = '';
+        document.getElementById('zone2').innerHTML = '';
+        document.getElementById('total-display').innerText = '?';
+        document.getElementById('total-btn').style.display = 'none';
+        document.getElementById('equation').innerText = `${t1} + ${t2}`;
+        
+        const msg = `Put ${t1} berries in the first box and ${t2} in the second!`;
+        document.getElementById('instruction').innerText = msg;
+        speak(msg);
+    }
+
+    window.onload = () => setTimeout(resetGame, 500);
+</script>
+
+</body>
+</html>
