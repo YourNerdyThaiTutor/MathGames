@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Monster Subtraction: Count the Rest!</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background-color: #FFECB3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            touch-action: none; 
+        }
+
+        #game-container {
+            background: white;
+            padding: 20px;
+            border-radius: 40px;
+            box-shadow: 0 10px 0 #FFB300;
+            text-align: center;
+            border: 8px solid #FFA000;
+            width: 95%;
+            max-width: 600px;
+            position: relative;
+        }
+
+        #mission-text {
+            font-size: 1.6rem;
+            color: #BF360C;
+            margin-bottom: 10px;
+            min-height: 60px;
+        }
+
+        #berry-source {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            background: #FFF3E0;
+            padding: 15px;
+            border-radius: 25px;
+            margin-bottom: 15px;
+            border: 3px dashed #FFB74D;
+            min-height: 100px;
+        }
+
+        .berry {
+            font-size: 3rem;
+            cursor: grab;
+            user-select: none;
+            touch-action: none;
+            z-index: 10;
+            display: inline-block;
+            width: 55px;
+            height: 55px;
+            line-height: 55px;
+            text-align: center;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        .drop-box {
+            width: 260px;
+            min-height: 160px;
+            border: 5px solid #FFA000;
+            border-radius: 20px;
+            background-color: #FFFDE7;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-content: flex-start;
+            padding: 15px;
+            gap: 10px;
+            margin: 0 auto;
+        }
+
+        #equation-display {
+            font-size: 3.5rem;
+            margin: 15px 0;
+            color: #E64A19;
+            font-weight: bold;
+        }
+
+        .btn {
+            background-color: #FF5722;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.5rem;
+            border-radius: 25px;
+            box-shadow: 0 6px 0 #BF360C;
+            display: none;
+            cursor: pointer;
+        }
+
+        .berry.eaten { 
+            transform: scale(0);
+            opacity: 0;
+            pointer-events: none;
+            position: absolute; /* Remove from flex flow */
+        }
+
+        .berry.counted {
+            filter: grayscale(1) opacity(0.4);
+            transform: scale(0.9);
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="mission-text">Ready?</div>
+    <div id="berry-source"></div>
+    <div class="drop-box" id="main-box"></div>
+    <div id="equation-display">? - ? = ?</div>
+    <button id="nextBtn" class="btn" onclick="nextMission()">Next Mission! ➔</button>
+</div>
+
+<script>
+    let num1 = 0, num2 = 0;
+    let berriesInBox = 0;
+    let berriesEaten = 0;
+    let leftCount = 0;
+    let mode = 'SETUP'; // SETUP -> EAT -> FINAL_COUNT -> DONE
+    let selectedVoice = null;
+
+    function loadVoices() {
+        let voices = window.speechSynthesis.getVoices();
+        selectedVoice = voices.find(v => (v.lang.startsWith('en')) && (v.name.includes('Google') || v.name.includes('Samantha'))) || voices.find(v => v.lang.startsWith('en')) || voices[0];
+    }
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+    loadVoices();
+
+    function speak(text, callback) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        if (selectedVoice) utterance.voice = selectedVoice;
+        utterance.lang = 'en-US';
+        utterance.pitch = 1.2;
+        if (callback) utterance.onend = callback;
+        window.speechSynthesis.speak(utterance);
+    }
+
+    function createBerries() {
+        const source = document.getElementById('berry-source');
+        source.innerHTML = '';
+        for (let i = 1; i <= 10; i++) {
+            const b = document.createElement('div');
+            b.className = 'berry';
+            b.id = 'berry' + i;
+            b.innerText = '🍓';
+            addUniversalDrag(b);
+            source.appendChild(b);
+        }
+    }
+
+    function addUniversalDrag(el) {
+        let active = false;
+        let startX, startY;
+
+        el.addEventListener("pointerdown", (e) => {
+            // Handle Tapping in EAT mode
+            if (mode === 'EAT' && el.parentElement.id === 'main-box') {
+                handleEat(el);
+                return;
+            }
+            // Handle Tapping in FINAL_COUNT mode
+            if (mode === 'FINAL_COUNT' && el.parentElement.id === 'main-box') {
+                handleFinalCount(el);
+                return;
+            }
+            if (mode !== 'SETUP') return;
+            
+            active = true;
+            el.setPointerCapture(e.pointerId);
+            const rect = el.getBoundingClientRect();
+            startX = rect.width / 2;
+            startY = rect.height / 2;
+            el.style.position = 'fixed';
+            el.style.zIndex = '1000';
+            moveAt(e.clientX, e.clientY);
+        });
+
+        function moveAt(pageX, pageY) {
+            el.style.left = (pageX - startX) + 'px';
+            el.style.top = (pageY - startY) + 'px';
+        }
+
+        el.addEventListener("pointermove", (e) => {
+            if (!active) return;
+            moveAt(e.clientX, e.clientY);
+        });
+
+        el.addEventListener("pointerup", (e) => {
+            if (!active) return;
+            active = false;
+            el.releasePointerCapture(e.pointerId);
+            el.style.display = 'none';
+            const dropTarget = document.elementFromPoint(e.clientX, e.clientY);
+            el.style.display = 'inline-block';
+            const box = dropTarget ? dropTarget.closest('#main-box') : null;
+
+            el.style.position = 'static';
+            if (box) {
+                box.appendChild(el);
+                berriesInBox = box.children.length;
+                updateEquation();
+
+                if (berriesInBox === num1) {
+                    speak(berriesInBox, () => setTimeout(startEatPhase, 400));
+                } else {
+                    speak(berriesInBox);
+                }
+            } else {
+                document.getElementById('berry-source').appendChild(el);
+            }
+        });
+    }
+
+    function updateEquation() {
+        let currentInBox = document.getElementById('main-box').children.length;
+        document.getElementById('equation-display').innerText = `${currentInBox} - ${num2} = ?`;
+    }
+
+    function startEatPhase() {
+        mode = 'EAT';
+        const msg = `Perfect! Now the monster is hungry. Tap to eat ${num2} berries!`;
+        document.getElementById('mission-text').innerText = msg;
+        speak(msg);
+    }
+
+    function handleEat(el) {
+        if (berriesEaten < num2 && !el.classList.contains('eaten')) {
+            berriesEaten++;
+            el.classList.add('eaten');
+            
+            if (berriesEaten === num2) {
+                speak(berriesEaten, () => setTimeout(startFinalCountPhase, 400));
+            } else {
+                speak(berriesEaten);
+            }
+        }
+    }
+
+    function startFinalCountPhase() {
+        mode = 'FINAL_COUNT';
+        const msg = `Yum! Now, how many berries are left in the box? Tap them to count!`;
+        document.getElementById('mission-text').innerText = msg;
+        speak(msg);
+    }
+
+    function handleFinalCount(el) {
+        if (!el.classList.contains('counted') && !el.classList.contains('eaten')) {
+            leftCount++;
+            el.classList.add('counted');
+            const actualLeft = num1 - num2;
+
+            if (leftCount === actualLeft) {
+                speak(leftCount, () => {
+                    setTimeout(() => {
+                        document.getElementById('equation-display').innerText = `${num1} - ${num2} = ${actualLeft}`;
+                        speak(`That's right! ${num1} minus ${num2} is ${actualLeft}!`);
+                        document.getElementById('nextBtn').style.display = 'inline-block';
+                        mode = 'DONE';
+                    }, 400);
+                });
+            } else {
+                speak(leftCount);
+            }
+        }
+    }
+
+    function nextMission() {
+        window.speechSynthesis.cancel();
+        num1 = Math.floor(Math.random() * 3) + 5; // 5 to 7
+        num2 = Math.floor(Math.random() * 3) + 1; // 1 to 3
+        berriesInBox = 0;
+        berriesEaten = 0;
+        leftCount = 0;
+        mode = 'SETUP';
+        
+        createBerries();
+        document.getElementById('main-box').innerHTML = '';
+        document.getElementById('equation-display').innerText = `? - ${num2} = ?`;
+        document.getElementById('nextBtn').style.display = 'none';
+        
+        setTimeout(() => {
+            const msg = `Put ${num1} berries in the box!`;
+            document.getElementById('mission-text').innerText = msg;
+            speak(msg);
+        }, 100);
+    }
+
+    window.onload = () => setTimeout(nextMission, 800);
+</script>
+</body>
+</html>
