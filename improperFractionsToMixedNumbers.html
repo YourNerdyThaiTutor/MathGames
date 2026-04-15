@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mixed Number Challenge</title>
+    <style>
+        :root {
+            --cup-color: #2c3e50;
+            --water-color: #3498db;
+            --overflow-color: #e74c3c;
+            --cup-width: 100px;
+            --cup-height: 120px;
+        }
+
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #fdfdfd; padding: 20px; color: #333; }
+        
+        /* The Fraction Input Styling */
+        .math-interface {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+            margin: 20px auto;
+            max-width: 500px;
+        }
+
+        .problem-display { font-size: 2rem; font-weight: bold; }
+
+        .mixed-number-input { display: flex; align-items: center; gap: 8px; }
+
+        .whole-input {
+            width: 50px; height: 60px; font-size: 1.8rem;
+            text-align: center; border: 2px solid #ddd; border-radius: 8px;
+        }
+
+        .fraction-stack {
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+        }
+
+        .numerator-input {
+            width: 45px; height: 40px; font-size: 1.4rem;
+            text-align: center; border: 2px solid #ddd; border-radius: 6px;
+        }
+
+        .fraction-bar { width: 100%; height: 3px; background: #333; border-radius: 2px; }
+
+        .denominator-display { font-size: 1.4rem; font-weight: bold; color: #777; padding-bottom: 5px; }
+
+        /* Game Visuals */
+        .game-layout { display: flex; justify-content: center; align-items: flex-end; gap: 30px; margin: 40px auto; min-height: 380px; }
+        .source-area { position: relative; width: var(--cup-width); height: 380px; }
+        .cup-frame {
+            width: 100%; height: var(--cup-height);
+            border: 4px solid var(--cup-color); border-top: none;
+            border-radius: 0 0 15px 15px; position: absolute; bottom: 0;
+            background: rgba(255,255,255,0.7); z-index: 1;
+        }
+        .unit-stack { position: absolute; width: 100%; bottom: 0; display: flex; flex-direction: column-reverse; align-items: center; z-index: 2; }
+        .target-cup {
+            width: var(--cup-width); height: var(--cup-height);
+            border: 4px solid var(--cup-color); border-top: none;
+            border-radius: 0 0 15px 15px; background: white;
+            position: relative; transition: transform 0.1s;
+        }
+        .target-cup.active { background: #e8f8f5; border-color: #27ae60; transform: scale(1.05); }
+
+        .unit { width: 92%; border-radius: 3px; margin-bottom: 2px; transition: all 0.2s; }
+        .blue { background: var(--water-color); }
+        .red { background: var(--overflow-color); cursor: grab; }
+        .dragging { opacity: 0.3; }
+
+        button {
+            padding: 12px 30px; background: #2c3e50; color: white;
+            border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
+        }
+        button:hover { background: #34495e; }
+        #msg { margin-top: 15px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>Improper Fraction Challenge</h1>
+    <p>Drag the <b>overflowing red units</b> into new cups to find the mixed number!</p>
+
+    <div class="math-interface">
+        <div id="problem" class="problem-display">9 / 4 =</div>
+        
+        <div class="mixed-number-input">
+            <input type="number" id="in-whole" class="whole-input" placeholder="0">
+            
+            <div class="fraction-stack">
+                <input type="number" id="in-num" class="numerator-input" placeholder="0">
+                <div class="fraction-bar"></div>
+                <div id="disp-den" class="denominator-display">4</div>
+            </div>
+        </div>
+
+        <button onclick="check()">Check</button>
+    </div>
+    <div id="msg"></div>
+
+    <div class="game-layout">
+        <div class="source-area">
+            <div class="cup-frame"></div>
+            <div id="main-stack" class="unit-stack"></div>
+        </div>
+        <div id="targets" style="display: flex; gap: 20px;"></div>
+    </div>
+
+    <script>
+        let total, den, targets;
+        let originalTotal;
+
+        function start() {
+            den = Math.floor(Math.random() * 3) + 3; // 3 to 5
+            total = Math.floor(Math.random() * (den * 2)) + (den + 1); // Ensures improper
+            originalTotal = total;
+            targets = [0, 0, 0];
+            
+            document.getElementById('problem').innerText = `${total} / ${den} =`;
+            document.getElementById('disp-den').innerText = den;
+            document.getElementById('in-whole').value = '';
+            document.getElementById('in-num').value = '';
+            document.getElementById('msg').innerText = '';
+            render();
+        }
+
+        function render() {
+            const main = document.getElementById('main-stack');
+            main.innerHTML = '';
+            const h = (120/den) - 2;
+
+            for(let i=0; i<total; i++) {
+                const u = document.createElement('div');
+                u.className = 'unit ' + (i < den ? 'blue' : 'red');
+                u.style.height = h + 'px';
+                if(i >= den) {
+                    u.draggable = true;
+                    u.addEventListener('dragstart', () => u.classList.add('dragging'));
+                    u.addEventListener('dragend', () => u.classList.remove('dragging'));
+                }
+                main.appendChild(u);
+            }
+
+            const tCont = document.getElementById('targets');
+            tCont.innerHTML = '';
+            targets.forEach((count, idx) => {
+                const wrap = document.createElement('div');
+                const cup = document.createElement('div');
+                cup.className = 'target-cup';
+                
+                cup.addEventListener('dragover', e => { e.preventDefault(); cup.classList.add('active'); });
+                cup.addEventListener('dragleave', () => cup.classList.remove('active'));
+                cup.addEventListener('drop', () => {
+                    if(total > den && targets[idx] < den) {
+                        total--; targets[idx]++; render();
+                    }
+                });
+
+                for(let i=0; i<count; i++) {
+                    const u = document.createElement('div');
+                    u.className = 'unit blue';
+                    u.style.height = h + 'px';
+                    u.style.position = 'absolute';
+                    u.style.bottom = (i * (h+2)) + 'px';
+                    u.style.width = '100%';
+                    cup.appendChild(u);
+                }
+                wrap.appendChild(cup);
+                const l = document.createElement('div');
+                l.innerText = count === den ? "1 Whole" : `${count}/${den}`;
+                l.style.marginTop = "8px";
+                wrap.appendChild(l);
+                tCont.appendChild(wrap);
+            });
+        }
+
+        function check() {
+            const w = parseInt(document.getElementById('in-whole').value) || 0;
+            const n = parseInt(document.getElementById('in-num').value) || 0;
+            const correctW = Math.floor(originalTotal / den);
+            const correctN = originalTotal % den;
+
+            const m = document.getElementById('msg');
+            if(w === correctW && n === correctN) {
+                m.innerHTML = "<span style='color:green'>Excellent! Correct Mixed Number.</span>";
+                setTimeout(start, 2000);
+            } else {
+                m.innerHTML = "<span style='color:red'>Try again! Count the full cups and remaining units.</span>";
+            }
+        }
+
+        start();
+    </script>
+</body>
+</html>

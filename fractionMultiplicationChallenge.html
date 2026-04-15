@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fraction Multiplication Master</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <link rel="stylesheet" href="assets/css/confetti.css">
+    <style>
+        :root {
+            --color-1: #4A90E2; 
+            --color-2: #E24A4A; 
+            --color-mix: #8B4AE2; 
+            --bg-color: #f4f7f6;
+            --main-text: #333;
+            --success: #27ae60;
+            --error: #e74c3c;
+        }
+       
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: var(--bg-color);
+            color: var(--main-text);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .app-container {
+            display: flex;
+            gap: 20px;
+            max-width: 1000px;
+            width: 100%;
+            margin-bottom: 30px;
+        }
+
+        .controls-sidebar {
+            flex: 0 0 100px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .fraction-inputs {
+            border: 2px solid #eee;
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .label-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .label-row.frac-1 { color: var(--color-1); }
+        .label-row.frac-2 { color: var(--color-2); }
+
+        .btn-group { display: flex; gap: 5px; }
+
+        button {
+            padding: 8px;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        button:hover { background: #f8f8f8; }
+
+        .visualization-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        .canvas-grid {
+            display: grid;
+            grid-template-columns: 60px 300px;
+            grid-template-rows: 60px 300px;
+            gap: 10px;
+        }
+
+        .numerator-tabs-1 { grid-column: 2; grid-row: 1; display: flex; border-bottom: 4px solid var(--color-1); }
+        .numerator-tabs-2 { grid-column: 1; grid-row: 2; display: flex; flex-direction: column; border-right: 4px solid var(--color-2); }
+
+        .num-tab {
+            flex: 1; display: flex; justify-content: center; align-items: center;
+            background: rgba(200,200,200,0.1); cursor: pointer; border: 1px solid #e0e0e0;
+            font-size: 0.9rem; font-weight: bold; margin: 1px;
+        }
+
+        .numerator-tabs-1 .num-tab.active { background-color: var(--color-1); color: white; }
+        .numerator-tabs-2 .num-tab.active { background-color: var(--color-2); color: white; }
+
+        canvas { grid-column: 2; grid-row: 2; border: 2px solid #333; background: white; }
+
+        /* --- Challenge Mode Styles --- */
+        .challenge-box {
+            width: 100%;
+            max-width: 700px;
+            background: #2c3e50;
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .challenge-prompt { font-size: 1.4rem; margin-bottom: 20px; }
+        
+        .answer-zone {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .fraction-input-ui {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            width: 60px;
+        }
+
+        .fraction-input-ui input {
+            padding: 8px;
+            text-align: center;
+            font-size: 1.2rem;
+            border-radius: 4px;
+            border: none;
+        }
+
+        .fraction-line { height: 3px; background: white; width: 100%; }
+
+        #feedback { margin-top: 15px; font-weight: bold; min-height: 24px; }
+        .correct { color: var(--success); }
+        .incorrect { color: var(--error); }
+
+        .action-btn {
+            background: var(--color-mix);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Fraction Multiplication Master</h1>
+
+    <div class="app-container">
+        <div class="controls-sidebar">
+            <h3 style="margin: 0; text-align: center;">Tool Settings</h3>
+            <div class="fraction-inputs">
+                <div class="label-row frac-1"><span>V-Slices</span><span id="d1-val">2</span></div>
+                <div class="btn-group">
+                    <button onclick="updateVal('d1', -1)">-</button>
+                    <button onclick="updateVal('d1', 1)">+</button>
+                </div>
+            </div>
+            <div class="fraction-inputs">
+                <div class="label-row frac-2"><span>H-Slices</span><span id="d2-val">2</span></div>
+                <div class="btn-group">
+                    <button onclick="updateVal('d2', -1)">-</button>
+                    <button onclick="updateVal('d2', 1)">+</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="visualization-area">
+            <div class="canvas-grid">
+                <div class="corner"></div>
+                <div id="n1-tabs" class="numerator-tabs-1"></div>
+                <div id="n2-tabs" class="numerator-tabs-2"></div>
+                <canvas id="visualizer" width="300" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="challenge-box">
+        <div class="challenge-prompt" id="challenge-text">Click "New Challenge" to start!</div>
+        
+        <div class="answer-zone">
+            <div class="fraction-input-ui">
+                <input type="number" id="ans-n" placeholder="?">
+                <div class="fraction-line"></div>
+                <input type="number" id="ans-d" placeholder="?">
+            </div>
+            <button class="action-btn" onclick="checkAnswer()">Submit Answer</button>
+            <button class="action-btn" style="background:#7f8c8d" onclick="generateChallenge()">New Challenge</button>
+        </div>
+        <div id="feedback"></div>
+    </div>
+
+    <script>
+        let state = {
+            f1: { n: 1, d: 2, c: 'rgba(74, 144, 226, 0.4)' },
+            f2: { n: 1, d: 2, c: 'rgba(226, 74, 74, 0.4)' },
+            mix: 'rgba(139, 74, 226, 0.7)',
+            challenge: null
+        };
+
+        const canvas = document.getElementById('visualizer');
+        const ctx = canvas.getContext('2d');
+        const size = 300;
+
+        function updateVal(target, change) {
+            let frac = (target === 'd1') ? state.f1 : state.f2;
+            frac.d = Math.max(1, Math.min(10, frac.d + change));
+            if (frac.n > frac.d) frac.n = frac.d;
+            render();
+        }
+
+        function setNumerator(id, val) {
+            if (id === 1) state.f1.n = val;
+            if (id === 2) state.f2.n = val;
+            render();
+        }
+
+        function generateChallenge() {
+            const d1 = Math.floor(Math.random() * 5) + 2;
+            const n1 = Math.floor(Math.random() * (d1 - 1)) + 1;
+            const d2 = Math.floor(Math.random() * 5) + 2;
+            const n2 = Math.floor(Math.random() * (d2 - 1)) + 1;
+
+            state.challenge = { n1, d1, n2, d2, ansN: n1 * n2, ansD: d1 * d2 };
+            
+            document.getElementById('challenge-text').innerHTML = 
+                `Solve: <span style="color:var(--color-1)">${n1}/${d1}</span> &times; <span style="color:var(--color-2)">${n2}/${d2}</span>`;
+            
+            document.getElementById('feedback').innerText = "";
+            document.getElementById('ans-n').value = "";
+            document.getElementById('ans-d').value = "";
+        }
+
+        function checkAnswer() {
+            if (!state.challenge) return;
+            const userN = parseInt(document.getElementById('ans-n').value);
+            const userD = parseInt(document.getElementById('ans-d').value);
+            const feedback = document.getElementById('feedback');
+
+            if (userN === state.challenge.ansN && userD === state.challenge.ansD) {
+                feedback.innerText = "Correct! Great job visualizing the product.";
+                feedback.className = "correct";
+            } else {
+                feedback.innerText = "Not quite. Try matching the slices on the square first!";
+                feedback.className = "incorrect";
+            }
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, size, size);
+            const fillWidth = (size / state.f1.d) * state.f1.n;
+            const fillHeight = (size / state.f2.d) * state.f2.n;
+
+            ctx.fillStyle = state.f1.c; ctx.fillRect(0, 0, fillWidth, size);
+            ctx.fillStyle = state.f2.c; ctx.fillRect(0, 0, size, fillHeight);
+            ctx.fillStyle = state.mix; ctx.fillRect(0, 0, fillWidth, fillHeight);
+
+            ctx.strokeStyle = '#222';
+            for (let i = 0; i <= state.f1.d; i++) {
+                let x = (size / state.f1.d) * i;
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, size); ctx.stroke();
+            }
+            for (let i = 0; i <= state.f2.d; i++) {
+                let y = (size / state.f2.d) * i;
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(size, y); ctx.stroke();
+            }
+
+            document.getElementById('d1-val').innerText = state.f1.d;
+            document.getElementById('d2-val').innerText = state.f2.d;
+
+            // Re-draw tabs
+            const tabs1 = document.getElementById('n1-tabs');
+            const tabs2 = document.getElementById('n2-tabs');
+            tabs1.innerHTML = ''; tabs2.innerHTML = '';
+
+            for (let i = 1; i <= state.f1.d; i++) {
+                let btn = document.createElement('div');
+                btn.className = 'num-tab' + (state.f1.n === i ? ' active' : '');
+                btn.innerText = i;
+                btn.onclick = () => setNumerator(1, i);
+                tabs1.appendChild(btn);
+            }
+            for (let i = 1; i <= state.f2.d; i++) {
+                let btn = document.createElement('div');
+                btn.className = 'num-tab' + (state.f2.n === i ? ' active' : '');
+                btn.innerText = i;
+                btn.onclick = () => setNumerator(2, i);
+                tabs2.appendChild(btn);
+            }
+        }
+
+        render();
+    </script>
+    <script src="https://yournerdythaitutor.github.io/MathLessons/JS/slay.js"></script>
+</body>
+</html>

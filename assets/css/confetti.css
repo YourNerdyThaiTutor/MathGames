@@ -1,0 +1,12 @@
+/* This targets the specific canvas created by the confetti library */
+canvas:not(#visualizer) {
+    background-color: rgba(0, 0, 0, 0) !important; /* Forces total transparency */
+    background: none !important;                 /* Removes any background images/colors */
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 100vw !important;
+    height: 100vh !important;
+    pointer-events: none !important;             /* Ensures you can click your tool through it */
+    z-index: 99999 !important;                   /* Keeps it on the very top layer */
+}

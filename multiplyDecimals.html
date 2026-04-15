@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decimal Slider & Type</title>
+    <style>
+        :root {
+            --primary: #4A90E2;
+            --success: #2ecc71;
+            --highlight-text: #e67e22;
+            --bg: #f0f4f8;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            background-color: var(--bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            user-select: none;
+        }
+
+        .workspace {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .column-math {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 3rem;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        .column-math div { display: flex; justify-content: flex-end; align-items: baseline; }
+        .line { border-bottom: 5px solid #333; margin: 10px 0; }
+
+        .digit-highlight {
+            background-color: #fff3cd;
+            color: var(--highlight-text);
+            padding: 0 4px;
+            border-radius: 4px;
+        }
+
+        /* Interactive Grid */
+        .decimal-grid {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: #fdfdfd;
+            border: 2px dashed #ddd;
+            border-radius: 15px;
+        }
+
+        .digit-slot {
+            font-size: 2.5rem;
+            width: 45px;
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: white;
+            border: 1px solid #eee;
+            border-radius: 5px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .drop-zone {
+            width: 25px;
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .decimal-point {
+            width: 18px;
+            height: 18px;
+            background-color: var(--highlight-text);
+            border-radius: 50%;
+            cursor: grab;
+            box-shadow: 0 0 10px var(--highlight-text);
+        }
+
+        .final-input-area {
+            margin-top: 20px;
+            padding: 15px;
+            background: #eef2f7;
+            border-radius: 10px;
+        }
+
+        input { font-size: 1.5rem; width: 140px; text-align: center; border-radius: 8px; border: 2px solid #ccc; }
+        
+        .step-box { display: none; }
+        .active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        button { background: var(--primary); color: white; border: none; padding: 12px 25px; border-radius: 10px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        #feedback { margin-top: 15px; font-weight: bold; min-height: 24px; }
+    </style>
+</head>
+<body>
+
+    <h1 style="color: var(--primary);">Decimal Master Challenge</h1>
+
+    <div class="workspace">
+        <div class="column-math">
+            <div id="row1"></div>
+            <div id="row2"></div>
+            <div class="line"></div>
+            <div id="col-ans-display" style="color: #999;">?</div>
+        </div>
+
+        <div id="step1" class="step-box active">
+            <h3>Step 1: Count all the decimal points.Hint: the numbers after the dot. (They are highlighted above.)</h3>
+            <p>decimal points: <input type="number" id="ans1" style="width:50px;"></p>
+            <button onclick="checkStep1()">Next &rarr;</button>
+        </div>
+
+        <div id="step2" class="step-box">
+            <h3>Step 2: Ignore the decimal and multiply the whole numbers. </h3>
+            <p><span id="math-hint"></span> = <input type="number" id="ans2"></p>
+            <button onclick="checkStep2()">Set Grid &rarr;</button>
+        </div>
+
+        <div id="step3" class="step-box">
+            <h3>Step 3: Move the decimal point as many times as the decimal point counted in step 1.</h3>
+            <p>Drag the dot <span id="jump-count-text" style="color:var(--highlight-text); font-weight:bold;"></span> places left.</p>
+            
+            <div class="decimal-grid" id="decimal-grid"></div>
+
+            <div class="final-input-area">
+                <p>Now, type the number you made:</p>
+                <input type="text" id="final-typed-ans" placeholder="0.00">
+                <br>
+                <button onclick="checkFinal()">Verify Final Answer</button>
+            </div>
+        </div>
+
+        <div id="step4" class="step-box">
+            <h2 style="color: var(--success);">You Win! 🏆</h2>
+            <button onclick="newProblem()">Play Again</button>
+        </div>
+
+        <div id="feedback"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <script>
+        let prob = { currentPos: -1 };
+
+        function newProblem() {
+            const d1 = Math.floor(Math.random() * 2) + 1;
+            const d2 = Math.floor(Math.random() * 2) + 1;
+            const n1 = (Math.floor(Math.random() * 90) + 11) / Math.pow(10, d1);
+            const n2 = (Math.floor(Math.random() * 8) + 2) / Math.pow(10, d2);
+            
+            const s1 = n1.toString().split('.');
+            const s2 = n2.toString().split('.');
+            const totalJumps = (s1[1]?.length || 0) + (s2[1]?.length || 0);
+
+            prob = {
+                jumps: totalJumps,
+                val1: parseInt(n1.toString().replace('.', '')),
+                val2: parseInt(n2.toString().replace('.', '')),
+                result: (n1 * n2).toFixed(totalJumps)
+            };
+
+            document.getElementById('row1').innerHTML = `${s1[0]}.<span class="digit-highlight">${s1[1]||''}</span>`;
+            document.getElementById('row2').innerHTML = `&times;${s2[0]}.<span class="digit-highlight">${s2[1]||''}</span>`;
+            document.getElementById('col-ans-display').innerText = "?";
+            document.getElementById('math-hint').innerText = `${prob.val1} × ${prob.val2}`;
+            document.getElementById('jump-count-text').innerText = totalJumps;
+
+            showStep(1);
+            document.querySelectorAll('input').forEach(i => i.value = "");
+            document.getElementById('feedback').innerText = "";
+        }
+
+        function showStep(n) {
+            document.querySelectorAll('.step-box').forEach(b => b.classList.remove('active'));
+            document.getElementById('step' + n).classList.add('active');
+        }
+
+        function checkStep1() {
+            if(parseInt(document.getElementById('ans1').value) === prob.jumps) {
+                showStep(2);
+                document.getElementById('feedback').innerText = "";
+            } else { document.getElementById('feedback').innerText = "Look closer at the highlights!"; }
+        }
+
+        function checkStep2() {
+            const res = prob.val1 * prob.val2;
+            if(parseInt(document.getElementById('ans2').value) === res) {
+                document.getElementById('col-ans-display').innerText = res;
+                buildGrid(res.toString());
+                showStep(3);
+                document.getElementById('feedback').innerText = "";
+            } else { document.getElementById('feedback').innerText = "Multiply carefully!"; }
+        }
+
+        function buildGrid(numStr) {
+            const grid = document.getElementById('decimal-grid');
+            grid.innerHTML = "";
+            const padded = "00" + numStr; // Add extra zeros for jumping
+            const digits = padded.split('');
+            
+            digits.forEach((digit, i) => {
+                const zone = document.createElement('div');
+                zone.className = "drop-zone";
+                zone.dataset.index = i;
+                zone.addEventListener('dragover', e => e.preventDefault());
+                zone.addEventListener('drop', e => {
+                    e.target.closest('.drop-zone').appendChild(document.getElementById('drag-dot'));
+                    prob.currentPos = i;
+                });
+                grid.appendChild(zone);
+
+                const slot = document.createElement('div');
+                slot.className = "digit-slot";
+                slot.innerText = digit;
+                grid.appendChild(slot);
+            });
+
+            const endZone = document.createElement('div');
+            endZone.className = "drop-zone";
+            endZone.dataset.index = digits.length;
+            endZone.addEventListener('dragover', e => e.preventDefault());
+            endZone.addEventListener('drop', e => {
+                e.target.closest('.drop-zone').appendChild(document.getElementById('drag-dot'));
+                prob.currentPos = digits.length;
+            });
+            grid.appendChild(endZone);
+
+            const dot = document.createElement('div');
+            dot.className = "decimal-point";
+            dot.id = "drag-dot";
+            dot.draggable = true;
+            dot.addEventListener('dragstart', e => e.dataTransfer.setData('text', 'dot'));
+            
+            endZone.appendChild(dot);
+            prob.currentPos = digits.length;
+        }
+
+        function checkFinal() {
+            const typed = document.getElementById('final-typed-ans').value.trim();
+            const correct = parseFloat(prob.result);
+            
+            // Check if the DOT is in the right place AND the typed number matches the math result
+            if(parseFloat(typed) === correct) {
+                confetti({ particleCount: 200, spread: 90, origin: { y: 0.7 }, zIndex: 1000 });
+                showStep(4);
+                document.getElementById('feedback').innerText = "";
+                document.getElementById('col-ans-display').innerText = correct;
+            } else {
+                document.getElementById('feedback').innerText = "Double check your dot position and your typing!";
+                document.getElementById('feedback').style.color = "red";
+            }
+        }
+
+        newProblem();
+    </script>
+</body>
+</html>

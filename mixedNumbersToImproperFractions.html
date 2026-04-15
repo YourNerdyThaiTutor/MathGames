@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fixed Animation Fraction Game</title>
+    <style>
+        :root {
+            --cup-color: #2c3e50;
+            --water-color: #3498db;
+            --overflow-color: #e74c3c;
+            --cup-width: 85px;
+            --cup-height: 100px;
+        }
+
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            text-align: center; 
+            background: #f8f9fa; 
+            margin: 0; 
+            padding: 10px;
+            touch-action: manipulation;
+        }
+
+        .fraction-view { display: flex; flex-direction: column; align-items: center; }
+        .bar { width: 100%; height: 3px; background: #333; margin: 4px 0; }
+        .den-text { font-size: 1.5rem; font-weight: bold; color: #666; }
+
+        .header-math {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            display: inline-block;
+            min-width: 320px;
+        }
+
+        .problem-row { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 20px; }
+        .starting-mixed { display: flex; align-items: center; gap: 8px; color: #27ae60; }
+        .whole-num-display { font-size: 2.5rem; font-weight: bold; }
+
+        .formula-container {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            font-size: 1.2rem; font-weight: bold; color: #555;
+            opacity: 0.3; pointer-events: none; transition: opacity 0.5s;
+        }
+        .formula-container.active { opacity: 1; pointer-events: auto; }
+
+        .step-input {
+            width: 45px; height: 45px; font-size: 1.2rem;
+            text-align: center; border: 2px solid #3498db; border-radius: 8px;
+            background: #ebf5fb;
+        }
+
+        .final-numerator {
+            width: 65px; height: 60px; font-size: 1.8rem;
+            text-align: center; border: 3px solid #2c3e50; border-radius: 10px;
+        }
+
+        .game-layout { display: flex; justify-content: center; align-items: flex-end; gap: 20px; margin-top: 20px; }
+        
+        .cup-wrapper { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        
+        .whole-cup {
+            width: var(--cup-width); height: var(--cup-height);
+            border: 4px solid var(--cup-color); border-top: none;
+            border-radius: 0 0 12px 12px; background: white;
+            position: relative; cursor: pointer;
+        }
+        .whole-cup.empty { border-style: dashed; opacity: 0.3; cursor: default; }
+
+        .unit { width: 90%; border-radius: 3px; position: absolute; left: 5%; }
+        .blue { background: var(--water-color); }
+        .red { background: var(--overflow-color); }
+
+        .source-area { position: relative; width: var(--cup-width); height: 320px; }
+        .cup-frame {
+            width: 100%; height: var(--cup-height);
+            border: 4px solid var(--cup-color); border-top: none;
+            border-radius: 0 0 12px 12px; position: absolute; bottom: 0;
+            background: rgba(255,255,255,0.7); z-index: 1; pointer-events: none;
+        }
+        .unit-stack { position: absolute; width: 100%; bottom: 0; z-index: 2; height: 100%; pointer-events: none; }
+
+        .block-flying {
+            z-index: 100;
+            position: fixed !important;
+            transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        button {
+            padding: 15px 35px; background: #2c3e50; color: white;
+            border: none; border-radius: 10px; font-size: 1.1rem; font-weight: bold;
+            cursor: pointer; margin-top: 15px; width: 100%;
+        }
+
+        #msg { margin-top: 15px; font-weight: bold; min-height: 1.5em; }
+    </style>
+</head>
+<body>
+
+    <div class="header-math">
+        <div class="problem-row">
+            <div class="starting-mixed">
+                <div id="start-whole" class="whole-num-display">?</div>
+                <div class="fraction-view">
+                    <div id="start-num" style="font-size:1.5rem; font-weight:bold;">?</div>
+                    <div class="bar"></div>
+                    <div id="start-den" class="den-text">?</div>
+                </div>
+            </div>
+            <div style="font-size: 2rem;">=</div>
+            <div class="fraction-view">
+                <input type="number" id="final-num" class="final-numerator" placeholder="?" pattern="\d*">
+                <div class="bar"></div>
+                <div id="den-view" class="den-text">?</div>
+            </div>
+        </div>
+        
+        <div id="formula-bar" class="formula-container">
+            <span>(</span>
+            <input type="number" id="step-wholes" class="step-input" placeholder="W">
+            <span>&times;</span>
+            <input type="number" id="step-den" class="step-input" placeholder="D">
+            <span>) +</span>
+            <input type="number" id="step-rem" class="step-input" placeholder="R">
+        </div>
+
+        <button onclick="checkAll()">Check Answer</button>
+        <div id="msg"></div>
+    </div>
+
+    <div class="game-layout">
+        <div id="wholes-area" style="display: flex; gap: 15px;"></div>
+        <div style="font-size: 1.5rem; padding-bottom: 40px; color: #ccc;">➔</div>
+        <div class="cup-wrapper">
+            <div class="source-area">
+                <div class="cup-frame"></div>
+                <div id="main-stack" class="unit-stack"></div>
+            </div>
+            <div style="font-weight: bold;">Main Cup</div>
+        </div>
+    </div>
+
+    <script>
+        let den, originalWholes, remainder, brokenCount = 0;
+        let unitH;
+        let animating = false;
+
+        function init() {
+            den = Math.floor(Math.random() * 3) + 3; 
+            originalWholes = Math.floor(Math.random() * 2) + 1; 
+            remainder = Math.floor(Math.random() * (den - 1)) + 1;
+            brokenCount = 0;
+            animating = false;
+            unitH = (100 / den) - 2;
+
+            document.getElementById('start-whole').innerText = originalWholes;
+            document.getElementById('start-num').innerText = remainder;
+            document.getElementById('start-den').innerText = den;
+            document.getElementById('den-view').innerText = den;
+            
+            document.getElementById('formula-bar').classList.remove('active');
+            ['step-wholes', 'step-den', 'step-rem', 'final-num'].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('msg').innerText = "Tap the full cups to break them!";
+
+            setupCups();
+        }
+
+        function setupCups() {
+            // Setup Wholes
+            const area = document.getElementById('wholes-area');
+            area.innerHTML = '';
+            for (let i = 0; i < originalWholes; i++) {
+                const wrap = document.createElement('div');
+                wrap.className = 'cup-wrapper';
+                const cup = document.createElement('div');
+                cup.className = 'whole-cup';
+                cup.id = `whole-cup-${i}`;
+                cup.onclick = () => animateBreak(i);
+
+                for (let u = 0; u < den; u++) {
+                    const unit = document.createElement('div');
+                    unit.className = 'unit blue';
+                    unit.style.height = unitH + 'px';
+                    unit.style.bottom = (u * (unitH + 2)) + 'px';
+                    unit.style.width = '90%';
+                    cup.appendChild(unit);
+                }
+                wrap.appendChild(cup);
+                area.appendChild(wrap);
+            }
+
+            // Setup Main Cup Initial State
+            const stack = document.getElementById('main-stack');
+            stack.innerHTML = '';
+            for (let i = 0; i < remainder; i++) {
+                addBlockToMain(i, false);
+            }
+        }
+
+        function animateBreak(index) {
+            if (animating) return;
+            const cup = document.getElementById(`whole-cup-${index}`);
+            if (cup.classList.contains('empty')) return;
+
+            animating = true;
+            brokenCount++;
+            
+            const units = cup.querySelectorAll('.unit');
+            const sourceRect = cup.getBoundingClientRect();
+            const stack = document.getElementById('main-stack');
+            const stackRect = stack.getBoundingClientRect();
+
+            let finishedCount = 0;
+
+            units.forEach((u, i) => {
+                const landingIdx = remainder + ((brokenCount - 1) * den) + i;
+                const landingBottom = landingIdx * (unitH + 2);
+
+                // Create flying clone
+                const flyer = document.createElement('div');
+                flyer.className = 'unit blue block-flying';
+                flyer.style.height = unitH + 'px';
+                flyer.style.width = (cup.offsetWidth * 0.9) + 'px';
+                
+                // Initial Pos
+                flyer.style.left = sourceRect.left + (cup.offsetWidth * 0.05) + 'px';
+                flyer.style.top = (sourceRect.top + sourceRect.height - (i * (unitH+2)) - unitH - 4) + 'px';
+                document.body.appendChild(flyer);
+
+                // Hide original
+                u.style.visibility = 'hidden';
+
+                setTimeout(() => {
+                    const destY = (stackRect.top + stackRect.height - landingBottom - unitH - 4);
+                    flyer.style.left = stackRect.left + 'px';
+                    flyer.style.top = destY + 'px';
+
+                    setTimeout(() => {
+                        flyer.remove();
+                        addBlockToMain(landingIdx, true);
+                        finishedCount++;
+                        if (finishedCount === den) {
+                            animating = false;
+                            cup.classList.add('empty');
+                            checkStep();
+                        }
+                    }, 600);
+                }, i * 150);
+            });
+        }
+
+        function addBlockToMain(idx, isOverflow) {
+            const stack = document.getElementById('main-stack');
+            const u = document.createElement('div');
+            u.className = 'unit ' + (idx < den ? 'blue' : 'red');
+            u.style.height = unitH + 'px';
+            u.style.bottom = (idx * (unitH + 2)) + 'px';
+            u.style.width = '100%';
+            u.style.left = '0';
+            stack.appendChild(u);
+        }
+
+        function checkStep() {
+            if (brokenCount === originalWholes) {
+                document.getElementById('formula-bar').classList.add('active');
+                document.getElementById('msg').innerHTML = "<span style='color:#3498db'>Now, complete the math formula!</span>";
+            }
+        }
+
+        function checkAll() {
+            const w = parseInt(document.getElementById('step-wholes').value);
+            const d = parseInt(document.getElementById('step-den').value);
+            const r = parseInt(document.getElementById('step-rem').value);
+            const f = parseInt(document.getElementById('final-num').value);
+            const correct = (originalWholes * den) + remainder;
+
+            if (w === originalWholes && d === den && r === remainder && f === correct) {
+                document.getElementById('msg').innerHTML = "<span style='color:green'>Correct! Great job!</span>";
+                setTimeout(init, 3000);
+            } else {
+                document.getElementById('msg').innerHTML = "<span style='color:red'>Not quite. Check your counts!</span>";
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

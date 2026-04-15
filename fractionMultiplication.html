@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizing Fraction Multiplication</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <link rel="stylesheet" href="assets/css/confetti.css">
+    <style>
+        :root {
+            --color-1: #4A90E2; /* Blue */
+            --color-2: #E24A4A; /* Red */
+            --color-mix: #8B4AE2; /* Purple */
+            --bg-color: #f4f7f6;
+            --main-text: #333;
+            --sub-text: #666;
+            --border-color: #ccc;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: var(--bg-color);
+            color: var(--main-text);
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 { margin-bottom: 30px; }
+
+        .app-container {
+            display: flex;
+            gap: 20px;
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        /* Denominator Controls Sidebar */
+        .controls-sidebar {
+            flex: 0 0 220px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            justify-content: center;
+        }
+
+        .fraction-inputs {
+            border: 2px solid #eee;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .label-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .label-row.frac-1 { color: var(--color-1); }
+        .label-row.frac-2 { color: var(--color-2); }
+
+        .btn-group {
+            display: flex;
+            gap: 5px;
+        }
+
+        button.denom-btn {
+            flex: 1;
+            padding: 10px;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            font-size: 1.2rem;
+            transition: all 0.2s;
+        }
+
+        button.denom-btn:hover { background: #f0f0f0; }
+
+        /* --- Visualization Area --- */
+        .visualization-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        .equation {
+            margin-top: auto;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+
+        .eq-f1 { color: var(--color-1); }
+        .eq-f2 { color: var(--color-2); }
+        .eq-res { color: var(--color-mix); }
+
+        /* The Grid that holds Canvas and Numerator Controls */
+        .canvas-grid {
+            display: grid;
+            grid-template-columns: 60px 400px;
+            grid-template-rows: 60px 400px;
+            gap: 10px;
+        }
+
+        /* Intersection (top-left, empty) */
+        .corner {
+            grid-column: 1;
+            grid-row: 1;
+        }
+
+        /* Fraction 1 Numerator Tabs (Top of square, affects width) */
+        .numerator-tabs-1 {
+            grid-column: 2;
+            grid-row: 1;
+            display: flex;
+            border-bottom: 4px solid var(--color-1);
+        }
+
+        /* Fraction 2 Numerator Tabs (Side of square, affects height) */
+        .numerator-tabs-2 {
+            grid-column: 1;
+            grid-row: 2;
+            display: flex;
+            flex-direction: column;
+            border-right: 4px solid var(--color-2);
+        }
+
+        /* Style for both sets of Numerator buttons */
+        .num-tab {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(200,200,200,0.1);
+            color: #555;
+            cursor: pointer;
+            border: 1px solid #e0e0e0;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: background 0.2s;
+            margin: 1px;
+        }
+
+        .numerator-tabs-1 .num-tab { border-radius: 4px 4px 0 0; }
+        .numerator-tabs-2 .num-tab { border-radius: 4px 0 0 4px; }
+
+        .num-tab:hover { background: rgba(200,200,200,0.3); }
+
+        /* Active styles for Fraction 1 (Vertical/Width) */
+        .numerator-tabs-1 .num-tab.active {
+            background-color: var(--color-1);
+            color: white;
+            border-color: var(--color-1);
+        }
+
+        /* Active styles for Fraction 2 (Horizontal/Height) */
+        .numerator-tabs-2 .num-tab.active {
+            background-color: var(--color-2);
+            color: white;
+            border-color: var(--color-2);
+        }
+
+        /* Canvas placement */
+        canvas {
+            grid-column: 2;
+            grid-row: 2;
+            border: 2px solid #333;
+            background: white;
+            border-radius: 2px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>Interactive Fraction Multiplication</h1>
+
+    <div class="app-container">
+        <div class="controls-sidebar">
+            <h3 style="margin: 0; text-align: center;">Set Slices</h3>
+            
+            <div class="fraction-inputs">
+                <div class="label-row frac-1">
+                    <span>Blue Slices (D1)</span>
+                    <span id="d1-val">2</span>
+                </div>
+                <div class="btn-group">
+                    <button class="denom-btn" onclick="updateVal('d1', -1)">-</button>
+                    <button class="denom-btn" onclick="updateVal('d1', 1)">+</button>
+                </div>
+            </div>
+
+            <div class="fraction-inputs">
+                <div class="label-row frac-2">
+                    <span>Red Slices (D2)</span>
+                    <span id="d2-val">2</span>
+                </div>
+                <div class="btn-group">
+                    <button class="denom-btn" onclick="updateVal('d2', -1)">-</button>
+                    <button class="denom-btn" onclick="updateVal('d2', 1)">+</button>
+                </div>
+            </div>
+            
+            <p style="font-size: 0.9rem; color: #777; font-style: italic; text-align: center;">Use the buttons next to the square to fill the numerator.</p>
+        </div>
+
+        <div class="visualization-area">
+            <div class="canvas-grid">
+                <div class="corner"></div>
+                
+                <div id="n1-tabs" class="numerator-tabs-1"></div>
+                
+                <div id="n2-tabs" class="numerator-tabs-2"></div>
+
+                <canvas id="visualizer" width="400" height="400"></canvas>
+            </div>
+
+            <div class="equation">
+                <span class="eq-f1" id="eq-f1">1/2</span> &times; 
+                <span class="eq-f2" id="eq-f2">1/2</span> = 
+                <span class="eq-res" id="eq-res">1/4</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Use a structure to keep state
+        let state = {
+            f1: { n: 1, d: 2, c: 'rgba(74, 144, 226, 0.3)' }, // Blue
+            f2: { n: 1, d: 2, c: 'rgba(226, 74, 74, 0.3)' }, // Red
+            mix: 'rgba(139, 74, 226, 0.6)'                 // Purple
+        };
+
+        const canvas = document.getElementById('visualizer');
+        const ctx = canvas.getContext('2d');
+        const size = 400;
+
+        // Change denominator via +/- buttons
+        function updateVal(target, change) {
+            let frac = (target === 'd1') ? state.f1 : state.f2;
+            
+            // Constrain between 1 and 10
+            frac.d = Math.max(1, Math.min(10, frac.d + change));
+            
+            // If numerator is now bigger than new denominator, reduce numerator
+            if (frac.n > frac.d) frac.n = frac.d;
+            
+            render();
+        }
+
+        // Set numerator directly via 'tabs'
+        function setNumerator(id, val) {
+            if (id === 1) state.f1.n = val;
+            if (id === 2) state.f2.n = val;
+            render();
+        }
+
+        // Generate the tab buttons based on current denominators
+        function drawNumeratorTabs() {
+            const tabs1 = document.getElementById('n1-tabs');
+            const tabs2 = document.getElementById('n2-tabs');
+            
+            tabs1.innerHTML = '';
+            tabs2.innerHTML = '';
+
+            // Fraction 1 (Blue) - Affects width, tabs go on TOP
+            // Iterate from 1 to D (0 numerator is rare in visualizing multiplication, start at 1 for clean look)
+            for (let i = 1; i <= state.f1.d; i++) {
+                let btn = document.createElement('div');
+                btn.className = 'num-tab';
+                btn.innerText = i;
+                if (state.f1.n === i) btn.classList.add('active');
+                btn.onclick = () => setNumerator(1, i);
+                tabs1.appendChild(btn);
+            }
+
+            // Fraction 2 (Red) - Affects height, tabs go on LEFT SIDE
+            for (let i = 1; i <= state.f2.d; i++) {
+                let btn = document.createElement('div');
+                btn.className = 'num-tab';
+                btn.innerText = i;
+                if (state.f2.n === i) btn.classList.add('active');
+                btn.onclick = () => setNumerator(2, i);
+                tabs2.appendChild(btn);
+            }
+        }
+
+        // Core rendering function
+        function render() {
+            ctx.clearRect(0, 0, size, size);
+
+            // Calculate active shaded area
+            const fillWidth = (size / state.f1.d) * state.f1.n;
+            const fillHeight = (size / state.f2.d) * state.f2.n;
+
+            // 1. Draw Fraction 1 fill (Blue Vertical)
+            ctx.fillStyle = state.f1.c;
+            ctx.fillRect(0, 0, fillWidth, size);
+
+            // 2. Draw Fraction 2 fill (Red Horizontal)
+            ctx.fillStyle = state.f2.c;
+            ctx.fillRect(0, 0, size, fillHeight);
+
+            // 3. Draw Overlap fill (Purple Product)
+            ctx.fillStyle = state.mix;
+            ctx.fillRect(0, 0, fillWidth, fillHeight);
+
+            // 4. Draw Grid Lines
+            ctx.strokeStyle = '#222';
+            ctx.lineWidth = 1;
+
+            // Vertical lines
+            for (let i = 0; i <= state.f1.d; i++) {
+                let x = (size / state.f1.d) * i;
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, size); ctx.stroke();
+            }
+
+            // Horizontal lines
+            for (let i = 0; i <= state.f2.d; i++) {
+                let y = (size / state.f2.d) * i;
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(size, y); ctx.stroke();
+            }
+
+            // 5. Update numerical text outside canvas
+            document.getElementById('d1-val').innerText = state.f1.d;
+            document.getElementById('d2-val').innerText = state.f2.d;
+
+            document.getElementById('eq-f1').innerText = `${state.f1.n}/${state.f1.d}`;
+            document.getElementById('eq-f2').innerText = `${state.f2.n}/${state.f2.d}`;
+            document.getElementById('eq-res').innerText = `${state.f1.n * state.f2.n}/${state.f1.d * state.f2.d}`;
+
+            // Re-generate tabs
+            drawNumeratorTabs();
+        }
+
+        // Initialize
+        render();
+    </script>
+    <script src="https://yournerdythaitutor.github.io/MathLessons/JS/slay.js"></script>
+</body>
+</html>
