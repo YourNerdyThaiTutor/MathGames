@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Perfect Snap 📐</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f3e5f5;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 100%;
+            max-width: 600px;
+        }
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            background: #f8bbd0;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+        .control-group { display: flex; flex-direction: column; align-items: center; }
+        svg {
+            background: #fafafa;
+            border: 2px solid #ce93d8;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        polygon { transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+        button {
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            background: #8e24aa;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        button:hover { background: #6a1b9a; }
+        .info { font-size: 1.2rem; margin-top: 10px; color: #4a148c; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>The Perfect Snap 📐</h1>
+    <p>Every triangle doubles into a <strong>parallelogram</strong>!</p>
+
+    <div class="controls">
+        <div class="control-group">
+            <label>Base Width</label>
+            <input type="range" id="baseW" min="50" max="200" value="150" oninput="draw()">
+        </div>
+        <div class="control-group">
+            <label>Height</label>
+            <input type="range" id="heightH" min="50" max="200" value="120" oninput="draw()">
+        </div>
+        <div class="control-group">
+            <label>Leaning (Skew)</label>
+            <input type="range" id="skew" min="0" max="150" value="50" oninput="draw()">
+        </div>
+        <div class="control-group" style="justify-content: center;">
+            <button onclick="toggle()">Double & Snap</button>
+        </div>
+    </div>
+
+    <svg width="450" height="300" viewBox="0 0 450 300">
+        <defs>
+            <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+                <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#eee" stroke-width="1"/>
+            </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grid)" />
+        
+        <polygon id="ghost" points="" fill="#ff80ab" opacity="0" />
+        
+        <polygon id="main" points="" fill="#ba68c8" stroke="#4a148c" stroke-width="2" />
+    </svg>
+
+    <div class="info" id="math">
+        Triangle Area = ½ × (Base × Height)
+    </div>
+</div>
+
+<script>
+    let isDoubled = false;
+
+    function draw() {
+        const b = parseInt(document.getElementById('baseW').value);
+        const h = parseInt(document.getElementById('heightH').value);
+        const s = parseInt(document.getElementById('skew').value);
+        
+        const main = document.getElementById('main');
+        const ghost = document.getElementById('ghost');
+
+        // Points for a general triangle: 
+        // (Bottom-Left), (Bottom-Right), (Top-Point)
+        // Offset the whole thing so it's centered
+        const xOffset = 50;
+        const yOffset = 250;
+
+        const p1 = `${xOffset},${yOffset}`; // Bottom Left
+        const p2 = `${xOffset + b},${yOffset}`; // Bottom Right
+        const p3 = `${xOffset + s},${yOffset - h}`; // Top point (controlled by skew)
+
+        main.setAttribute('points', `${p1} ${p2} ${p3}`);
+
+        if (isDoubled) {
+            // To form a parallelogram, the second triangle is rotated 180 
+            // and moved to sit on the other side.
+            // New points: Top-Right, Top-Left, Bottom-Right-of-first
+            const p4 = `${xOffset + b + s},${yOffset - h}`; // New Top Right
+            ghost.setAttribute('points', `${p2} ${p3} ${p4}`);
+            ghost.setAttribute('opacity', '0.7');
+        } else {
+            // "Hide" it behind the main triangle
+            ghost.setAttribute('points', `${p1} ${p2} ${p3}`);
+            ghost.setAttribute('opacity', '0');
+        }
+
+        document.getElementById('math').innerHTML = 
+            `Area = ½ × (${b} × ${h}) = <strong>${(b * h) / 2}</strong> units²`;
+    }
+
+    function toggle() {
+        isDoubled = !isDoubled;
+        draw();
+    }
+
+    // Initial load
+    draw();
+</script>
+
+</body>
+</html>

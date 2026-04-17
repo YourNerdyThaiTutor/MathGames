@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parallelogram Power! 📐</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #fff3e0;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #f57c00;
+            margin-bottom: 0.5rem;
+        }
+
+        .instructions {
+            background-color: #e3f2fd;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 5px solid #1976d2;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .controls {
+            margin-bottom: 30px;
+            padding: 20px;
+            border-radius: 15px;
+            border: 3px solid #ff9800;
+            background-color: #fff9c4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        label {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        input[type="number"] {
+            width: 60px;
+            padding: 8px;
+            font-size: 1.1rem;
+            border: 2px solid #ff9800;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .workspace {
+            margin: 40px auto;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align labels to top of shape */
+            gap: 15px; /* Space between shape and labels */
+        }
+
+        /* Container to group shape and its top/bottom labels */
+        .shape-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .label {
+            font-weight: bold;
+            font-size: 1.3rem;
+            pointer-events: none; /* Let clicks pass through */
+        }
+
+        #top-label {
+            color: #d32f2f;
+            margin-bottom: 8px;
+        }
+
+        #parallelogram-shape {
+            display: grid;
+            gap: 4px;
+            background-color: #e0e0e0;
+            padding: 10px;
+            border-radius: 8px;
+            transform: skewX(-20deg); /* This creates the parallelogram lean */
+            /* Add some margin to the left to offset the skew visual */
+            margin-left: 20px; 
+        }
+
+        .square {
+            width: 40px;
+            height: 40px;
+            background-color: #fff;
+            cursor: pointer;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            transition: background-color 0.2s;
+        }
+
+        .square:hover {
+            background-color: #f0f0f0;
+        }
+
+        .square.counted {
+            background-color: #ff9800;
+            border-color: #e65100;
+        }
+
+        /* SVG Overlay for Height Line */
+        #height-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Clicks pass through to squares */
+            z-index: 10;
+        }
+
+        #side-label-container {
+            display: flex;
+            align-items: center;
+            height: 100%; /* Match height of shape */
+            padding-top: 48px; /* Offset for top label + padding */
+        }
+
+        #side-label {
+            color: #1976d2;
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            margin-left: 10px;
+        }
+
+        .quiz-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #e8f5e9;
+            border-radius: 15px;
+            border: 2px solid #2e7d32;
+        }
+
+        button {
+            padding: 10px 25px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            border-radius: 10px;
+            border: none;
+            background: #f57c00;
+            color: white;
+            margin: 5px;
+            transition: background 0.2s, transform 0.1s;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+        }
+
+        button:hover {
+            background: #e65100;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button.check-btn {
+            background: #2e7d32;
+        }
+        button.check-btn:hover {
+            background: #1b5e20;
+        }
+
+        .hint-text {
+            font-size: 1rem;
+            color: #555;
+            margin-top: 15px;
+            font-style: italic;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Parallelogram Power! 📐</h1>
+        
+        <div class="instructions">
+            <strong>How to use:</strong>
+            <ol>
+                <li>Set the <strong>Base</strong> (how wide) and <strong>Height</strong> (how tall) below.</li>
+                <li>Click "Update Shape" to see the new parallelogram.</li>
+                <li>The squares show the area. Click them to count!</li>
+                <li>Can you figure out the formula? Enter your guess for the total area.</li>
+            </ol>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="baseIn">Base (b):</label>
+                <input type="number" id="baseIn" value="5" min="2" max="10">
+            </div>
+            <div class="control-group">
+                <label for="heightIn">Height (h):</label>
+                <input type="number" id="heightIn" value="3" min="2" max="10">
+            </div>
+            <button onclick="resetShape()">Update Shape</button>
+        </div>
+
+        <div class="workspace">
+            <div id="side-label-container">
+                <div id="side-label" class="label">Height (h) = 3</div>
+            </div>
+
+            <div class="shape-container">
+                <div id="top-label" class="label">Base (b) = 5</div>
+                
+                <div id="parallelogram-shape">
+                    </div>
+
+                <svg id="height-svg">
+                    <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#1976d2" />
+                        </marker>
+                    </defs>
+                    <line id="height-line" x1="0" y1="0" x2="0" y2="0" stroke="#1976d2" stroke-width="3" stroke-dasharray="6,4" marker-end="url(#arrowhead)" />
+                </svg>
+            </div>
+        </div>
+
+        <div class="quiz-section">
+            <p style="font-size: 1.2rem; font-weight: bold;">It's leaning! But notice the rows and columns...<br>What is the total area (total squares)?</p>
+            <input type="number" id="guessInput" style="width:100px; padding:12px; font-size:1.3rem;">
+            <button class="check-btn" onclick="checkAnswer()">Check Answer!</button>
+            <div id="feedback" style="margin-top:15px; font-size:1.4rem; font-weight:bold; min-height: 1.6em;"></div>
+            <p class="hint-text"><strong>Hint:</strong> The definition of <strong>Height (h)</strong> is the <span style="color: #1976d2; font-weight:bold;">perpendicular (straight up-and-down) distance</span> between the top and bottom bases. It is NOT the length of the slanted side!</p>
+        </div>
+    </div>
+
+    <script>
+        // Constants for grid measurements (matching CSS)
+        const SQUARE_SIZE = 40;
+        const GAP_SIZE = 4;
+        const PADDING_SIZE = 10;
+        const SKEW_ANGLE = -20; // degrees
+
+        function resetShape() {
+            // Get inputs
+            let b = parseInt(document.getElementById('baseIn').value);
+            let h = parseInt(document.getElementById('heightIn').value);
+
+            // Validation (ensure numbers are within bounds)
+            if (isNaN(b) || b < 2) b = 2;
+            if (b > 10) b = 10;
+            if (isNaN(h) || h < 2) h = 2;
+            if (h > 10) h = 10;
+            
+            // Update input display just in case validation changed them
+            document.getElementById('baseIn').value = b;
+            document.getElementById('heightIn').value = h;
+
+            const shape = document.getElementById('parallelogram-shape');
+            const topLabel = document.getElementById('top-label');
+            const sideLabel = document.getElementById('side-label');
+            const feedback = document.getElementById('feedback');
+            const guessInput = document.getElementById('guessInput');
+            
+            // Update labels
+            topLabel.innerText = `Base (b) = ${b}`;
+            sideLabel.innerText = `Height (h) = ${h}`;
+            
+            // Reset UI states
+            feedback.innerText = "";
+            feedback.style.color = "#333";
+            guessInput.value = "";
+            
+            // 1. Setup the Grid
+            shape.style.gridTemplateColumns = `repeat(${b}, ${SQUARE_SIZE}px)`;
+            shape.style.gridTemplateRows = `repeat(${h}, ${SQUARE_SIZE}px)`;
+            shape.innerHTML = '';
+
+            // 2. Generate the Squares
+            for (let i = 0; i < b * h; i++) {
+                const box = document.createElement('div');
+                box.classList.add('square');
+                // Click handler to toggle counting color
+                box.onclick = function() {
+                    this.classList.toggle('counted');
+                };
+                shape.appendChild(box);
+            }
+
+            // 3. Position the Height Line (Perpendicular Altitude)
+            // Wait a tiny bit for the grid to render so we can get its position
+            requestAnimationFrame(() => positionHeightLine(b, h));
+        }
+
+        function positionHeightLine(b, h) {
+            const shape = document.getElementById('parallelogram-shape');
+            const svg = document.getElementById('height-svg');
+            const line = document.getElementById('height-line');
+            const shapeContainer = document.querySelector('.shape-container');
+
+            // Get the bounding box of the shape element (the grey area)
+            const shapeRect = shape.getBoundingClientRect();
+            const containerRect = shapeContainer.getBoundingClientRect();
+
+            // Calculate height of the grid content
+            // (Number of rows * square size) + (Number of gaps)
+            const contentHeight = (h * SQUARE_SIZE) + ((h - 1) * GAP_SIZE);
+            const totalGridHeight = contentHeight + (2 * PADDING_SIZE);
+
+            // Set the SVG container size to match the shape's full footprint
+            svg.setAttribute('width', shapeRect.width);
+            svg.setAttribute('height', shapeRect.height);
+            // Position SVG exactly over the shape
+            svg.style.left = (shapeRect.left - containerRect.left) + 'px';
+            svg.style.top = (shapeRect.top - containerRect.top) + 'px';
+
+            // Calculate the horizontal offset caused by the skew.
+            //tan(angle) = offset / height -> offset = height * tan(angle)
+            const angleRad = Math.abs(SKEW_ANGLE) * (Math.PI / 180);
+            const skewOffset = contentHeight * Math.tan(angleRad);
+
+            // We want to draw the line within the first column, 
+            // from the top-left inner padding corner straight down.
+            
+            // Start Point (top, slightly offset right to be inside padding)
+            const x1 = 6;
+            const y1 = PADDING_SIZE;
+            
+            // End Point (bottom, same X as start, Y at bottom padding)
+            const x2 = x1; 
+            const y2 = PADDING_SIZE + contentHeight;
+
+            // Update SVG line attributes
+            line.setAttribute('x1', x1);
+            line.setAttribute('y1', y1);
+            line.setAttribute('x2', x2);
+            line.setAttribute('y2', y2);
+        }
+
+        function checkAnswer() {
+            const b = parseInt(document.getElementById('baseIn').value) || 0;
+            const h = parseInt(document.getElementById('heightIn').value) || 0;
+            const guess = parseInt(document.getElementById('guessInput').value);
+            const feedback = document.getElementById('feedback');
+            
+            const area = b * h;
+
+            if (isNaN(guess)) {
+                feedback.style.color = "#d32f2f";
+                feedback.innerText = "Please enter a number!";
+                return;
+            }
+
+            if (guess === area) {
+                feedback.style.color = "#2e7d32";
+                feedback.innerHTML = `⭐ Correct! The area is ${area}.<br>Formula: Area = Base (b) × Height (h)`;
+            } else {
+                feedback.style.color = "#d32f2f";
+                feedback.innerText = "Not quite. Try counting all the white squares! Leaning doesn't change the total number of squares.";
+            }
+        }
+
+        // Initialize on load
+        window.onload = resetShape;
+        // Recalculate line if window resizes
+        window.onresize = resetShape; 
+    </script>
+</body>
+</html>

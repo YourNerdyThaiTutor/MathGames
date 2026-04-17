@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Geometry Lab</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f7ff;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+        }
+        .step-indicator {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+        .step {
+            padding: 8px 15px;
+            border-radius: 20px;
+            background: #eee;
+            color: #999;
+            font-size: 0.9rem;
+        }
+        .step.active {
+            background: #2196f3;
+            color: white;
+            font-weight: bold;
+        }
+        svg {
+            background: #fff;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        .controls {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 15px;
+        }
+        input[type="number"] {
+            width: 80px;
+            padding: 10px;
+            font-size: 1.2rem;
+            border: 2px solid #2196f3;
+            border-radius: 8px;
+            text-align: center;
+        }
+        button {
+            padding: 10px 20px;
+            background: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+        #feedback {
+            margin-top: 15px;
+            font-weight: bold;
+            min-height: 1.5em;
+        }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="step-indicator">
+        <div id="badge1" class="step active">Step 1: Parallelogram</div>
+        <div id="badge2" class="step">Step 2: Triangle</div>
+    </div>
+
+    <h2 id="instruction">Calculate the Parallelogram Area</h2>
+    
+    <svg id="viz" width="400" height="250" viewBox="0 0 400 250">
+        <polygon id="shape" points="" fill="#bbdefb" stroke="#1976d2" stroke-width="3" />
+        
+        <line id="height-line" x1="140" y1="50" x2="140" y2="200" stroke="#d32f2f" stroke-width="2" stroke-dasharray="5,5" />
+        <text id="h-text" x="110" y="130" fill="#d32f2f" font-weight="bold" font-size="20">h=?</text>
+        
+        <text id="b-text" x="180" y="230" fill="#1976d2" font-weight="bold" font-size="20">b=?</text>
+        
+        <line id="slice-line" x1="0" y1="0" x2="0" y2="0" stroke="#fbc02d" stroke-width="4" stroke-dasharray="10,5" opacity="0" />
+    </svg>
+
+    <div class="controls">
+        <div id="input-area">
+            <span id="label-text">Area:</span>
+            <input type="number" id="userGuess" placeholder="?">
+            <button onclick="checkStep()">Check</button>
+        </div>
+        <div id="feedback"></div>
+        <button id="nextBtn" class="hidden" onclick="startStep2()" style="background:#4caf50; width:100%; margin-top:10px;">That's correct! Next: Slice it! &rarr;</button>
+        <button id="resetBtn" class="hidden" onclick="initNewProblem()" style="background:#9c27b0; width:100%; margin-top:10px;">New Problem ↻</button>
+    </div>
+</div>
+
+<script>
+    let currentStep = 1;
+    let bVal, hVal, pArea, tArea;
+    const skew = 40; // The 'lean' of the shape
+
+    function initNewProblem() {
+        currentStep = 1;
+        
+        // 1. Generate Random Numbers (2 to 12)
+        bVal = Math.floor(Math.random() * 11) + 2;
+        hVal = Math.floor(Math.random() * 11) + 2;
+        pArea = bVal * hVal;
+        tArea = pArea / 2;
+
+        // 2. Reset UI
+        document.getElementById('badge1').className = "step active";
+        document.getElementById('badge2').className = "step";
+        document.getElementById('instruction').innerText = "Calculate the Parallelogram Area";
+        document.getElementById('label-text').innerText = "Area:";
+        document.getElementById('userGuess').value = "";
+        document.getElementById('feedback').innerText = "";
+        document.getElementById('nextBtn').classList.add('hidden');
+        document.getElementById('resetBtn').classList.add('hidden');
+
+        // 3. Update Visuals
+        const xBase = 100; // Starting X coordinate
+        const yBase = 200; // Starting Y coordinate
+        const scale = 15;  // Zoom factor for the drawing
+
+        // Points for the parallelogram
+        const p1 = `${xBase},${yBase}`;
+        const p2 = `${xBase + (bVal * scale)},${yBase}`;
+        const p3 = `${xBase + (bVal * scale) + skew},${yBase - (hVal * scale)}`;
+        const p4 = `${xBase + skew},${yBase - (hVal * scale)}`;
+        
+        const shape = document.getElementById('shape');
+        shape.setAttribute('points', `${p1} ${p2} ${p3} ${p4}`);
+        shape.style.fill = "#bbdefb";
+        shape.style.stroke = "#1976d2";
+
+        // Position Height line and Slice line
+        const slice = document.getElementById('slice-line');
+        slice.setAttribute('opacity', '0');
+        slice.setAttribute('x1', xBase);
+        slice.setAttribute('y1', yBase);
+        slice.setAttribute('x2', xBase + (bVal * scale) + skew);
+        slice.setAttribute('y2', yBase - (hVal * scale));
+
+        document.getElementById('height-line').setAttribute('x1', xBase + skew);
+        document.getElementById('height-line').setAttribute('y1', yBase - (hVal * scale));
+        document.getElementById('height-line').setAttribute('x2', xBase + skew);
+        document.getElementById('height-line').setAttribute('y2', yBase);
+
+        // Update Text Labels
+        document.getElementById('b-text').textContent = `base = ${bVal}`;
+        document.getElementById('h-text').textContent = `h = ${hVal}`;
+    }
+
+    function checkStep() {
+        const guess = parseFloat(document.getElementById('userGuess').value);
+        const feedback = document.getElementById('feedback');
+
+        if (currentStep === 1) {
+            if (guess === pArea) {
+                feedback.style.color = "green";
+                feedback.innerText = `Correct! ${bVal} × ${hVal} = ${pArea}`;
+                document.getElementById('nextBtn').classList.remove('hidden');
+            } else {
+                feedback.style.color = "red";
+                feedback.innerText = "Check your math! Area = base × height.";
+            }
+        } else {
+            if (guess === tArea) {
+                feedback.style.color = "green";
+                feedback.innerText = `Exactly! Half of ${pArea} is ${tArea}.`;
+                document.getElementById('resetBtn').classList.remove('hidden');
+            } else {
+                feedback.style.color = "red";
+                feedback.innerText = `Close! Just divide the parallelogram (${pArea}) by 2.`;
+            }
+        }
+    }
+
+    function startStep2() {
+        currentStep = 2;
+        document.getElementById('badge1').classList.remove('active');
+        document.getElementById('badge2').classList.add('active');
+        document.getElementById('instruction').innerText = "Now find the Triangle Area";
+        document.getElementById('label-text').innerText = "Triangle Area:";
+        document.getElementById('userGuess').value = "";
+        document.getElementById('feedback').innerText = "";
+        document.getElementById('nextBtn').classList.add('hidden');
+
+        // Animation: Show slice and change shape to triangle
+        document.getElementById('slice-line').setAttribute('opacity', '1');
+        const xBase = 100;
+        const yBase = 200;
+        const scale = 15;
+        
+        setTimeout(() => {
+            const p1 = `${xBase},${yBase}`;
+            const p2 = `${xBase + (bVal * scale)},${yBase}`;
+            const p3 = `${xBase + (bVal * scale) + skew},${yBase - (hVal * scale)}`;
+            document.getElementById('shape').setAttribute('points', `${p1} ${p2} ${p3}`);
+            document.getElementById('shape').style.fill = "#fff9c4";
+        }, 300);
+    }
+
+    // Start first problem on load
+    initNewProblem();
+</script>
+
+</body>
+</html>

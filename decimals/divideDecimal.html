@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Master Decimal Division</title>
+    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+    <style>
+        :root { --blue: #3498db; --green: #2ecc71; --red: #e74c3c; --dark: #2c3e50; --gold: #f1c40f; }
+        body { font-family: 'Comic Sans MS', cursive; background-color: #f0f4f8; display: flex; flex-direction: column; align-items: center; padding: 20px; overflow-x: hidden; touch-action: manipulation; }
+        
+        .workspace { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-width: 800px; width: 100%; text-align: center; margin-bottom: 20px; }
+        
+        .level-badge { background: var(--gold); color: #000; padding: 5px 15px; border-radius: 20px; font-weight: bold; margin-bottom: 10px; display: inline-block; }
+        .step-info { background: #e8f4fd; padding: 15px; border-radius: 12px; margin-bottom: 20px; border-left: 6px solid var(--blue); text-align: left; font-size: 1rem; }
+
+        /* Long Division Styles */
+        .math-display { display: flex; justify-content: center; align-items: center; font-size: clamp(30px, 8vw, 54px); margin: 30px 0; font-family: 'Courier New', monospace; }
+        .bracket { border-left: 4px solid var(--dark); border-top: 4px solid var(--dark); border-top-left-radius: 15px; padding: 10px 15px; display: flex; margin-left: 5px; }
+        .digit-container { display: flex; position: relative; width: clamp(30px, 6vw, 45px); justify-content: center; }
+        .decimal { color: var(--red); cursor: pointer; position: absolute; left: -12px; z-index: 10; font-weight: bold; touch-action: none; padding: 10px; margin-top: -10px; }
+
+        /* Grid for Phase 2 */
+        .solve-grid { display: grid; justify-content: center; gap: 5px; font-family: 'Courier New', monospace; font-size: clamp(24px, 5vw, 36px); }
+        .input-box { width: 40px; height: 50px; font-size: 28px; text-align: center; border: 2px solid #cbd5e0; border-radius: 8px; -webkit-appearance: none; }
+        .input-box.correct { border-color: var(--green); background: #e6fffa; }
+        .input-box.error { border-color: var(--red); background: #fff5f5; }
+
+        .btn { background: var(--blue); color: white; padding: 15px 30px; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; margin: 10px; }
+        .btn-next { background: var(--green); }
+        .hidden { display: none; }
+        #feedback { margin-top: 20px; font-weight: bold; font-size: 20px; min-height: 25px; }
+    </style>
+</head>
+<body>
+
+<div class="workspace">
+    <div id="level-display" class="level-badge">Level 1: Easy</div>
+    <h2 id="header">Step 1: Shift the Decimals</h2>
+    
+    <div id="step-hint" class="step-info">
+        Move the <b>Red Decimal</b> until the divisor (outside) is a whole number. 
+        Move the dividend (inside) the <b>same</b> number of times!
+    </div>
+
+    <div id="phase-drag">
+        <div class="math-display" id="math-drag-area">
+            </div>
+        <button class="btn" onclick="checkStep1()">Check My Shifting!</button>
+    </div>
+
+    <div id="phase-solve" class="hidden">
+        <div id="solve-container" class="solve-grid">
+            </div>
+        <br>
+        <button class="btn" onclick="checkStep2()">Check My Math!</button>
+        <button id="next-lvl-btn" class="btn btn-next hidden" onclick="nextLevel()">Next Problem →</button>
+    </div>
+
+    <div id="feedback"></div>
+</div>
+
+<script>
+    const levels = [
+        {
+            title: "Level 1: Easy",
+            divisor: "0.25", dividend: "1.50",
+            cleanDiv: "25", cleanDvd: "150",
+            shifts: 2,
+            quotient: "006", // padded to match dividend length
+            subtract: "150",
+            remainder: "0"
+        },
+        {
+            title: "Level 2: Medium",
+            divisor: "0.5", dividend: "12.5",
+            cleanDiv: "5", cleanDvd: "125",
+            shifts: 1,
+            quotient: "025",
+            subtract: "125",
+            remainder: "0"
+        },
+        {
+            title: "Level 3: Harder",
+            divisor: "0.12", dividend: "1.44",
+            cleanDiv: "12", cleanDvd: "144",
+            shifts: 2,
+            quotient: "012",
+            subtract: "144",
+            remainder: "0"
+        }
+    ];
+
+    let currentLvlIdx = 0;
+    let currentShifts = { d1: 0, d2: 0 };
+
+    function initLevel() {
+        const lvl = levels[currentLvlIdx];
+        document.getElementById('level-display').innerText = lvl.title;
+        document.getElementById('header').innerText = "Step 1: Shift the Decimals";
+        document.getElementById('phase-drag').classList.remove('hidden');
+        document.getElementById('phase-solve').classList.add('hidden');
+        document.getElementById('next-lvl-btn').classList.add('hidden');
+        document.getElementById('feedback').innerText = "";
+        
+        // Reset shifts based on initial decimal position (after first 0/digit)
+        // For simplicity in this UI, we assume decimal starts after the 1st char
+        currentShifts = { d1: 1, d2: 1 }; 
+
+        setupDragUI(lvl);
+    }
+
+    function setupDragUI(lvl) {
+        const area = document.getElementById('math-drag-area');
+        area.innerHTML = `
+            <div id="divisor-row" style="display:flex; color: var(--blue);">
+                ${createDigitSlots(lvl.divisor, 'dec-1')}
+            </div>
+            <div class="bracket" id="dividend-row" style="color: var(--green);">
+                ${createDigitSlots(lvl.dividend, 'dec-2')}
+            </div>
+        `;
+        initInteract('dec-1');
+        initInteract('dec-2');
+    }
+
+    function createDigitSlots(numStr, decId) {
+        let html = '';
+        const parts = numStr.replace('.', '').split('');
+        // Add slots for digits + 1 extra at the end
+        for (let i = 0; i <= parts.length; i++) {
+            let digit = parts[i] || '';
+            let decimalHtml = (i === 1) ? `<span class="decimal" id="${decId}">.</span>` : '';
+            html += `<div class="digit-container">${decimalHtml}${digit}</div>`;
+        }
+        return html;
+    }
+
+    function initInteract(id) {
+        interact('#' + id).draggable({
+            listeners: {
+                move(event) {
+                    let x = (parseFloat(event.target.getAttribute('data-x')) || 0) + event.dx;
+                    if (x > 25) { updateShift(id, 1); x = 0; }
+                    else if (x < -25) { updateShift(id, -1); x = 0; }
+                    event.target.setAttribute('data-x', x);
+                    event.target.style.transform = `translateX(${x}px)`;
+                },
+                end(event) {
+                    event.target.style.transform = 'none';
+                    event.target.setAttribute('data-x', 0);
+                }
+            }
+        });
+    }
+
+    function updateShift(id, dir) {
+        const dec = document.getElementById(id);
+        const parent = dec.closest('#divisor-row, #dividend-row');
+        const slots = parent.querySelectorAll('.digit-container');
+        let key = id === 'dec-1' ? 'd1' : 'd2';
+        let next = currentShifts[key] + dir;
+        
+        if (next >= 0 && next < slots.length) {
+            currentShifts[key] = next;
+            slots[next].appendChild(dec);
+        }
+    }
+
+    function checkStep1() {
+        const lvl = levels[currentLvlIdx];
+        const fb = document.getElementById('feedback');
+        
+        // Target is starting pos (1) + shift amount
+        const target = 1 + lvl.shifts;
+
+        if (currentShifts.d1 === target && currentShifts.d2 === target) {
+            fb.innerHTML = "✅ Perfect! Decimals shifted.";
+            fb.style.color = "var(--green)";
+            setTimeout(startPhase2, 800);
+        } else {
+            fb.innerHTML = "❌ Not quite. Move them until the divisor is a whole number!";
+            fb.style.color = "var(--red)";
+        }
+    }
+
+    function startPhase2() {
+        const lvl = levels[currentLvlIdx];
+        document.getElementById('header').innerText = "Step 2: Divide";
+        document.getElementById('phase-drag').classList.add('hidden');
+        document.getElementById('phase-solve').classList.remove('hidden');
+        document.getElementById('feedback').innerText = "";
+
+        const grid = document.getElementById('solve-container');
+        const dvdLen = lvl.cleanDvd.length;
+        grid.style.gridTemplateColumns = `repeat(${dvdLen + 2}, 50px)`;
+
+        let html = `<div></div><div></div>`;
+        // Quotient inputs
+        for(let i=0; i<dvdLen; i++) html += `<input type="number" class="input-box q-box" data-val="${lvl.quotient[i]}">`;
+        
+        // Problem row
+        html += `<div style="grid-column: 1/3; text-align: right; padding-right:10px;">${lvl.cleanDiv})</div>`;
+        for(let char of lvl.cleanDvd) html += `<div>${char}</div>`;
+
+        // Subtraction row
+        html += `<div style="color:var(--red)">-</div><div></div>`;
+        for(let i=0; i<dvdLen; i++) html += `<input type="number" class="input-box s-box" data-val="${lvl.subtract[i]}">`;
+
+        // Line
+        html += `<div style="grid-column: 2/${dvdLen+3}; border-bottom: 3px solid black; margin: 5px 0;"></div>`;
+
+        // Remainder
+        html += `<div></div><div></div>`;
+        for(let i=0; i<dvdLen-1; i++) html += `<div></div>`;
+        html += `<input type="number" class="input-box r-box" data-val="${lvl.remainder}">`;
+
+        grid.innerHTML = html;
+    }
+
+    function checkStep2() {
+        let allCorrect = true;
+        document.querySelectorAll('.input-box').forEach(input => {
+            if (input.value === input.getAttribute('data-val')) {
+                input.className = 'input-box correct';
+            } else {
+                input.className = 'input-box error';
+                allCorrect = false;
+            }
+        });
+
+        const fb = document.getElementById('feedback');
+        if (allCorrect) {
+            fb.innerHTML = "🎉 Level Complete!";
+            fb.style.color = "var(--green)";
+            document.getElementById('next-lvl-btn').classList.remove('hidden');
+        } else {
+            fb.innerHTML = "⚠️ Try again!";
+            fb.style.color = "var(--red)";
+        }
+    }
+
+    function nextLevel() {
+        currentLvlIdx = (currentLvlIdx + 1) % levels.length;
+        initLevel();
+    }
+
+    // Start
+    initLevel();
+</script>
+</body>
+</html>

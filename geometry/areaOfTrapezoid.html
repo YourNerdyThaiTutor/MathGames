@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfect Trapezoid Snap</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #fdf2f8;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 650px;
+            width: 100%;
+        }
+        .step-indicator { display: flex; justify-content: space-around; margin-bottom: 20px; }
+        .step { padding: 8px 15px; border-radius: 20px; background: #eee; color: #999; }
+        .step.active { background: #d81b60; color: white; font-weight: bold; }
+        svg { background: #fff; border: 2px solid #f8bbd0; border-radius: 12px; margin: 20px 0; }
+        .controls { background: #fce4ec; padding: 20px; border-radius: 15px; }
+        input[type="number"] { width: 80px; padding: 10px; font-size: 1.2rem; border: 2px solid #d81b60; border-radius: 8px; text-align: center; }
+        button { padding: 10px 20px; background: #d81b60; color: white; border: none; border-radius: 8px; cursor: pointer; font-family: inherit; }
+        #feedback { margin-top: 15px; font-weight: bold; min-height: 1.5em; }
+        .hidden { display: none; }
+        polygon { transition: all 0.5s ease-out; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="step-indicator">
+        <div id="badge1" class="step active">Step 1: Giant Parallelogram</div>
+        <div id="badge2" class="step">Step 2: Original Trapezoid</div>
+    </div>
+
+    <h2 id="instruction">Find the Area of the Combined Shape</h2>
+    
+    <svg id="viz" width="550" height="280" viewBox="0 0 550 280">
+        <defs>
+            <pattern id="dotGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+                <circle cx="2" cy="2" r="1" fill="#f0f0f0" />
+            </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#dotGrid)" />
+
+        <polygon id="trap2" points="" fill="#f8bbd0" stroke="#c2185b" stroke-width="2" opacity="0.6" />
+        
+        <polygon id="trap1" points="" fill="#f06292" stroke="#880e4f" stroke-width="3" />
+        
+        <text id="h-text" x="50" y="130" fill="#d32f2f" font-weight="bold">h=?</text>
+        <text id="b1-text" x="150" y="70" fill="#880e4f" font-weight="bold">b1=?</text>
+        <text id="b2-text" x="150" y="230" fill="#880e4f" font-weight="bold">b2=?</text>
+        <line id="h-line" x1="" y1="" x2="" y2="" stroke="#d32f2f" stroke-width="2" stroke-dasharray="5,5" />
+    </svg>
+
+    <div class="controls">
+        <div id="input-area">
+            <span id="label-text">Parallelogram Area:</span>
+            <input type="number" id="userGuess" placeholder="?">
+            <button onclick="checkStep()">Check</button>
+        </div>
+        <div id="feedback"></div>
+        <button id="nextBtn" class="hidden" onclick="startStep2()" style="background:#43a047; width:100%; margin-top:10px;">Correct! Now see the Trapezoid Area &rarr;</button>
+        <button id="resetBtn" class="hidden" onclick="initNewProblem()" style="background:#7b1fa2; width:100%; margin-top:10px;">Next Problem ↻</button>
+    </div>
+</div>
+
+<script>
+    let currentStep = 1;
+    let b1, b2, h, pArea, tArea;
+    const SCALE = 20;
+    const OFFSET_X = 100;
+    const OFFSET_Y = 200;
+    const SKEW = 40; // Horizontal tilt
+
+    function initNewProblem() {
+        currentStep = 1;
+        b1 = Math.floor(Math.random() * 6) + 3; // Top base
+        b2 = Math.floor(Math.random() * 6) + 3; // Bottom base
+        h = Math.floor(Math.random() * 5) + 3;  // Height
+        
+        pArea = (b1 + b2) * h;
+        tArea = pArea / 2;
+
+        document.getElementById('badge1').className = "step active";
+        document.getElementById('badge2').className = "step";
+        document.getElementById('instruction').innerText = "Step 1: Calculate the GIANT Parallelogram Area";
+        document.getElementById('label-text').innerText = "Giant Area:";
+        document.getElementById('userGuess').value = "";
+        document.getElementById('feedback').innerText = "";
+        document.getElementById('nextBtn').classList.add('hidden');
+        document.getElementById('resetBtn').classList.add('hidden');
+
+        drawShapes();
+    }
+
+    function drawShapes() {
+        const t1 = document.getElementById('trap1');
+        const t2 = document.getElementById('trap2');
+
+        // Original Trapezoid Points
+        const p1 = { x: OFFSET_X, y: OFFSET_Y }; // Bottom Left
+        const p2 = { x: OFFSET_X + b2 * SCALE, y: OFFSET_Y }; // Bottom Right
+        const p3 = { x: OFFSET_X + b1 * SCALE + SKEW, y: OFFSET_Y - h * SCALE }; // Top Right
+        const p4 = { x: OFFSET_X + SKEW, y: OFFSET_Y - h * SCALE }; // Top Left
+
+        t1.setAttribute('points', `${p1.x},${p1.y} ${p2.x},${p2.y} ${p3.x},${p3.y} ${p4.x},${p4.y}`);
+        t1.style.fill = "#f06292";
+        t1.style.opacity = "1";
+
+        // To form a parallelogram, we "flip" the trapezoid and snap it to the side.
+        // The second trapezoid's bottom base (b2) sits on the first's top line.
+        // The points effectively "invert".
+        const p5 = { x: p3.x + b2 * SCALE, y: p3.y }; 
+        const p6 = { x: p3.x, y: p3.y }; // Snaps to p3
+        const p7 = { x: p2.x, y: p2.y }; // Snaps to p2
+        const p8 = { x: p2.x + b1 * SCALE, y: p2.y };
+
+        t2.setAttribute('points', `${p5.x},${p5.y} ${p6.x},${p6.y} ${p7.x},${p7.y} ${p8.x},${p8.y}`);
+        t2.setAttribute('opacity', "0.6");
+
+        // Labels
+        document.getElementById('b1-text').textContent = `b1 = ${b1}`;
+        document.getElementById('b1-text').setAttribute('x', OFFSET_X + SKEW + (b1*SCALE)/2 - 15);
+        document.getElementById('b1-text').setAttribute('y', OFFSET_Y - h * SCALE - 10);
+
+        document.getElementById('b2-text').textContent = `b2 = ${b2}`;
+        document.getElementById('b2-text').setAttribute('x', OFFSET_X + (b2*SCALE)/2 - 15);
+        document.getElementById('b2-text').setAttribute('y', OFFSET_Y + 25);
+
+        document.getElementById('h-text').textContent = `h = ${h}`;
+        document.getElementById('h-line').setAttribute('x1', OFFSET_X + SKEW/2);
+        document.getElementById('h-line').setAttribute('y1', OFFSET_Y - h*SCALE);
+        document.getElementById('h-line').setAttribute('x2', OFFSET_X + SKEW/2);
+        document.getElementById('h-line').setAttribute('y2', OFFSET_Y);
+    }
+
+    function checkStep() {
+        const guess = parseFloat(document.getElementById('userGuess').value);
+        const feedback = document.getElementById('feedback');
+
+        if (currentStep === 1) {
+            if (guess === pArea) {
+                feedback.style.color = "green";
+                feedback.innerText = `Correct! Giant base (${b1}+${b2}) × height (${h}) = ${pArea}`;
+                document.getElementById('nextBtn').classList.remove('hidden');
+            } else {
+                feedback.style.color = "red";
+                feedback.innerText = `Hint: The long base is b1 + b2 = ${b1 + b2}.`;
+            }
+        } else {
+            if (guess === tArea) {
+                feedback.style.color = "green";
+                feedback.innerText = `Spot on! Half of ${pArea} is ${tArea}.`;
+                document.getElementById('resetBtn').classList.remove('hidden');
+            } else {
+                feedback.style.color = "red";
+                feedback.innerText = `Just divide your previous answer (${pArea}) by 2!`;
+            }
+        }
+    }
+
+    function startStep2() {
+        currentStep = 2;
+        document.getElementById('badge1').classList.remove('active');
+        document.getElementById('badge2').classList.add('active');
+        document.getElementById('instruction').innerText = "Step 2: Find the Area of ONE Trapezoid";
+        document.getElementById('label-text').innerText = "Trapezoid Area:";
+        document.getElementById('userGuess').value = "";
+        document.getElementById('feedback').innerText = "";
+        document.getElementById('nextBtn').classList.add('hidden');
+        
+        // Hide the copy
+        document.getElementById('trap2').setAttribute('opacity', '0');
+        document.getElementById('trap1').style.fill = "#81c784";
+    }
+
+    initNewProblem();
+</script>
+
+</body>
+</html>
