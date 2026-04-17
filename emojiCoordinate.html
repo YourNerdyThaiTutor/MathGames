@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Emoji Plotting Quest</title>
+    <style>
+        :root {
+            --accent: #6c5ce7;
+            --success: #27ae60;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            display: flex; flex-direction: column; align-items: center;
+            background-color: #f1f2f6; margin: 0; padding: 5px;
+            touch-action: none; overflow: hidden; 
+            height: 100vh; width: 100vw; /* Lock to screen size */
+        }
+
+        /* UI Card - Slimmed down */
+        .ui-card {
+            background: white; padding: 10px; border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08); 
+            margin: 5px 0; width: 95%; max-width: 500px;
+            flex-shrink: 1; /* Allows this to get smaller if needed */
+        }
+
+        /* The Game Container - This holds everything below the top card */
+        .game-container {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; flex-grow: 1; width: 100%;
+            overflow: hidden;
+        }
+
+        /* The Graph Wrapper - Locked to a square based on the smaller screen dimension */
+        .graph-outer {
+            padding: 30px 15px 35px 35px; /* Room for numbers */
+            background: white; border-radius: 15px;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .graph-area {
+            position: relative; 
+            /* Square size: 65% of the shorter screen side to ensure it fits */
+            width: 65vmin; height: 65vmin; 
+            max-width: 350px; max-height: 350px;
+            background-image: linear-gradient(to right, #e0e0e0 1px, transparent 1px),
+                              linear-gradient(to bottom, #e0e0e0 1px, transparent 1px);
+            background-size: 10% 10%;
+            border-left: 3px solid #333; border-bottom: 3px solid #333;
+        }
+
+        /* Toolbox - Horizontal and slim */
+        #toolbox {
+            display: none; justify-content: center; gap: 5px; flex-wrap: wrap;
+            margin-top: 10px; padding: 5px; width: 95%;
+            flex-shrink: 1;
+        }
+        .tool-emoji {
+            font-size: 1.4rem; padding: 5px; border-radius: 6px; 
+            border: 2px solid #ddd; background: white; cursor: pointer;
+        }
+        .tool-emoji.selected { border-color: var(--accent); background: #e0d9f7; }
+
+        /* Logic for items */
+        .intersection {
+            position: absolute; width: 35px; height: 35px;
+            transform: translate(-50%, 50%);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 10;
+        }
+        .emoji-marker { font-size: 1.5rem; pointer-events: none; animation: pop 0.3s ease-out; }
+        @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+
+        /* Axis Number Positioning */
+        .axis-num { position: absolute; font-size: 0.75rem; font-weight: bold; color: #444; }
+        .x-num { bottom: -20px; transform: translateX(-50%); }
+        .y-num { left: -20px; transform: translateY(50%); }
+        .origin { position: absolute; bottom: -20px; left: -20px; font-weight: bold; }
+
+        button { padding: 10px 15px; margin: 5px; border-radius: 8px; border: none; background: var(--accent); color: white; font-weight: bold; }
+        .mission-item { font-size: 0.9rem; }
+        .completed { text-decoration: line-through; opacity: 0.3; }
+    </style>
+</head>
+<body>
+
+    <div class="ui-card">
+        <div id="level-select">
+            <button onclick="setLevel(1)">Lvl 1</button>
+            <button onclick="setLevel(2)">Lvl 2</button>
+            <button onclick="setLevel(3)">Lvl 3</button>
+        </div>
+        <div id="game-info" style="display:none">
+            <div id="mission-container" style="display:flex; justify-content: center; gap: 10px; flex-wrap: wrap;"></div>
+            <div id="msg" style="font-size: 0.8rem; margin-top: 5px; font-weight: bold;"></div>
+        </div>
+    </div>
+
+    <div class="game-container">
+        <div class="graph-outer">
+            <div class="graph-area" id="graph">
+                <div class="origin">0</div>
+            </div>
+        </div>
+        <div id="toolbox"></div>
+    </div>
+
+    <script>
+        const emojis = ['🚀', '🦄', '🦖', '🍕', '🍩', '🦊', '👾', '🌈', '💎', '🐱'];
+        let currentLevel = 1, activeMissions = [], userSelectedEmoji = null;
+
+        function setLevel(lvl) {
+            currentLevel = lvl;
+            document.getElementById('level-select').style.display = 'none';
+            document.getElementById('game-info').style.display = 'block';
+            if(lvl >= 2) {
+                document.getElementById('toolbox').style.display = 'flex';
+                initToolbox();
+            }
+            initGraph();
+            newMission();
+        }
+
+        function initGraph() {
+            const graph = document.getElementById('graph');
+            for (let x = 0; x <= 10; x++) {
+                for (let y = 0; y <= 10; y++) {
+                    const pt = document.createElement('div');
+                    pt.className = 'intersection';
+                    pt.style.left = (x * 10) + '%';
+                    pt.style.bottom = (y * 10) + '%';
+                    pt.onclick = () => checkPoint(x, y, pt);
+                    graph.appendChild(pt);
+                    if (y === 0 && x > 0) createLabel(x, 'x', graph);
+                    if (x === 0 && y > 0) createLabel(y, 'y', graph);
+                }
+            }
+        }
+
+        function createLabel(val, axis, container) {
+            const lbl = document.createElement('div');
+            lbl.className = `axis-num ${axis}-num`;
+            lbl.style[axis === 'x' ? 'left' : 'bottom'] = (val * 10) + '%';
+            lbl.innerText = val;
+            container.appendChild(lbl);
+        }
+
+        function initToolbox() {
+            const box = document.getElementById('toolbox');
+            box.innerHTML = '';
+            emojis.forEach(e => {
+                const btn = document.createElement('div');
+                btn.className = 'tool-emoji';
+                btn.innerText = e;
+                btn.onclick = () => {
+                    userSelectedEmoji = e;
+                    document.querySelectorAll('.tool-emoji').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                };
+                box.appendChild(btn);
+            });
+        }
+
+        function newMission() {
+            activeMissions = [];
+            const count = (currentLevel === 3) ? 3 : 1;
+            for(let i=0; i<count; i++) {
+                activeMissions.push({
+                    x: Math.floor(Math.random() * 11),
+                    y: Math.floor(Math.random() * 11),
+                    emoji: emojis[Math.floor(Math.random() * emojis.length)],
+                    done: false
+                });
+            }
+            userSelectedEmoji = null;
+            document.querySelectorAll('.tool-emoji').forEach(b => b.classList.remove('selected'));
+            document.querySelectorAll('.emoji-marker').forEach(m => m.remove());
+            renderMissions();
+        }
+
+        function renderMissions() {
+            const container = document.getElementById('mission-container');
+            container.innerHTML = '';
+            activeMissions.forEach(m => {
+                const item = document.createElement('div');
+                item.className = 'mission-item' + (m.done ? ' completed' : '');
+                item.innerHTML = `${m.emoji}(${m.x},${m.y})`;
+                container.appendChild(item);
+            });
+        }
+
+        function checkPoint(x, y, el) {
+            if (currentLevel >= 2 && !userSelectedEmoji) {
+                document.getElementById('msg').innerText = "Pick an emoji first!";
+                return;
+            }
+            const matchIndex = activeMissions.findIndex(m => 
+                !m.done && m.x === x && m.y === y && (currentLevel === 1 || userSelectedEmoji === m.emoji)
+            );
+            if (matchIndex !== -1) {
+                activeMissions[matchIndex].done = true;
+                const m = document.createElement('span'); 
+                m.className = 'emoji-marker'; 
+                m.innerText = activeMissions[matchIndex].emoji;
+                el.appendChild(m);
+                renderMissions();
+                if (activeMissions.every(m => m.done)) {
+                    document.getElementById('msg').innerHTML = "<span style='color:green'>Done!</span>";
+                    setTimeout(newMission, 1200);
+                }
+            } else {
+                document.getElementById('msg').innerHTML = `<span style='color:red'>Clicked (${x}, ${y})</span>`;
+            }
+        }
+    </script>
+</body>
+</html>

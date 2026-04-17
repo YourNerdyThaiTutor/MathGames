@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Intersection Plotting Quest</title>
+    <style>
+        :root {
+            --grid-size: 440px; /* Divisible by 10 */
+            --step: 40px; 
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            display: flex; flex-direction: column; align-items: center;
+            background-color: #f8f9fa; margin: 0; padding: 20px;
+            touch-action: none;
+        }
+
+        .instruction-card {
+            background: white; padding: 20px; border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 30px;
+            text-align: center; width: 100%; max-width: 450px;
+        }
+
+        /* The Visual Grid */
+        .graph-area {
+            position: relative;
+            width: var(--grid-size);
+            height: var(--grid-size);
+            background-image: 
+                linear-gradient(to right, #e0e0e0 1px, transparent 1px),
+                linear-gradient(to bottom, #e0e0e0 1px, transparent 1px);
+            background-size: var(--step) var(--step);
+            border-left: 3px solid #333;
+            border-bottom: 3px solid #333;
+            margin: 20px;
+        }
+
+        /* The clickable points at intersections */
+        .intersection-point {
+            position: absolute;
+            width: 30px; height: 30px;
+            border-radius: 50%;
+            transform: translate(-50%, 50%); /* Centers the hit area on the line cross */
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 10;
+        }
+
+        /* Show a small dot on hover/touch so they know where to click */
+        .intersection-point:hover::after {
+            content: '';
+            width: 6px; height: 6px;
+            background: #6c5ce7; border-radius: 50%;
+        }
+
+        .emoji-marker {
+            font-size: 1.8rem;
+            pointer-events: none;
+            animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+
+        .axis-num { position: absolute; font-size: 0.85rem; font-weight: bold; color: #444; }
+        .x-num { bottom: -25px; transform: translateX(-50%); }
+        .y-num { left: -25px; transform: translateY(50%); }
+        .origin { position: absolute; bottom: -25px; left: -25px; font-weight: bold; }
+
+        #msg { margin-top: 20px; font-weight: bold; font-size: 1.2rem; min-height: 1.5em; }
+    </style>
+</head>
+<body>
+
+    <div class="instruction-card">
+        <div id="mission-text" style="font-size: 1.5rem; font-weight: bold;">Loading...</div>
+        <div id="msg"></div>
+    </div>
+
+    <div class="graph-area" id="graph">
+        <div class="origin">0</div>
+        </div>
+
+    <script>
+        const gridSize = 10;
+        const step = 40; 
+        const emojis = ['🚀', '🦄', '🦖', '🍕', '🍩', '🦊', '👾', '🌈', '💎', '🐱'];
+        let target = { x: 0, y: 0, emoji: '' };
+
+        function init() {
+            const graph = document.getElementById('graph');
+
+            for (let x = 0; x <= gridSize; x++) {
+                for (let y = 0; y <= gridSize; y++) {
+                    // Create clickable hit area
+                    const pt = document.createElement('div');
+                    pt.className = 'intersection-point';
+                    pt.style.left = (x * step) + 'px';
+                    pt.style.bottom = (y * step) + 'px';
+                    
+                    pt.onclick = () => checkPoint(x, y, pt);
+                    graph.appendChild(pt);
+
+                    // Add Number Labels (only once per axis)
+                    if (y === 0 && x > 0) {
+                        const xN = document.createElement('div');
+                        xN.className = 'axis-num x-num';
+                        xN.style.left = (x * step) + 'px';
+                        xN.innerText = x;
+                        graph.appendChild(xN);
+                    }
+                    if (x === 0 && y > 0) {
+                        const yN = document.createElement('div');
+                        yN.className = 'axis-num y-num';
+                        yN.style.bottom = (y * step) + 'px';
+                        yN.innerText = y;
+                        graph.appendChild(yN);
+                    }
+                }
+            }
+            newMission();
+        }
+
+        function newMission() {
+            // Target can now be 0 to 10
+            target.x = Math.floor(Math.random() * (gridSize + 1));
+            target.y = Math.floor(Math.random() * (gridSize + 1));
+            target.emoji = emojis[Math.floor(Math.random() * emojis.length)];
+
+            document.getElementById('mission-text').innerHTML = 
+                `Plot the ${target.emoji} at <span style="color:#6c5ce7">(${target.x}, ${target.y})</span>`;
+            document.getElementById('msg').innerText = "";
+        }
+
+        function checkPoint(x, y, ptElement) {
+            if (x === target.x && y === target.y) {
+                const marker = document.createElement('span');
+                marker.className = 'emoji-marker';
+                marker.innerText = target.emoji;
+                ptElement.appendChild(marker);
+                
+                document.getElementById('msg').innerHTML = "<span style='color:green'>Perfect! Exactly on the intersection.</span>";
+                
+                setTimeout(() => {
+                    ptElement.innerHTML = '';
+                    newMission();
+                }, 1500);
+            } else {
+                document.getElementById('msg').innerHTML = 
+                    `<span style='color:red'>That's the point (${x}, ${y}). Try again!</span>`;
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
