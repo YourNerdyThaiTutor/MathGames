@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Title</title>
+        <style>
+            .garden {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-end;
+                height: 300px;
+                padding-bottom: 50px;
+            }
+
+            #plant-container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-end;
+                height: 200px;
+                width: 100px;
+            }
+
+            .stem {
+                width: 8px;
+                background: #27ae60;
+                border-radius: 4px;
+                position: relative;
+                height: 0%; /* Controlled by JS */
+                transition: height 0.3s ease-out;
+            }
+
+            .flower {
+                font-size: 100px;
+                transform: scale(0);
+                transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                position: absolute;
+                top: -30%;
+                left: -800%
+            }
+
+            .leaf {
+                position: absolute;
+                font-size: 40px;
+                opacity: 0;
+                transition: opacity 0.3s;
+            }
+            .leaf.left {
+                left: -40px;
+                top: 60%;
+                transform: scaleX(-1);
+            }
+            
+            .leaf.right {
+                right: -40px;
+                top: 30%;
+            }
+
+            .show {
+                opacity: 1 !important;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="garden">
+            <div id="plant-container">
+                
+
+                <div id="stem" class="stem">
+                    <div id="flower" class="flower">🌸</div>
+                    <div id="leaf-1" class="leaf left">🌿</div>
+                    <div id="leaf-2" class="leaf right">🌿</div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <input type="range" id="growthSlider" min="0" max="100" value="0" />
+                <p>Growth: <span id="percent">0</span>%</p>
+            </div>
+        </div>
+        <script>
+            const stem = document.getElementById("stem");
+            const flower = document.getElementById("flower");
+            const leaf1 = document.getElementById("leaf-1");
+            const leaf2 = document.getElementById("leaf-2");
+            const slider = document.getElementById("growthSlider");
+            const percentText = document.getElementById("percent");
+
+            function updatePlant(value) {
+                // 1. Update text
+                percentText.innerText = value;
+
+                // 2. Grow the stem (height percentage)
+                stem.style.height = value + "%";
+
+                // 3. Show leaves at specific thresholds
+                if (value >= 30) leaf1.classList.add("show");
+                else leaf1.classList.remove("show");
+
+                if (value >= 60) leaf2.classList.add("show");
+                else leaf2.classList.remove("show");
+
+                // 4. Bloom at 100
+                if (value >= 100) {
+                    flower.style.transform = "scale(1)";
+                } else {
+                    flower.style.transform = "scale(0)";
+                }
+            }
+
+            // Event listener for the slider
+            slider.addEventListener("input", (e) => {
+                updatePlant(e.target.value);
+            });
+        </script>
+    </body>
+</html>
