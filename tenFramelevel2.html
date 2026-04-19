@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ten Frame Builder</title>
+    <style>
+        :root {
+            --bg: #fdf6e3;
+            --blue: #268bd2;
+            --red: #dc322f;
+            --frame: #073642;
+            --slot: #eee8d5;
+        }
+
+        body {
+            font-family: 'Avenir', sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            touch-action: none; 
+            user-select: none;
+        }
+
+        .status-bar {
+            margin-top: 15px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #586e75;
+            text-align: center;
+            padding: 0 10px;
+        }
+
+        .equation-builder {
+            display: flex;
+            gap: 20px;
+            margin: 15px 0;
+            align-items: center;
+        }
+
+        .num-box {
+            font-size: 2.5rem;
+            font-weight: 900;
+            padding: 10px 20px;
+            border-radius: 12px;
+            border: 4px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .num-box.active-blue { border-color: var(--blue); background: white; color: var(--blue); box-shadow: 0 0 15px rgba(38,139,210,0.4); }
+        .num-box.active-red { border-color: var(--red); background: white; color: var(--red); box-shadow: 0 0 15px rgba(220,50,47,0.4); }
+        .num-box.inactive { color: #93a1a1; }
+
+        .workspace {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .ten-frame {
+            display: grid;
+            grid-template-columns: repeat(5, 60px);
+            grid-template-rows: repeat(2, 60px);
+            gap: 10px;
+            background: var(--frame);
+            padding: 12px;
+            border-radius: 12px;
+        }
+
+        .slot {
+            background: var(--slot);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .dot {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            position: absolute;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+
+        .blue { background-color: var(--blue); }
+        .red { background-color: var(--red); }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        input {
+            width: 80px;
+            font-size: 1.5rem;
+            padding: 10px;
+            border-radius: 10px;
+            border: 2px solid #93a1a1;
+            text-align: center;
+        }
+
+        button {
+            padding: 12px 25px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            background: #859900;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 0 #586e00;
+        }
+
+        @media (min-width: 768px) {
+            .workspace { flex-direction: row; gap: 40px; }
+            .ten-frame { grid-template-columns: repeat(5, 80px); grid-template-rows: repeat(2, 80px); }
+            .slot { width: 80px; height: 80px; }
+            .dot { width: 70px; height: 70px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="status-bar" id="msg">Tap a number to start filling!</div>
+
+    <div class="equation-builder">
+        <div id="btn1" class="num-box" onclick="setMode('blue')">?</div>
+        <div style="font-size: 2rem; font-weight: bold;">+</div>
+        <div id="btn2" class="num-box" onclick="setMode('red')">?</div>
+        <div style="font-size: 2rem; font-weight: bold;">=</div>
+    </div>
+
+    <div class="workspace">
+        <div class="ten-frame" id="f1"></div>
+        <div class="ten-frame" id="f2"></div>
+    </div>
+
+    <div class="controls" id="finalControls" style="visibility: hidden;">
+        <input type="number" id="ans" pattern="\d*" inputmode="numeric" placeholder="?">
+        <button onclick="checkResult()">Check</button>
+        <button onclick="initGame()" style="background:#2aa198; box-shadow: 0 4px 0 #1c6b65;">Next</button>
+    </div>
+
+    <script>
+        let v1, v2, targetTotal, mode = null;
+        let placedBlue = 0, placedRed = 0;
+        let activeDot = null, offsetX, offsetY;
+
+        function initGame() {
+            v1 = Math.floor(Math.random() * 4) + 6; 
+            v2 = Math.floor(Math.random() * 5) + 4;
+            targetTotal = v1 + v2;
+            placedBlue = 0; placedRed = 0; mode = null;
+
+            document.getElementById('btn1').innerText = v1;
+            document.getElementById('btn1').className = 'num-box active-blue';
+            document.getElementById('btn2').innerText = v2;
+            document.getElementById('btn2').className = 'num-box inactive';
+            document.getElementById('msg').innerText = `Put ${v1} blue dots in the frames!`;
+            document.getElementById('finalControls').style.visibility = 'hidden';
+            document.getElementById('ans').value = "";
+            
+            mode = 'blue';
+            renderEmptyFrames();
+        }
+
+        function renderEmptyFrames() {
+            ['f1', 'f2'].forEach(id => {
+                const frame = document.getElementById(id);
+                frame.innerHTML = '';
+                for (let i = 0; i < 10; i++) {
+                    const slot = document.createElement('div');
+                    slot.className = 'slot';
+                    slot.onclick = () => handleSlotClick(slot);
+                    frame.appendChild(slot);
+                }
+            });
+        }
+
+        function setMode(newMode) {
+            if (newMode === 'red' && placedBlue < v1) return; // Must finish blue first
+            mode = newMode;
+            document.getElementById('btn1').className = mode === 'blue' ? 'num-box active-blue' : 'num-box inactive';
+            document.getElementById('btn2').className = mode === 'red' ? 'num-box active-red' : 'num-box inactive';
+        }
+
+        function handleSlotClick(slot) {
+            if (slot.hasChildNodes()) return;
+
+            if (mode === 'blue' && placedBlue < v1) {
+                addDot(slot, 'blue');
+                placedBlue++;
+                if (placedBlue === v1) {
+                    setMode('red');
+                    document.getElementById('msg').innerText = `Great! Now put ${v2} red dots!`;
+                }
+            } else if (mode === 'red' && placedRed < v2) {
+                addDot(slot, 'red');
+                placedRed++;
+                if (placedRed === v2) {
+                    mode = 'drag';
+                    document.getElementById('msg').innerText = "Now move dots to fill a ten frame!";
+                    document.getElementById('btn1').className = 'num-box inactive';
+                    document.getElementById('btn2').className = 'num-box inactive';
+                    document.getElementById('finalControls').style.visibility = 'visible';
+                }
+            }
+        }
+
+        function addDot(slot, color) {
+            const dot = document.createElement('div');
+            dot.className = `dot ${color}`;
+            addTouchListeners(dot);
+            slot.appendChild(dot);
+        }
+
+        function addTouchListeners(dot) {
+            const start = (e) => {
+                if (mode !== 'drag') return;
+                activeDot = dot;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const rect = dot.getBoundingClientRect();
+                offsetX = clientX - rect.left; offsetY = clientY - rect.top;
+                dot.style.zIndex = 1000; dot.style.position = 'fixed';
+                moveAt(clientX, clientY);
+            };
+
+            const move = (e) => {
+                if (!activeDot) return;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                moveAt(clientX, clientY);
+            };
+
+            const end = (e) => {
+                if (!activeDot) return;
+                const d = activeDot; activeDot = null;
+                d.style.display = 'none';
+                const x = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+                const y = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+                const elemBelow = document.elementFromPoint(x, y);
+                d.style.display = 'block';
+
+                const slot = elemBelow ? elemBelow.closest('.slot') : null;
+                if (slot && !slot.hasChildNodes()) {
+                    slot.appendChild(d);
+                    d.style.position = 'relative'; d.style.left = '0'; d.style.top = '0';
+                    checkTen();
+                } else {
+                    d.style.position = 'relative'; d.style.left = '0'; d.style.top = '0';
+                }
+            };
+
+            function moveAt(x, y) {
+                activeDot.style.left = x - offsetX + 'px';
+                activeDot.style.top = y - offsetY + 'px';
+            }
+
+            dot.onmousedown = start; dot.ontouchstart = start;
+            window.onmousemove = move; window.ontouchmove = move;
+            dot.onmouseup = end; dot.ontouchend = end;
+        }
+
+        function checkTen() {
+            const f1 = document.getElementById('f1').querySelectorAll('.dot').length;
+            const f2 = document.getElementById('f2').querySelectorAll('.dot').length;
+            if (f1 === 10 || f2 === 10) document.getElementById('msg').innerText = "You made a ten! How many total?";
+        }
+
+        function checkResult() {
+            const user = parseInt(document.getElementById('ans').value);
+            if (user === targetTotal) {
+                document.getElementById('msg').innerText = "Correct! You built it and solved it! ⭐";
+            } else {
+                document.getElementById('msg').innerText = "Count one more time!";
+            }
+        }
+
+        initGame();
+    </script>
+</body>
+</html>
