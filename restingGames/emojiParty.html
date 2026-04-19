@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emoji Mosaic Party</title>
+    <style>
+        body { 
+            margin: 0; background: #ffcc00; overflow: hidden; 
+            font-family: 'Arial Black', sans-serif; cursor: crosshair;
+        }
+        #ui {
+            position: absolute; top: 0; width: 100%; text-align: center;
+            background: rgba(255,255,255,0.8); padding: 10px 0; border-bottom: 5px solid #000;
+        }
+        #timer { font-size: 32px; color: #ff3e3e; margin: 0; }
+        canvas { display: block; background: #fff; }
+        
+        #frame {
+            display: none; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); background: #fff;
+            border: 20px solid #5d4037; padding: 20px; text-align: center;
+            box-shadow: 0 0 100px rgba(0,0,0,0.5);
+        }
+        .btn {
+            background: #4caf50; color: white; border: none; padding: 15px 30px;
+            font-size: 20px; border-radius: 10px; cursor: pointer; margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui">
+        <p id="timer">CREATE! 20s</p>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <div id="frame">
+        <h1 style="color:#5d4037">✨ MASTERPIECE ✨</h1>
+        <p>A true work of art! Your brain is now refreshed.</p>
+        <button class="btn" onclick="location.reload()">New Canvas</button>
+    </div>
+
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const timerEl = document.getElementById('timer');
+    const frame = document.getElementById('frame');
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let timeLeft = 20;
+    let painting = true;
+    const emojis = ["⭐", "🌈", "🍦", "🎨", "🚀", "🐱", "🍕", "💎", "🍩", "🍄"];
+
+    function paint(e) {
+        if (!painting) return;
+
+        const x = e.clientX || (e.touches ? e.touches[0].clientX : 0);
+        const y = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+
+        // Stamp 3 random emojis around the click point
+        for(let i=0; i<3; i++) {
+            const randEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+            const offsetX = (Math.random() - 0.5) * 60;
+            const offsetY = (Math.random() - 0.5) * 60;
+            const size = 30 + Math.random() * 40;
+
+            ctx.font = `${size}px serif`;
+            ctx.save();
+            ctx.translate(x + offsetX, y + offsetY);
+            ctx.rotate(Math.random() * Math.PI); // Random rotation for "party" feel
+            ctx.fillText(randEmoji, 0, 0);
+            ctx.restore();
+        }
+    }
+
+    // Controls
+    window.addEventListener('mousemove', (e) => { if(e.buttons === 1) paint(e); });
+    window.addEventListener('mousedown', paint);
+    window.addEventListener('touchstart', paint);
+    window.addEventListener('touchmove', paint);
+
+    // Timer
+    const countdown = setInterval(() => {
+        timeLeft--;
+        timerEl.innerText = `TIME: ${timeLeft}`;
+        if (timeLeft <= 0) {
+            clearInterval(countdown);
+            painting = false;
+            showFrame();
+        }
+    }, 1000);
+
+    function showFrame() {
+        frame.style.display = "block";
+        timerEl.innerText = "ART COMPLETE!";
+    }
+
+    // Fill background initially
+    ctx.fillStyle = "white";
+    ctx.fillRect(0,0, canvas.width, canvas.height);
+</script>
+</body>
+</html>

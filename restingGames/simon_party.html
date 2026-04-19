@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simon Says Party!</title>
+    <style>
+        body {
+            margin: 0; background: #2c3e50; color: white;
+            font-family: 'Arial Black', sans-serif;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100vh; overflow: hidden;
+        }
+        #status { font-size: 24px; margin-bottom: 20px; text-shadow: 2px 2px #000; color: #f1c40f; }
+        #game-container {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 15px;
+            background: #1a1a1a; padding: 20px; border-radius: 50%;
+            box-shadow: 0 10px 0 #000;
+        }
+        .pad {
+            width: 140px; height: 140px; border-radius: 20px;
+            cursor: pointer; transition: transform 0.1s, opacity 0.1s;
+            border: 8px solid rgba(0,0,0,0.2);
+        }
+        .pad:active { transform: scale(0.95); }
+        #green  { background: #2ecc71; border-top-left-radius: 100px; }
+        #red    { background: #e74c3c; border-top-right-radius: 100px; }
+        #yellow { background: #f1c40f; border-bottom-left-radius: 100px; }
+        #blue   { background: #3498db; border-bottom-right-radius: 100px; }
+        .lit { opacity: 0.3; transform: scale(1.05); border-color: white; }
+        
+        #overlay {
+            display: none; position: absolute; background: white; color: black;
+            padding: 30px; border-radius: 20px; text-align: center; border: 10px solid #f1c40f;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="status">Watch the Pattern!</div>
+    <div id="game-container">
+        <div id="green" class="pad" onclick="userClick(0)"></div>
+        <div id="red" class="pad" onclick="userClick(1)"></div>
+        <div id="yellow" class="pad" onclick="userClick(2)"></div>
+        <div id="blue" class="pad" onclick="userClick(3)"></div>
+    </div>
+
+    <div id="overlay">
+        <h1 id="result-text">GAME OVER!</h1>
+        <p id="final-score"></p>
+        <button onclick="location.reload()" style="padding:10px 20px; cursor:pointer; font-weight:bold;">Play Again</button>
+    </div>
+
+<script>
+    const pads = [document.getElementById('green'), document.getElementById('red'), 
+                  document.getElementById('yellow'), document.getElementById('blue')];
+    const statusText = document.getElementById('status');
+    
+    let sequence = [];
+    let userSequence = [];
+    let canClick = false;
+    let score = 0;
+
+    function startRound() {
+        userSequence = [];
+        canClick = false;
+        statusText.innerText = "Watch...";
+        sequence.push(Math.floor(Math.random() * 4));
+        playSequence();
+    }
+
+    async function playSequence() {
+        for (let i = 0; i < sequence.size || i < sequence.length; i++) {
+            await new Promise(r => setTimeout(r, 600));
+            lightUp(sequence[i]);
+        }
+        statusText.innerText = "Your Turn!";
+        canClick = true;
+    }
+
+    function lightUp(index) {
+        pads[index].classList.add('lit');
+        setTimeout(() => pads[index].classList.remove('lit'), 300);
+    }
+
+    function userClick(index) {
+        if (!canClick) return;
+        
+        lightUp(index);
+        userSequence.push(index);
+
+        if (userSequence[userSequence.length - 1] !== sequence[userSequence.length - 1]) {
+            gameOver();
+            return;
+        }
+
+        if (userSequence.length === sequence.length) {
+            score++;
+            canClick = false;
+            statusText.innerText = "Great Job!";
+            setTimeout(startRound, 1000);
+        }
+    }
+
+    function gameOver() {
+        canClick = false;
+        document.getElementById('overlay').style.display = 'block';
+        document.getElementById('final-score').innerText = `You remembered ${score} patterns!`;
+        statusText.innerText = "Oops!";
+    }
+
+    // Start game after 1 second
+    setTimeout(startRound, 1000);
+</script>
+</body>
+</html>

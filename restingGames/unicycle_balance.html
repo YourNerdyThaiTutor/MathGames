@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tightrope Balance!</title>
+    <style>
+        body { 
+            margin: 0; background: #56CCF2; background: linear-gradient(to bottom, #2F80ED, #56CCF2);
+            overflow: hidden; font-family: 'Arial Black', sans-serif; text-align: center;
+        }
+        #ui { position: absolute; top: 20px; width: 100%; color: white; text-shadow: 2px 2px 4px #000; }
+        #timer { font-size: 40px; }
+        
+        #rope {
+            position: absolute; top: 70%; left: 0; width: 100%; height: 6px;
+            background: #444; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        #rider {
+            position: absolute; bottom: 30%; left: 50%; font-size: 80px;
+            transform-origin: bottom center; transition: transform 0.05s;
+            user-select: none;
+        }
+
+        #results {
+            display: none; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); background: white;
+            padding: 40px; border-radius: 20px; border: 10px solid #2F80ED;
+        }
+        .btn { padding: 15px 30px; font-weight: bold; cursor: pointer; background: #2F80ED; color: white; border: none; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <div id="ui">
+        <div id="timer">Time: 20</div>
+        <p>Use LEFT/RIGHT Keys or Tap Sides!</p>
+    </div>
+
+    <div id="rope"></div>
+    <div id="rider">🤡</div>
+
+    <div id="results">
+        <h1 id="status">FELL OFF!</h1>
+        <p id="final-score"></p>
+        <button class="btn" onclick="location.reload()">TRY AGAIN</button>
+    </div>
+
+<script>
+    let timeLeft = 20;
+    let balance = 0; // 0 is perfectly center
+    let gameActive = true;
+    let tiltSpeed = 0.5;
+
+    const rider = document.getElementById('rider');
+    const timerEl = document.getElementById('timer');
+    const results = document.getElementById('results');
+
+    // Movement Logic
+    function move(dir) {
+        if (!gameActive) return;
+        balance += dir * 8; // Pull back
+    }
+
+    window.addEventListener('keydown', (e) => {
+        if (e.key === "ArrowLeft") move(-1);
+        if (e.key === "ArrowRight") move(1);
+    });
+
+    window.addEventListener('touchstart', (e) => {
+        const x = e.touches[0].clientX;
+        if (x < window.innerWidth / 2) move(-1);
+        else move(1);
+    });
+
+    // Game Loop
+    const loop = setInterval(() => {
+        if (!gameActive) return;
+
+        // Random wind/tilt
+        balance += (Math.random() - 0.5) * 2; 
+        balance += (balance > 0 ? tiltSpeed : -tiltSpeed); // Gravity pull
+
+        // Update visual
+        rider.style.transform = `translateX(-50%) rotate(${balance}deg)`;
+
+        // Check fail
+        if (Math.abs(balance) > 45) {
+            endGame(false);
+        }
+    }, 30);
+
+    // Timer
+    const timer = setInterval(() => {
+        timeLeft--;
+        timerEl.innerText = `Time: ${timeLeft}`;
+        tiltSpeed += 0.1; // Gets harder!
+
+        if (timeLeft <= 0) {
+            endGame(true);
+        }
+    }, 1000);
+
+    function endGame(win) {
+        gameActive = false;
+        clearInterval(loop);
+        clearInterval(timer);
+        results.style.display = "block";
+        document.getElementById('status').innerText = win ? "STAYED ON! ⭐" : "OOPS! FELL OFF!";
+        document.getElementById('final-score').innerText = win ? "Great balance! You are a superstar." : "The wind was too strong!";
+    }
+</script>
+</body>
+</html>

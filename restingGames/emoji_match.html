@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emoji Match Break</title>
+    <style>
+        body {
+            margin: 0; background: #6a11cb;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            font-family: 'Arial Black', sans-serif;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100vh; color: white; overflow: hidden;
+        }
+        #timer { font-size: 40px; margin-bottom: 10px; text-shadow: 2px 2px #000; }
+        #grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+            perspective: 1000px;
+        }
+        .card {
+            width: 80px; height: 80px; background: #fff; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 40px; cursor: pointer; color: transparent;
+            transform-style: preserve-3d; transition: transform 0.3s, background 0.3s;
+            box-shadow: 0 5px 0 #bbb;
+        }
+        .card.flipped {
+            color: initial; transform: rotateY(180deg); background: #fdfdfd;
+        }
+        .card.matched {
+            background: #a8ff78; color: initial; cursor: default; box-shadow: none; transform: scale(0.9);
+        }
+        #finish-screen {
+            display: none; position: absolute; background: white; color: black;
+            padding: 30px; border-radius: 20px; text-align: center; border: 8px solid #2575fc;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="timer">Match 'em! 20</div>
+    <div id="grid"></div>
+
+    <div id="finish-screen">
+        <h1 id="result-msg">TIME'S UP!</h1>
+        <p id="stats"></p>
+        <button onclick="location.reload()" style="padding:10px 20px; font-weight:bold; cursor:pointer;">Play Again</button>
+    </div>
+
+<script>
+    const grid = document.getElementById('grid');
+    const timerEl = document.getElementById('timer');
+    const finishScreen = document.getElementById('finish-screen');
+    
+    let emojis = ['🍎', '🍎', '🚀', '🚀', '💎', '💎', '🐶', '🐶', '🍕', '🍕', '👻', '👻', '🌈', '🌈', '👾', '👾'];
+    let flippedCards = [];
+    let matchedCount = 0;
+    let timeLeft = 20;
+    let gameActive = true;
+
+    // Shuffle Emojis
+    emojis.sort(() => Math.random() - 0.5);
+
+    // Create Cards
+    emojis.forEach((emoji, index) => {
+        const card = document.createElement('div');
+        card.classList.add('card');
+        card.dataset.emoji = emoji;
+        card.innerText = emoji;
+        card.addEventListener('click', flipCard);
+        grid.appendChild(card);
+    });
+
+    function flipCard() {
+        if (!gameActive || flippedCards.length >= 2 || this.classList.contains('flipped') || this.classList.contains('matched')) return;
+
+        this.classList.add('flipped');
+        flippedCards.push(this);
+
+        if (flippedCards.length === 2) {
+            checkMatch();
+        }
+    }
+
+    function checkMatch() {
+        const [card1, card2] = flippedCards;
+        if (card1.dataset.emoji === card2.dataset.emoji) {
+            card1.classList.add('matched');
+            card2.classList.add('matched');
+            matchedCount += 2;
+            flippedCards = [];
+            if (matchedCount === emojis.length) endGame(true);
+        } else {
+            setTimeout(() => {
+                card1.classList.remove('flipped');
+                card2.classList.remove('flipped');
+                flippedCards = [];
+            }, 600);
+        }
+    }
+
+    const timer = setInterval(() => {
+        timeLeft--;
+        timerEl.innerText = `Match 'em! ${timeLeft}`;
+        if (timeLeft <= 0) endGame(false);
+    }, 1000);
+
+    function endGame(win) {
+        gameActive = false;
+        clearInterval(timer);
+        finishScreen.style.display = 'block';
+        document.getElementById('result-msg').innerText = win ? "PERFECT! 🏆" : "TIME UP!";
+        document.getElementById('stats').innerText = win ? "You cleared the board!" : `You found ${matchedCount/2} pairs!`;
+    }
+</script>
+</body>
+</html>

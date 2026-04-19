@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>20-Second Power Up</title>
+    <style>
+        body {
+            margin: 0; background: #000; color: white;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            height: 100vh; overflow: hidden;
+        }
+        #timer { font-size: 5rem; color: #ff0055; margin: 0; }
+        #score { font-size: 1.5rem; color: #00ffcc; }
+        #game-board {
+            width: 90vw; height: 60vh;
+            position: relative; border: 2px solid #333;
+            margin-top: 20px; border-radius: 10px;
+        }
+        #target {
+            width: 60px; height: 60px; background: #fff;
+            border-radius: 50%; position: absolute;
+            cursor: pointer; box-shadow: 0 0 20px #fff;
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.1s;
+        }
+        button {
+            padding: 15px 30px; font-size: 1.2rem;
+            background: #00ffcc; border: none; cursor: pointer;
+            border-radius: 5px; font-weight: bold;
+        }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <h1 id="timer">20</h1>
+    <div id="score">Hits: 0</div>
+
+    <div id="game-board">
+        <div id="target">⚡</div>
+    </div>
+
+    <div id="overlay" class="hidden">
+        <h2 id="final-rank"></h2>
+        <button onclick="startGame()">Try Again</button>
+    </div>
+
+<script>
+    let timeLeft = 20;
+    let hits = 0;
+    let timerId;
+    const timerEl = document.getElementById('timer');
+    const scoreEl = document.getElementById('score');
+    const target = document.getElementById('target');
+    const board = document.getElementById('game-board');
+    const overlay = document.getElementById('overlay');
+
+    function moveTarget() {
+        const maxX = board.clientWidth - 60;
+        const maxY = board.clientHeight - 60;
+        target.style.left = Math.random() * maxX + 'px';
+        target.style.top = Math.random() * maxY + 'px';
+        // Make it slightly smaller/random for challenge
+        const size = 40 + Math.random() * 30;
+        target.style.width = size + 'px';
+        target.style.height = size + 'px';
+    }
+
+    function startGame() {
+        timeLeft = 20;
+        hits = 0;
+        overlay.classList.add('hidden');
+        board.classList.remove('hidden');
+        scoreEl.innerText = "Hits: 0";
+        timerEl.innerText = timeLeft;
+        moveTarget();
+        
+        clearInterval(timerId);
+        timerId = setInterval(() => {
+            timeLeft--;
+            timerEl.innerText = timeLeft;
+            if (timeLeft <= 0) endGame();
+        }, 1000);
+    }
+
+    function endGame() {
+        clearInterval(timerId);
+        board.classList.add('hidden');
+        overlay.classList.remove('hidden');
+        
+        let rank = "";
+        if (hits < 15) rank = "Turtle Speed 🐢";
+        else if (hits < 30) rank = "Quick Reflexes 🐇";
+        else if (hits < 45) rank = "Lightning Bolt ⚡";
+        else rank = "Cyborg Status 🤖";
+        
+        document.getElementById('final-rank').innerHTML = `Time Up!<br>Rank: ${rank}<br>Total Hits: ${hits}`;
+    }
+
+    target.addEventListener('mousedown', (e) => {
+        if (timeLeft > 0) {
+            hits++;
+            scoreEl.innerText = `Hits: ${hits}`;
+            moveTarget();
+        }
+    });
+
+    startGame();
+</script>
+</body>
+</html>

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bubble Pop Symphony</title>
+    <style>
+        body {
+            margin: 0;
+            background: linear-gradient(to bottom, #1a2a6c, #b21f1f, #fdbb2d);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+        }
+        canvas {
+            cursor: crosshair;
+            filter: drop-shadow(0 0 10px rgba(255,255,255,0.3));
+        }
+        #ui {
+            position: absolute;
+            top: 10px;
+            text-align: center;
+            color: white;
+            pointer-events: none;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui">
+        <h1 id="scoreLabel">Pops: 0</h1>
+        <p>Keep the screen clear!</p>
+    </div>
+    <canvas id="bubbleCanvas"></canvas>
+
+<script>
+    const canvas = document.getElementById('bubbleCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreLabel = document.getElementById('scoreLabel');
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let bubbles = [];
+    let score = 0;
+    const colors = ['#FFADAD', '#FFD6A5', '#FDFFB6', '#CAFFBF', '#9BF6FF', '#A0C4FF', '#BDB2FF', '#FFC6FF'];
+
+    class Bubble {
+        constructor(x, y, radius) {
+            this.x = x;
+            this.y = y;
+            this.radius = radius;
+            this.color = colors[Math.floor(Math.random() * colors.length)];
+            this.vx = (Math.random() - 0.5) * 2;
+            this.vy = (Math.random() - 0.5) * 2;
+        }
+
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = this.color;
+            ctx.globalAlpha = 0.6;
+            ctx.fill();
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = 2;
+            ctx.globalAlpha = 1;
+            ctx.stroke();
+            
+            // Add a little "shine"
+            ctx.beginPath();
+            ctx.arc(this.x - this.radius/3, this.y - this.radius/3, this.radius/6, 0, Math.PI * 2);
+            ctx.fillStyle = "white";
+            ctx.fill();
+        }
+
+        update() {
+            this.x += this.vx;
+            this.y += this.vy;
+
+            if (this.x + this.radius > canvas.width || this.x - this.radius < 0) this.vx *= -1;
+            if (this.y + this.radius > canvas.height || this.y - this.radius < 0) this.vy *= -1;
+            
+            this.draw();
+        }
+    }
+
+    function spawnBubble() {
+        if (bubbles.length < 25) {
+            const r = 30 + Math.random() * 40;
+            const x = Math.random() * (canvas.width - r * 2) + r;
+            const y = Math.random() * (canvas.height - r * 2) + r;
+            bubbles.push(new Bubble(x, y, r));
+        }
+        setTimeout(spawnBubble, 800);
+    }
+
+    function checkPop(e) {
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = (e.clientX || e.touches[0].clientX) - rect.left;
+        const mouseY = (e.clientY || e.touches[0].clientY) - rect.top;
+
+        for (let i = bubbles.length - 1; i >= 0; i--) {
+            const b = bubbles[i];
+            const dist = Math.hypot(mouseX - b.x, mouseY - b.y);
+            
+            if (dist < b.radius) {
+                bubbles.splice(i, 1);
+                score++;
+                scoreLabel.innerText = `Pops: ${score}`;
+                // Visual "pop" effect could go here
+                break; 
+            }
+        }
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        bubbles.forEach(b => b.update());
+        
+        // Difficulty warning
+        if (bubbles.length > 20) {
+            ctx.fillStyle = "rgba(255, 0, 0, 0.2)";
+            ctx.fillRect(0,0, canvas.width, canvas.height);
+        }
+
+        requestAnimationFrame(animate);
+    }
+
+    window.addEventListener('mousedown', checkPop);
+    window.addEventListener('touchstart', checkPop);
+    
+    spawnBubble();
+    animate();
+
+    // Handle resize
+    window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dino-Dance Party (20s Break!)</title>
+    <style>
+        body { margin: 0; background: #222; overflow: hidden; font-family: 'Arial Black', sans-serif; cursor: pointer; user-select: none; }
+        #floor {
+            width: 100vw; height: 100vh; background: #8e44ad;
+            background: linear-gradient(135deg, #8e44ad, #3498db);
+            display: flex; align-items: center; justify-content: center;
+        }
+        #ui { position: absolute; top: 10px; width: 100%; text-align: center; color: white; pointer-events: none; }
+        #timer { font-size: 40px; }
+        .tap-msg { position: absolute; bottom: 20px; font-size: 16px; opacity: 0.8; }
+        
+        #final {
+            display: none; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); background: white; color: black;
+            padding: 40px; border-radius: 30px; border: 10px solid #f1c40f; text-align: center;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5); z-index: 100;
+        }
+        button { padding: 10px 20px; border-radius: 10px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div id="floor">
+        <h1 id="tap-to-start" style="color:white; font-size: 60px;">TAP/CLICK!</h1>
+    </div>
+
+    <div id="ui">
+        <div id="timer">TIME: 20</div>
+        <div class="tap-msg">Stamp those animals! Keep tapping!</div>
+    </div>
+
+    <div id="final">
+        <h1 style="color:#f1c40f;">SUPER DANCE COMPLETE!</h1>
+        <p>A true master of the party.</p>
+        <button onclick="location.reload()">Start New Party</button>
+    </div>
+
+<script>
+    let timeLeft = 20;
+    let gameActive = false;
+    let timerInterval;
+
+    const animals = ["🦖", "🐻", "🦄", "🐒", "🐔", "🐧", "🐙", "💃", "🕺"];
+    const sounds = ["ROAR!", "GROWL!", "NEIGH!", "OOOH-AH-AH!", "BA-GOCK!", "SQUEAK!", "WIGGLE!", "CHA-CHA!", "BOOGIE!"];
+    const colors = ["#ffadad", "#ffd6a5", "#fdffb6", "#caffbf", "#9bf6ff", "#a0c4ff", "#bdb2ff", "#ffc6ff"];
+
+    const floor = document.getElementById('floor');
+    const timerEl = document.getElementById('timer');
+    const startMsg = document.getElementById('tap-to-start');
+
+    function createDancer(e) {
+        if (timeLeft <= 0) return;
+        
+        // Start the game on the first tap
+        if (!gameActive) {
+            gameActive = true;
+            startMsg.style.display = 'none';
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerEl.innerText = `TIME: ${timeLeft}`;
+                if (timeLeft <= 0) {
+                    gameActive = false;
+                    clearInterval(timerInterval);
+                    document.getElementById('final').style.display = 'block';
+                }
+            }, 1000);
+        }
+
+        const rect = floor.getBoundingClientRect();
+        const x = (e.clientX || e.touches[0].clientX) - rect.left;
+        const y = (e.clientY || e.touches[0].clientY) - rect.top;
+
+        const randIndex = Math.floor(Math.random() * animals.length);
+        const emoji = animals[randIndex];
+        const sound = sounds[randIndex];
+        
+        // 1. Create the Dancing Animal
+        const dancer = document.createElement('div');
+        dancer.innerText = emoji;
+        dancer.style.position = 'absolute';
+        dancer.style.fontSize = (60 + Math.random() * 40) + 'px';
+        dancer.style.left = (x - 40) + 'px';
+        dancer.style.top = (y - 40) + 'px';
+        dancer.style.transform = `rotate(${(Math.random()-0.5)*30}deg)`;
+        floor.appendChild(dancer);
+        
+        // 2. Create the Pop-up Sound (Visual)
+        const sfx = document.createElement('div');
+        sfx.innerText = sound;
+        sfx.style.position = 'absolute';
+        sfx.style.left = (x + (Math.random()-0.5)*100) + 'px';
+        sfx.style.top = (y - (Math.random()-0.5)*100) + 'px';
+        sfx.style.fontSize = (20 + Math.random() * 10) + 'px';
+        sfx.style.color = colors[Math.floor(Math.random() * colors.length)];
+        sfx.style.textShadow = '1px 1px 0 #000';
+        sfx.style.pointerEvents = 'none';
+        
+        // Simple animation to float up and fade
+        sfx.style.animation = 'floatUpFade 0.8s ease-out forwards';
+        document.body.appendChild(sfx);
+        setTimeout(() => sfx.remove(), 800);
+        
+        // Screen Flash for fun
+        floor.style.background = colors[Math.floor(Math.random() * colors.length)];
+        setTimeout(() => floor.style.background = '#8e44ad', 30);
+    }
+
+    // Add CSS for the float up animation dynamically
+    const style = document.createElement('style');
+    style.innerHTML = `
+        @keyframes floatUpFade {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-100px); opacity: 0; }
+        }
+    `;
+    document.head.appendChild(style);
+
+    // Inputs (works on touch and mouse)
+    window.addEventListener('mousedown', createDancer);
+    window.addEventListener('touchstart', (e) => { e.preventDefault(); createDancer(e); });
+</script>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pattern Path Memory</title>
+    <style>
+        body {
+            margin: 0; background: #283c86;
+            background: linear-gradient(to right, #45a247, #283c86);
+            font-family: 'Arial Black', sans-serif;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100vh; color: white; overflow: hidden;
+        }
+        #ui { text-align: center; margin-bottom: 20px; }
+        #timer { font-size: 32px; color: #ffeb3b; }
+        #grid {
+            display: grid; grid-template-columns: repeat(3, 100px); gap: 10px;
+        }
+        .tile {
+            width: 100px; height: 100px; background: rgba(255,255,255,0.2);
+            border: 4px solid rgba(255,255,255,0.3); border-radius: 15px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            font-size: 40px; transition: 0.2s;
+        }
+        .tile.active { background: #ffeb3b; transform: scale(1.05); box-shadow: 0 0 20px #ffeb3b; }
+        .tile.wrong { background: #ff5252; }
+        
+        #overlay {
+            display: none; position: absolute; background: white; color: #333;
+            padding: 30px; border-radius: 20px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        button { padding: 10px 20px; font-weight: bold; cursor: pointer; margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+    <div id="ui">
+        <div id="timer">Time: 20</div>
+        <div id="msg">Watch the Path...</div>
+    </div>
+
+    <div id="grid">
+        <div class="tile" data-id="0" onclick="userClick(0)"></div>
+        <div class="tile" data-id="1" onclick="userClick(1)"></div>
+        <div class="tile" data-id="2" onclick="userClick(2)"></div>
+        <div class="tile" data-id="3" onclick="userClick(3)"></div>
+        <div class="tile" data-id="4" onclick="userClick(4)"></div>
+        <div class="tile" data-id="5" onclick="userClick(5)"></div>
+        <div class="tile" data-id="6" onclick="userClick(6)"></div>
+        <div class="tile" data-id="7" onclick="userClick(7)"></div>
+        <div class="tile" data-id="8" onclick="userClick(8)"></div>
+    </div>
+
+    <div id="overlay">
+        <h1 id="res-title">TIME UP!</h1>
+        <p id="res-score"></p>
+        <button onclick="location.reload()">TRY AGAIN</button>
+    </div>
+
+<script>
+    let path = [];
+    let userPath = [];
+    let timeLeft = 20;
+    let gameActive = false;
+    let showingPath = false;
+    let level = 1;
+
+    const tiles = document.querySelectorAll('.tile');
+    const msg = document.getElementById('msg');
+
+    function startLevel() {
+        if(!gameActive && timeLeft < 20) return;
+        userPath = [];
+        path = [];
+        for(let i=0; i < (level + 1); i++) {
+            path.push(Math.floor(Math.random() * 9));
+        }
+        showPath();
+    }
+
+    async function showPath() {
+        showingPath = true;
+        msg.innerText = "WATCH!";
+        for(let id of path) {
+            await new Promise(r => setTimeout(r, 500));
+            tiles[id].classList.add('active');
+            await new Promise(r => setTimeout(r, 400));
+            tiles[id].classList.remove('active');
+        }
+        msg.innerText = "GO!";
+        showingPath = false;
+    }
+
+    function userClick(id) {
+        if(showingPath || !gameActive) return;
+
+        if(id === path[userPath.length]) {
+            userPath.push(id);
+            tiles[id].classList.add('active');
+            setTimeout(() => tiles[id].classList.remove('active'), 200);
+
+            if(userPath.length === path.length) {
+                level++;
+                setTimeout(startLevel, 800);
+            }
+        } else {
+            tiles[id].classList.add('wrong');
+            setTimeout(() => tiles[id].classList.remove('wrong'), 300);
+            userPath = []; // Reset current attempt
+        }
+    }
+
+    const timer = setInterval(() => {
+        if(!gameActive && timeLeft === 20) {
+            gameActive = true;
+            startLevel();
+        }
+        timeLeft--;
+        document.getElementById('timer').innerText = `Time: ${timeLeft}`;
+        if(timeLeft <= 0) {
+            clearInterval(timer);
+            gameActive = false;
+            showResults();
+        }
+    }, 1000);
+
+    function showResults() {
+        document.getElementById('overlay').style.display = 'block';
+        document.getElementById('res-score').innerText = `You reached Level ${level}!`;
+    }
+</script>
+</body>
+</html>

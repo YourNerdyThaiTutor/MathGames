@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Star-Catcher Study Break</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #1a1a2e;
+            font-family: 'Arial', sans-serif;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        canvas {
+            border: 4px solid #4d4dff;
+            border-radius: 15px;
+            cursor: none;
+            background: #0f3460;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        #ui {
+            position: absolute;
+            top: 20px;
+            pointer-events: none;
+            text-align: center;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui">
+        <h2 id="scoreDisplay">Stars: 0</h2>
+        <p id="msg">Catch the stars! Avoid the red blocks!</p>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+
+        // Resize canvas
+        canvas.width = 600;
+        canvas.height = 400;
+
+        let score = 0;
+        let gameActive = true;
+        let player = { x: 300, y: 200, size: 20 };
+        let items = [];
+
+        // Track Mouse
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            player.x = e.clientX - rect.left;
+            player.y = e.clientY - rect.top;
+        });
+
+        function spawnItem() {
+            if (!gameActive) return;
+            const isStar = Math.random() > 0.3; // 70% chance of a star
+            items.push({
+                x: Math.random() * canvas.width,
+                y: -20,
+                size: isStar ? 15 : 20,
+                speed: 2 + Math.random() * 3,
+                type: isStar ? 'star' : 'enemy',
+                color: isStar ? '#f9d71c' : '#ff4d4d'
+            });
+            setTimeout(spawnItem, 600);
+        }
+
+        function update() {
+            if (!gameActive) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Player (The Glow)
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2);
+            ctx.fillStyle = '#00d4ff';
+            ctx.fill();
+            ctx.closePath();
+
+            for (let i = items.length - 1; i >= 0; i--) {
+                let s = items[i];
+                s.y += s.speed;
+
+                // Draw Item
+                ctx.fillStyle = s.color;
+                if (s.type === 'star') {
+                    ctx.beginPath();
+                    ctx.arc(s.x, s.y, s.size/2, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    ctx.fillRect(s.x - 10, s.y - 10, 20, 20);
+                }
+
+                // Collision Detection
+                let dx = player.x - s.x;
+                let dy = player.y - s.y;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < player.size + s.size/2) {
+                    if (s.type === 'star') {
+                        score++;
+                        scoreDisplay.innerText = `Stars: ${score}`;
+                        items.splice(i, 1);
+                    } else {
+                        gameOver();
+                    }
+                }
+
+                // Remove off-screen items
+                if (s.y > canvas.height + 20) items.splice(i, 1);
+            }
+
+            requestAnimationFrame(update);
+        }
+
+        function gameOver() {
+            gameActive = false;
+            document.getElementById('msg').innerHTML = `<b style="color: #ff4d4d">Game Over!</b> Score: ${score}<br>Refresh to try again!`;
+        }
+
+        spawnItem();
+        update();
+    </script>
+</body>
+</html>

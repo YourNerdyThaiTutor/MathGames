@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ColorPop Study Break</title>
+    <style>
+        :root {
+            --bg-color: #f0f4f8;
+            --primary: #4a90e2;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --text: #333;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            user-select: none; /* Prevents text highlighting while clicking */
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+            border: 5px solid var(--primary);
+        }
+
+        #ui {
+            position: absolute;
+            top: 15px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .stat {
+            background: rgba(255,255,255,0.8);
+            padding: 5px 15px;
+            border-radius: 10px;
+            border: 2px solid #ddd;
+            font-weight: bold;
+        }
+
+        .circle {
+            position: absolute;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.1s ease-out; /* Slight pop effect */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .circle:active {
+            transform: scale(0.9);
+        }
+
+        /* Overlay for Start/Game Over/Win */
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            border-radius: 15px;
+        }
+
+        #overlay h1 { font-size: 3rem; margin-bottom: 10px; }
+        #overlay p { font-size: 1.2rem; margin-bottom: 30px; }
+
+        #startBtn {
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            background-color: var(--success);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        #startBtn:hover { background-color: #27ae60; }
+
+    </style>
+</head>
+<body>
+
+    <div id="gameContainer">
+        <div id="ui">
+            <div class="stat">Time: <span id="timeLeft">30</span>s</div>
+            <div class="stat">Target: Pop the <span style="color:var(--success)">GREEN</span>!</div>
+            <div class="stat">Remaining: <span id="circlesLeft">--</span></div>
+        </div>
+
+        <div id="overlay">
+            <h1>ColorPop!</h1>
+            <p>Pop all the GREEN circles. Avoid the RED!</p>
+            <button id="startBtn" onclick="startGame()">Start Break</button>
+        </div>
+        
+        </div>
+
+    <script>
+        const container = document.getElementById('gameContainer');
+        const overlay = document.getElementById('overlay');
+        const timeLeftDisplay = document.getElementById('timeLeft');
+        const circlesLeftDisplay = document.getElementById('circlesLeft');
+        const titleDisplay = overlay.querySelector('h1');
+        const descDisplay = overlay.querySelector('p');
+        const startBtn = document.getElementById('startBtn');
+
+        let gameState = {
+            active: false,
+            time: 30,
+            targetCircles: 0,
+            timerInterval: null,
+            circles: []
+        };
+
+        const NUM_GREEN = 10;
+        const NUM_RED = 10;
+        const CIRCLE_SIZE = 50;
+
+        function startGame() {
+            // Reset state
+            gameState.active = true;
+            gameState.time = 30;
+            gameState.circles = [];
+            overlay.style.display = 'none';
+            container.querySelectorAll('.circle').forEach(c => c.remove());
+            timeLeftDisplay.innerText = gameState.time;
+
+            // Spawn Circles
+            for (let i = 0; i < NUM_GREEN; i++) createCircle('green');
+            for (let i = 0; i < NUM_RED; i++) createCircle('red');
+
+            updateTargetCount();
+
+            // Start Timer
+            gameState.timerInterval = setInterval(() => {
+                if (!gameState.active) return;
+                gameState.time--;
+                timeLeftDisplay.innerText = gameState.time;
+
+                if (gameState.time <= 0) {
+                    endGame(false);
+                }
+            }, 1000);
+
+            // Start Movement Loop
+            requestAnimationFrame(moveCircles);
+        }
+
+        function createCircle(type) {
+            const circle = document.createElement('div');
+            circle.classList.add('circle');
+            
+            // Set visuals based on type
+            if (type === 'green') {
+                circle.style.backgroundColor = 'var(--success)';
+                circle.dataset.type = 'green';
+            } else {
+                circle.style.backgroundColor = 'var(--danger)';
+                circle.dataset.type = 'red';
+            }
+
+            // Set size and initial random position/velocity
+            circle.style.width = `${CIRCLE_SIZE}px`;
+            circle.style.height = `${CIRCLE_SIZE}px`;
+            
+            const cData = {
+                el: circle,
+                type: type,
+                x: Math.random() * (800 - CIRCLE_SIZE),
+                y: Math.random() * (600 - CIRCLE_SIZE),
+                vx: (Math.random() - 0.5) * 6, // Velocity X (-3 to 3)
+                vy: (Math.random() - 0.5) * 6 // Velocity Y
+            };
+
+            // Update initial visual position
+            circle.style.left = `${cData.x}px`;
+            circle.style.top = `${cData.y}px`;
+
+            // Click Handler
+            circle.addEventListener('mousedown', () => clickCircle(cData));
+
+            gameState.circles.push(cData);
+            container.appendChild(circle);
+        }
+
+        function clickCircle(cData) {
+            if (!gameState.active) return;
+
+            if (cData.type === 'green') {
+                // Good pop!
+                cData.el.remove();
+                gameState.circles = gameState.circles.filter(c => c !== cData);
+                updateTargetCount();
+                
+                // Check Win Condition
+                if (gameState.circles.filter(c => c.type === 'green').length === 0) {
+                    endGame(true);
+                }
+            } else {
+                // Penalty!
+                gameState.time = Math.max(0, gameState.time - 3);
+                timeLeftDisplay.innerText = gameState.time;
+                timeLeftDisplay.style.color = 'var(--danger)';
+                setTimeout(()=> timeLeftDisplay.style.color = 'var(--text)', 500);
+            }
+        }
+
+        function moveCircles() {
+            if (!gameState.active) return;
+
+            const width = 800 - CIRCLE_SIZE;
+            const height = 600 - CIRCLE_SIZE;
+
+            gameState.circles.forEach(c => {
+                // Update position
+                c.x += c.vx;
+                c.y += c.vy;
+
+                // Bounce off walls
+                if (c.x <= 0 || c.x >= width) c.vx *= -1;
+                if (c.y <= 0 || c.y >= height) c.vy *= -1;
+
+                // Update visual position
+                c.el.style.left = `${c.x}px`;
+                c.el.style.top = `${c.y}px`;
+            });
+
+            requestAnimationFrame(moveCircles);
+        }
+
+        function updateTargetCount() {
+            const count = gameState.circles.filter(c => c.type === 'green').length;
+            circlesLeftDisplay.innerText = count;
+        }
+
+        function endGame(win) {
+            gameState.active = false;
+            clearInterval(gameState.timerInterval);
+            overlay.style.display = 'flex';
+            
+            if (win) {
+                titleDisplay.innerText = "You Win! 🎉";
+                titleDisplay.style.color = 'var(--success)';
+                descDisplay.innerText = `You popped all the bubbles with ${gameState.time} seconds to spare!`;
+                startBtn.innerText = "Play Again";
+            } else {
+                titleDisplay.innerText = "Time's Up! ⏰";
+                titleDisplay.style.color = 'var(--danger)';
+                const remaining = gameState.circles.filter(c => c.type === 'green').length;
+                descDisplay.innerText = `You were so close! Only ${remaining} green bubbles left.`;
+                startBtn.innerText = "Try Again";
+            }
+        }
+
+    </script>
+</body>
+</html>

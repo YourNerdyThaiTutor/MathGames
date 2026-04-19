@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>20-Second Planet Painter</title>
+    <style>
+        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
+        #timer {
+            position: absolute; top: 20px; width: 100%; text-align: center;
+            color: white; font-size: 30px; font-weight: bold; pointer-events: none;
+        }
+        #finish-screen {
+            display: none; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); background: white;
+            padding: 40px; border-radius: 30px; text-align: center;
+            box-shadow: 0 0 50px #00d4ff;
+        }
+        button { 
+            padding: 15px 30px; font-size: 18px; cursor: pointer; 
+            border-radius: 10px; border: none; background: #00d4ff; color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="timer">Wave your mouse to create a galaxy! Time: 20</div>
+    
+    <div id="finish-screen">
+        <h1>🌌 Galaxy Complete!</h1>
+        <p>Your brain is recharged and ready.</p>
+        <button onclick="location.reload()">Start New Break</button>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let timeLeft = 20;
+    let active = true;
+
+    // Timer
+    const countdown = setInterval(() => {
+        timeLeft--;
+        document.getElementById('timer').innerText = `Keep painting! Time: ${timeLeft}`;
+        if (timeLeft <= 0) {
+            clearInterval(countdown);
+            active = false;
+            document.getElementById('finish-screen').style.display = 'block';
+        }
+    }, 1000);
+
+    function drawGalaxy(e) {
+        if (!active) return;
+
+        const x = e.clientX || (e.touches ? e.touches[0].clientX : 0);
+        const y = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+
+        // Every time you move, it draws a "Planet" (a circle)
+        const size = Math.random() * 40 + 10;
+        const hue = Math.random() * 360;
+
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${hue}, 80%, 60%, 0.7)`;
+        ctx.fill();
+
+        // Add some "Stars" (little white dots)
+        ctx.beginPath();
+        ctx.arc(x + (Math.random()-0.5)*100, y + (Math.random()-0.5)*100, 2, 0, Math.PI * 2);
+        ctx.fillStyle = "white";
+        ctx.fill();
+    }
+
+    window.addEventListener('mousemove', drawGalaxy);
+    window.addEventListener('touchmove', drawGalaxy);
+
+    // Initial background
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+</script>
+</body>
+</html>

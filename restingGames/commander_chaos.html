@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commander Chaos v2</title>
+    <style>
+        body {
+            margin: 0; background: #6c5b7b; color: white;
+            font-family: 'Arial Black', sans-serif;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100vh; overflow: hidden; text-align: center; user-select: none;
+        }
+        #instruction-box {
+            background: #f8b195; padding: 20px 40px; border: 8px solid #355c7d;
+            border-radius: 20px; box-shadow: 0 10px 0 #355c7d;
+            min-width: 300px; margin-bottom: 40px;
+        }
+        #command { font-size: 35px; color: #355c7d; margin: 0; text-transform: uppercase; }
+        
+        #interaction-zone {
+            width: 200px; height: 200px; background: #f67280;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 80px; cursor: pointer; border: 10px solid white;
+            transition: transform 0.1s, background 0.2s;
+        }
+        #interaction-zone.active-tap { transform: scale(0.9); }
+
+        #score-board { font-size: 24px; margin-top: 20px; color: #f8b195; }
+        
+        #game-over {
+            display: none; position: absolute; background: white; color: black;
+            padding: 40px; border-radius: 20px; border: 10px solid #f67280; z-index: 10;
+        }
+        button { padding: 15px 25px; font-weight: bold; cursor: pointer; font-size: 18px; }
+    </style>
+</head>
+<body>
+
+    <div id="instruction-box">
+        <p id="command">GET READY!</p>
+    </div>
+
+    <div id="interaction-zone">🎯</div>
+
+    <div id="score-board">Orders Followed: 0</div>
+
+    <div id="game-over">
+        <h1>Ouch! Wrong Move!</h1>
+        <p id="final-score"></p>
+        <button onclick="location.reload()">TRY AGAIN</button>
+    </div>
+
+<script>
+    const commandText = document.getElementById('command');
+    const zone = document.getElementById('interaction-zone');
+    const scoreBoard = document.getElementById('score-board');
+    const gameOverScreen = document.getElementById('game-over');
+
+    let score = 0;
+    let currentCommand = "";
+    let gameActive = true;
+    let timer;
+    let spamCount = 0;
+
+    const commands = [
+        { text: "CLICK ONCE!", type: "click" },
+        { text: "FREEZE!!", type: "still" },
+        { text: "SPAM CLICK (3X)!", type: "spam" }
+    ];
+
+    function nextCommand() {
+        if (!gameActive) return;
+        
+        spamCount = 0;
+        const cmd = commands[Math.floor(Math.random() * commands.length)];
+        currentCommand = cmd.type;
+        commandText.innerText = cmd.text;
+        
+        zone.style.background = "#f67280";
+        zone.innerText = ["⭐", "🍎", "🦄", "🍕", "🎈", "👻"][Math.floor(Math.random() * 6)];
+
+        clearTimeout(timer);
+        
+        // Time to react (gets faster as you go)
+        let timeLimit = Math.max(1000, 2500 - (score * 150));
+        
+        timer = setTimeout(() => {
+            // If the time ran out and the command was to stay still, you win the round!
+            if (currentCommand === "still" && gameActive) {
+                success();
+            } else if (gameActive) {
+                fail();
+            }
+        }, timeLimit);
+    }
+
+    function success() {
+        if (!gameActive) return;
+        score++;
+        scoreBoard.innerText = `Orders Followed: ${score}`;
+        zone.style.background = "#45b649";
+        
+        currentCommand = "transitioning"; // Prevent double triggers
+        clearTimeout(timer);
+        setTimeout(nextCommand, 400);
+    }
+
+    function fail() {
+        gameActive = false;
+        clearTimeout(timer);
+        gameOverScreen.style.display = "block";
+        document.getElementById('final-score').innerText = `You followed ${score} orders!`;
+    }
+
+    // Interaction Logic
+    zone.addEventListener('mousedown', (e) => {
+        if (!gameActive) return;
+        
+        // Visual feedback for click
+        zone.classList.add('active-tap');
+        setTimeout(() => zone.classList.remove('active-tap'), 100);
+
+        if (currentCommand === "click") {
+            success();
+        } else if (currentCommand === "spam") {
+            spamCount++;
+            if (spamCount >= 3) success();
+        } else {
+            fail(); // Clicked during Still or Hover
+        }
+    });
+
+    zone.addEventListener('mouseenter', () => {
+        if (!gameActive) return;
+        if (currentCommand === "hover") {
+            success();
+        } else if (currentCommand === "still") {
+            fail(); // Moved when supposed to be still
+        }
+    });
+
+    // Start the game
+    setTimeout(nextCommand, 1500);
+
+</script>
+</body>
+</html>

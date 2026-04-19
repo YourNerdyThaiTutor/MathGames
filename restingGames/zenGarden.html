@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>20-Second Zen Break</title>
+    <style>
+        body {
+            margin: 0; background: #050505; color: #fff;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; height: 100vh;
+        }
+        #canvas { cursor: crosshair; touch-action: none; }
+        #timer-bar {
+            position: absolute; top: 0; left: 0;
+            height: 5px; background: #00ffcc; width: 100%;
+            transition: width 1s linear;
+        }
+        #ui { position: absolute; bottom: 30px; text-align: center; pointer-events: none; }
+        .btn {
+            pointer-events: all; background: #fff; color: #000;
+            padding: 10px 20px; border-radius: 20px; text-decoration: none;
+            font-weight: bold; display: none; margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="timer-bar"></div>
+    
+    <div id="ui">
+        <p id="hint">Doodle something beautiful...</p>
+        <button id="reset-btn" class="btn" onclick="location.reload()">One More Break?</button>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const timerBar = document.getElementById('timer-bar');
+    
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let drawing = false;
+    let hue = 0;
+    let timeLeft = 20;
+
+    // Timer logic
+    const countdown = setInterval(() => {
+        timeLeft--;
+        timerBar.style.width = (timeLeft / 20 * 100) + "%";
+        if (timeLeft <= 0) {
+            clearInterval(countdown);
+            document.getElementById('hint').innerText = "Brain refreshed! Ready to study?";
+            document.getElementById('reset-btn').style.display = "inline-block";
+            drawing = false;
+        }
+    }, 1000);
+
+    function startPosition(e) { if(timeLeft > 0) drawing = true; draw(e); }
+    function finishedPosition() { drawing = false; ctx.beginPath(); }
+
+    function draw(e) {
+        if (!drawing) return;
+        
+        ctx.lineWidth = 8;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = `hsl(${hue}, 100%, 60%)`;
+        
+        // Handle touch or mouse
+        const x = e.clientX || e.touches[0].clientX;
+        const y = e.clientY || e.touches[0].clientY;
+
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+
+        hue += 2; // Cycle colors
+    }
+
+    // Fade effect for "Zen" feel
+    function fade() {
+        ctx.fillStyle = 'rgba(5, 5, 5, 0.05)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        requestAnimationFrame(fade);
+    }
+
+    canvas.addEventListener('mousedown', startPosition);
+    canvas.addEventListener('mouseup', finishedPosition);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('touchstart', startPosition);
+    canvas.addEventListener('touchend', finishedPosition);
+    canvas.addEventListener('touchmove', draw);
+
+    fade();
+</script>
+</body>
+</html>
