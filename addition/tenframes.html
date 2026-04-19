@@ -138,9 +138,11 @@
     </div>
 
     <div id="msg"></div>
-
+    <script src="../assets/JS/GameOverlay.js"></script>
     <script>
         let total, activeDot = null, offsetX, offsetY;
+        var score = 0;
+        var missed= 0;
 
         function init() {
             const v1 = Math.floor(Math.random() * 4) + 6; // 6-9
@@ -247,8 +249,13 @@
             const user = parseInt(document.getElementById('ans').value);
             if (user === total) {
                 document.getElementById('msg').innerText = "Awesome! 10 + " + (total-10) + " = " + total;
+                score ++;
+                if(score===20){
+                    launchGame('../restingGames/simon_party.html');
+                }
             } else {
                 document.getElementById('msg').innerText = "Try counting again!";
+                missed ++;
             }
         }
 

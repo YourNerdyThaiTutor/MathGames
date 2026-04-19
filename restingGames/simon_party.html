@@ -107,6 +107,9 @@
         document.getElementById('overlay').style.display = 'block';
         document.getElementById('final-score').innerText = `You remembered ${score} patterns!`;
         statusText.innerText = "Oops!";
+        setTimeout(() => {
+            window.parent.postMessage('closeIframe', '*');
+        }, 2000);
     }
 
     // Start game after 1 second
