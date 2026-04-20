@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Step-by-Step Multiplier</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .game-card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; max-width: 500px; }
+        
+        .instruction-box {
+            background: #e7f3ff;
+            border-left: 5px solid #2196F3;
+            padding: 15px;
+            margin-bottom: 20px;
+            min-height: 60px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        table { margin: 20px auto; border-collapse: collapse; }
+        td { width: 50px; height: 50px; padding: 2px; }
+        
+        input {
+            width: 45px; height: 45px; font-size: 24px; text-align: center;
+            border: 2px solid #ddd; border-radius: 8px; outline: none;
+        }
+        input:focus { border-color: #2196F3; background: #fffde7; }
+
+        .carry-row input { height: 30px; width: 30px; font-size: 16px; color: #d32f2f; border-color: #ffcdd2; }
+        .line-row { border-bottom: 3px solid #333; }
+        .symbol { font-size: 28px; font-weight: bold; }
+        
+        .step-btn {
+            background: #4CAF50; color: white; border: none;
+            padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px;
+        }
+        .step-btn:hover { background: #45a049; }
+    </style>
+</head>
+<body>
+
+<div class="game-card">
+    <h2>Multiplication Tutor</h2>
+    
+    <div id="guide" class="instruction-box">
+        Welcome! Let's multiply. First, type your top and bottom numbers into the boxes.
+    </div>
+
+    <table>
+        <tr class="carry-row">
+            <td></td>
+            <td><input type="text" id="c1" maxlength="1"></td>
+            <td><input type="text" id="c2" maxlength="1"></td>
+            <td></td>
+        </tr>
+        <tr>
+            <td></td>
+            <td><input type="text" id="t1" maxlength="1" placeholder="H"></td>
+            <td><input type="text" id="t2" maxlength="1" placeholder="T"></td>
+            <td><input type="text" id="t3" maxlength="1" placeholder="O"></td>
+        </tr>
+        <tr class="line-row">
+            <td class="symbol">×</td>
+            <td></td>
+            <td></td>
+            <td><input type="text" id="b1" maxlength="1"></td>
+        </tr>
+        <tr>
+            <td></td>
+            <td><input type="text" id="r1" maxlength="1"></td>
+            <td><input type="text" id="r2" maxlength="1"></td>
+            <td><input type="text" id="r3" maxlength="1"></td>
+        </tr>
+    </table>
+
+    <button class="step-btn" onclick="nextStep()">Next Step →</button>
+    <button class="step-btn" style="background:#888" onclick="location.reload()">Reset</button>
+</div>
+
+<script>
+    let currentStep = 0;
+    const guide = document.getElementById('guide');
+
+    const steps = [
+        "1. Start in the ONES column. Multiply the bottom number by the top-right number.",
+        "2. If the answer is 10 or more, write the ones digit below and 'carry' the tens digit to the small red box!",
+        "3. Now multiply the bottom number by the top-middle (Tens) number.",
+        "4. Don't forget! If you carried a number, add it to your multiplication result now.",
+        "5. Write your final digits in the answer boxes. You've done it!"
+    ];
+
+    function nextStep() {
+        if (currentStep < steps.length) {
+            guide.innerText = steps[currentStep];
+            currentStep++;
+        } else {
+            guide.innerText = "Great job! Check your work with a calculator to be sure!";
+        }
+    }
+</script>
+
+</body>
+</html>

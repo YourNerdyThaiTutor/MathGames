@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Column Multiplication Helper</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f8ff;
+            padding: 20px;
+        }
+
+        .math-container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        table {
+            border-collapse: collapse;
+            margin: 20px auto;
+        }
+
+        td {
+            width: 40px;
+            height: 50px;
+            text-align: center;
+        }
+
+        input {
+            width: 35px;
+            height: 45px;
+            font-size: 24px;
+            text-align: center;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        /* The "Carry" row styling */
+        .carry-row input {
+            height: 30px;
+            width: 25px;
+            font-size: 16px;
+            color: #d9534f;
+            border-color: #ffcccb;
+        }
+
+        /* The multiplication line */
+        .operator-row {
+            border-bottom: 3px solid #333;
+        }
+        .result-row{
+            border-top: 3px solid #333;
+        }
+
+        .operator {
+            font-size: 24px;
+            font-weight: bold;
+            padding-right: 10px;
+        }
+
+        .instructions {
+            color: #555;
+            max-width: 400px;
+            text-align: center;
+        }
+        /* 1. Hide the helper rows by default */
+#helper-one, #helper-ten, #helper-hun {
+    display: none;
+}
+
+/* 2. Show #helper-one if the 'one' input is not empty */
+/* Logic: "If the table HAS an input with ID 'one' that is NOT showing its placeholder..." */
+table:has(#one:not(:placeholder-shown)) #helper-one {
+    display: table-row;
+}
+
+/* 3. Show #helper-ten if the 'ten' input is not empty */
+table:has(#ten:not(:placeholder-shown)) #helper-ten {
+    display: table-row;
+}
+
+/* 4. Show #helper-hun if the 'hun' input is not empty */
+table:has(#hun:not(:placeholder-shown)) #helper-hun {
+    display: table-row;
+}
+    </style>
+</head>
+<body>
+
+    <h1>Multiplication Helper</h1>
+    <p class="instructions">Type one digit in each box. Use the small red boxes at the top for carrying!</p>
+
+    <div class="math-container">
+        <table>
+            <tr class="carry-row">
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td> <td><input type="text" maxlength="1"></td>
+                <td><input type="text" maxlength="1"></td>
+                <td><input type="text" maxlength="1"></td>
+            </tr>
+            
+            <tr>
+                
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td><input type="text" maxlength="1"></td>
+                <td><input type="text" maxlength="1"></td>
+                <td><input type="text" maxlength="1"></td>
+            </tr>
+
+            <tr class="operator-row">
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="operator">×</td>
+                <td><input id="hun" type="text" placeholder=" " maxlength="1"></td>
+                <td><input id="ten" type="text" placeholder=" " maxlength="1"></td>
+                <td><input id="one" type="text" placeholder=" " maxlength="1"></td>
+            </tr>
+
+            <tr id="helper-one">
+                <td></td>
+                <td></td>
+                <td></td>
+                <td><input type="text" maxlength="1"></td>
+                <td><input type="text" maxlength="1"></td>
+                <td><input type="text" maxlength="1"></td>
+                <td><input type="text" maxlength="1"></td>
+            </tr>
+            <tr id="helper-ten">
+                <td class="operator">+</td>
+                <td></td>
+                <td><input type="text" maxlength="1"></td>
+                <td><input type="text" maxlength="1"></td>
+                <td><input type="text" maxlength="1"></td>
+                <td><input type="text" maxlength="1"></td>
+                <td>0</td>
+            </tr>
+            <tr id="helper-hun">
+                <td class="operator">+</td>
+                <td><input type="text" maxlength="1"></td>
+                <td><input type="text" maxlength="1"></td>
+                <td><input type="text" maxlength="1"></td>
+                <td><input type="text" maxlength="1"></td>
+                <td>0</td>
+                <td>0</td>
+            </tr>
+            <tr class="result-row">
+                <td><input type="text" maxlength="1"></td>
+                <td><input type="text" maxlength="1"></td>
+                <td><input type="text" maxlength="1"></td>
+                <td><input type="text" maxlength="1"></td>
+                <td><input type="text" maxlength="1"></td>
+                <td><input type="text" maxlength="1"></td>
+                <td><input type="text" maxlength="1"></td>
+            </tr>
+            
+        </table>
+    </div>
+
+    <button onclick="window.location.reload()" style="margin-top: 20px; padding: 10px 20px; cursor: pointer;">Clear All</button>
+
+</body>
+</html>
