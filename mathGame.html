@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ten Frame Master</title>
+    <link rel="stylesheet" href="assets/css/certification.css">
+    <style>
+        :root { --blue: #268bd2; --red: #dc322f; --bg: #fdf6e3; --frame: #073642; }
+        body { font-family: sans-serif; background: var(--bg); text-align: center; margin: 0; touch-action: none; user-select: none; }
+        
+        /* Game UI */
+        .header { padding: 20px; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .score-box { font-size: 1.2rem; color: #586e75; font-weight: bold; }
+        .equation { font-size: 3rem; font-weight: 900; margin: 20px 0; }
+        
+        .workspace { display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 20px; }
+        .ten-frame { display: grid; grid-template-columns: repeat(5, 60px); grid-template-rows: repeat(2, 60px); gap: 10px; background: var(--frame); padding: 12px; border-radius: 12px; }
+        .slot { background: #eee8d5; border-radius: 50%; width: 60px; height: 60px; display: flex; justify-content: center; align-items: center; position: relative; }
+        .dot { width: 50px; height: 50px; border-radius: 50%; box-shadow: 0 4px 0 rgba(0,0,0,0.2); z-index: 10; position: absolute; }
+        .blue { background: var(--blue); }
+        .red { background: var(--red); }
+
+        .controls { margin-top: 20px; display: flex; gap: 10px; justify-content: center; }
+        input { width: 80px; font-size: 1.5rem; padding: 10px; border-radius: 10px; border: 2px solid #93a1a1; text-align: center; }
+        button { padding: 12px 25px; font-size: 1.1rem; font-weight: bold; background: #859900; color: white; border: none; border-radius: 10px; cursor: pointer; }
+
+
+        @media (min-width: 768px) {
+            .workspace { flex-direction: row; }
+            .ten-frame { grid-template-columns: repeat(5, 80px); grid-template-rows: repeat(2, 80px); }
+            .slot { width: 80px; height: 80px; }
+            .dot { width: 70px; height: 70px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="score-box">Stars Earned: <span id="stars">0</span> / 100</div>
+        <div id="instruction">Tap a number to start!</div>
+    </div>
+
+    <div class="equation" id="eq">7 + 5 = ?</div>
+
+    <div class="workspace">
+        <div class="ten-frame" id="f1"></div>
+        <div class="ten-frame" id="f2"></div>
+    </div>
+
+    <div class="controls" id="inputArea" style="visibility:hidden">
+        <input type="number" id="ans" inputmode="numeric" placeholder="?">
+        <button onclick="check()">Check</button>
+    </div>
+
+    <div id="certOverlay">
+    <div id="cert">
+        <h1 style="font-size: 50px; color: #1a3a5f; margin: 0;">MATH EXCELLENCE</h1>
+        <p style="font-size: 24px;">This award is proudly presented to</p>
+        <h2 id="certName" style="font-size: 45px; border-bottom: 2px solid #1a3a5f; display: inline-block; padding: 0 50px; margin: 20px 0;">Student Name</h2>
+        <p style="font-size: 20px;">For successfully solving 100 Ten-Frame problems!</p>
+        <div style="margin-top: 30px; font-size: 80px;">⭐ 100 ⭐</div>
+        
+        <div class="no-print" style="margin-top: 30px;">
+            <button onclick="window.print()" style="background: #859900;">Print Certificate</button>
+            <button onclick="document.getElementById('certOverlay').style.display='none'" style="background: #93a1a1;">Back to Game</button>
+        </div>
+    </div>
+</div>
+
+    <script>
+        let n1, n2, total, score = localStorage.getItem('mathWins') || 0;
+        let mode = 'blue', placed1 = 0, placed2 = 0;
+        let activeDot = null, ox, oy;
+
+        document.getElementById('stars').innerText = score;
+
+        function init() {
+            n1 = Math.floor(Math.random() * 4) + 6; 
+            n2 = Math.floor(Math.random() * 4) + 4;
+            total = n1 + n2;
+            placed1 = 0; placed2 = 0; mode = 'blue';
+            document.getElementById('eq').innerText = `${n1} + ${n2} = ?`;
+            document.getElementById('instruction').innerText = `Place ${n1} BLUE dots.`;
+            document.getElementById('inputArea').style.visibility = 'hidden';
+            render();
+        }
+
+        function render() {
+            [document.getElementById('f1'), document.getElementById('f2')].forEach(f => {
+                f.innerHTML = '';
+                for(let i=0; i<10; i++){
+                    let s = document.createElement('div');
+                    s.className = 'slot';
+                    s.onclick = () => tapSlot(s);
+                    f.appendChild(s);
+                }
+            });
+        }
+
+        function tapSlot(slot) {
+            if(slot.hasChildNodes()) return;
+            if(mode === 'blue' && placed1 < n1) {
+                makeDot(slot, 'blue'); placed1++;
+                if(placed1 === n1) { mode = 'red'; document.getElementById('instruction').innerText = `Now place ${n2} RED dots.`; }
+            } else if (mode === 'red' && placed2 < n2) {
+                makeDot(slot, 'red'); placed2++;
+                if(placed2 === n2) { mode = 'drag'; document.getElementById('instruction').innerText = "Move dots to fill a ten!"; document.getElementById('inputArea').style.visibility = 'visible'; }
+            }
+        }
+
+        function makeDot(slot, color) {
+            let d = document.createElement('div');
+            d.className = `dot ${color}`;
+            // Drag Logic
+            d.ontouchstart = d.onmousedown = (e) => {
+                if(mode !== 'drag') return;
+                activeDot = d;
+                let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                let r = d.getBoundingClientRect();
+                ox = clientX - r.left; oy = clientY - r.top;
+                d.style.position = 'fixed'; d.style.zIndex = 100;
+            };
+            slot.appendChild(d);
+        }
+
+        window.onmousemove = window.ontouchmove = (e) => {
+            if(!activeDot) return;
+            let x = e.touches ? e.touches[0].clientX : e.clientX;
+            let y = e.touches ? e.touches[0].clientY : e.clientY;
+            activeDot.style.left = (x - ox) + 'px';
+            activeDot.style.top = (y - oy) + 'px';
+        };
+
+        window.onmouseup = window.ontouchend = (e) => {
+            if(!activeDot) return;
+            let d = activeDot; activeDot = null;
+            d.style.display = 'none';
+            let x = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+            let y = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+            let el = document.elementFromPoint(x, y);
+            d.style.display = 'block';
+            let s = el ? el.closest('.slot') : null;
+            if(s && !s.hasChildNodes()) {
+                s.appendChild(d); d.style.position = 'relative'; d.style.left = '0'; d.style.top = '0';
+            } else {
+                d.style.position = 'relative'; d.style.left = '0'; d.style.top = '0';
+            }
+        };
+
+        function check() {
+            if(parseInt(document.getElementById('ans').value) === total) {
+                score++;
+                localStorage.setItem('mathWins', score);
+                document.getElementById('stars').innerText = score;
+                if(score >= 1) {
+                    document.getElementById('certName').innerText = prompt("100 WINS! Enter name for certificate:");
+                    window.print();
+                } else {
+                    alert("Correct! Keep going to reach 100!");
+                    init();
+                }
+            } else { alert("Try counting again!"); }
+        }
+
+        init();
+    </script>
+</body>
+</html>

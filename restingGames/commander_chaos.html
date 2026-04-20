@@ -111,6 +111,9 @@
         clearTimeout(timer);
         gameOverScreen.style.display = "block";
         document.getElementById('final-score').innerText = `You followed ${score} orders!`;
+        setTimeout(() => {
+            window.parent.postMessage('closeIframe', '*');
+        }, 2000);
     }
 
     // Interaction Logic

@@ -128,6 +128,9 @@
     function showResults() {
         document.getElementById('overlay').style.display = 'block';
         document.getElementById('res-score').innerText = `You reached Level ${level}!`;
+        setTimeout(() => {
+            window.parent.postMessage('closeIframe', '*');
+        }, 2000);
     }
 </script>
 </body>

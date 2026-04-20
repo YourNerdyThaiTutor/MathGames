@@ -171,6 +171,9 @@
             targetBox.style.backgroundColor = '#444'; // Dark box
             
             messageDisplay.innerHTML = `<b style="color: #FF6B6B">Ouch! No match.</b><br>Final Score: ${score}<br>Tap to reset!`;
+            setTimeout(() => {
+                window.parent.postMessage('closeIframe', '*');
+            }, 2000);
         }
 
         function resetGame() {

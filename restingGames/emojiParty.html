@@ -91,6 +91,9 @@
             clearInterval(countdown);
             painting = false;
             showFrame();
+            setTimeout(() => {
+                window.parent.postMessage('closeIframe', '*');
+            }, 2000);
         }
     }, 1000);
 

@@ -55,7 +55,12 @@
     const startMsg = document.getElementById('tap-to-start');
 
     function createDancer(e) {
-        if (timeLeft <= 0) return;
+        if (timeLeft <= 0) {
+            setTimeout(() => {
+                window.parent.postMessage('closeIframe', '*');
+            }, 2000);
+             return;
+        }
         
         // Start the game on the first tap
         if (!gameActive) {

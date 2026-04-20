@@ -98,6 +98,9 @@
         else rank = "Cyborg Status 🤖";
         
         document.getElementById('final-rank').innerHTML = `Time Up!<br>Rank: ${rank}<br>Total Hits: ${hits}`;
+        setTimeout(() => {
+            window.parent.postMessage('closeIframe', '*');
+        }, 2000);
     }
 
     target.addEventListener('mousedown', (e) => {

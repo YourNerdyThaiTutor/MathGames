@@ -38,7 +38,7 @@
 </head>
 <body>
 
-    <div id="timer">Match 'em! 20</div>
+    <div id="timer">Match 'em! 30</div>
     <div id="grid"></div>
 
     <div id="finish-screen">
@@ -55,7 +55,7 @@
     let emojis = ['🍎', '🍎', '🚀', '🚀', '💎', '💎', '🐶', '🐶', '🍕', '🍕', '👻', '👻', '🌈', '🌈', '👾', '👾'];
     let flippedCards = [];
     let matchedCount = 0;
-    let timeLeft = 20;
+    let timeLeft = 30;
     let gameActive = true;
 
     // Shuffle Emojis
@@ -111,6 +111,9 @@
         finishScreen.style.display = 'block';
         document.getElementById('result-msg').innerText = win ? "PERFECT! 🏆" : "TIME UP!";
         document.getElementById('stats').innerText = win ? "You cleared the board!" : `You found ${matchedCount/2} pairs!`;
+        setTimeout(() => {
+            window.parent.postMessage('closeIframe', '*');
+        }, 2000);
     }
 </script>
 </body>

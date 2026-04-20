@@ -89,6 +89,9 @@
             clearInterval(countdown);
             gameActive = false;
             showQuiz();
+            setTimeout(() => {
+                window.parent.postMessage('closeIframe', '*');
+            }, 2000);
         }
     }, 1000);
 
@@ -112,6 +115,7 @@
                     alert(`OOPS! There were actually ${chickenCount} chickens.`);
                 }
                 location.reload();
+                
             };
             optionsDiv.appendChild(btn);
         });

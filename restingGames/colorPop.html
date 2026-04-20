@@ -276,6 +276,9 @@
                 descDisplay.innerText = `You were so close! Only ${remaining} green bubbles left.`;
                 startBtn.innerText = "Try Again";
             }
+            setTimeout(() => {
+                window.parent.postMessage('closeIframe', '*');
+            }, 2000);
         }
 
     </script>

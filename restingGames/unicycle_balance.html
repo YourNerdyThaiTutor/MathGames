@@ -109,6 +109,9 @@
         results.style.display = "block";
         document.getElementById('status').innerText = win ? "STAYED ON! ⭐" : "OOPS! FELL OFF!";
         document.getElementById('final-score').innerText = win ? "Great balance! You are a superstar." : "The wind was too strong!";
+        setTimeout(() => {
+            window.parent.postMessage('closeIframe', '*');
+        }, 2000);
     }
 </script>
 </body>

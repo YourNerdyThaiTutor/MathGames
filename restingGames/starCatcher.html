@@ -128,6 +128,9 @@
         function gameOver() {
             gameActive = false;
             document.getElementById('msg').innerHTML = `<b style="color: #ff4d4d">Game Over!</b> Score: ${score}<br>Refresh to try again!`;
+            setTimeout(() => {
+                window.parent.postMessage('closeIframe', '*');
+            }, 2000);
         }
 
         spawnItem();

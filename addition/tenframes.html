@@ -1,265 +1,330 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>iPad Friendly Ten Frames</title>
-    <style>
-        :root {
-            --bg: #fdf6e3;
-            --blue: #268bd2;
-            --red: #dc322f;
-            --frame: #073642;
-            --slot: #eee8d5;
-        }
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <title>iPad Friendly Ten Frames</title>
+        <link rel="stylesheet" href="../assets/css/certification.css" />
+        <style>
+            :root {
+                --bg: #fdf6e3;
+                --blue: #268bd2;
+                --red: #dc322f;
+                --frame: #073642;
+                --slot: #eee8d5;
+            }
 
-        body {
-            font-family: 'Avenir', 'Helvetica Neue', sans-serif;
-            background-color: var(--bg);
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            overflow: hidden; /* Prevents scrolling while dragging */
-            touch-action: none; 
-        }
+            body {
+                font-family: "Avenir", "Helvetica Neue", sans-serif;
+                background-color: var(--bg);
+                margin: 0;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                overflow: hidden; /* Prevents scrolling while dragging */
+                touch-action: none;
+            }
 
-        h1 { color: #586e75; margin: 15px 0 5px 0; font-size: 1.5rem; }
+            h1 {
+                color: #586e75;
+                margin: 15px 0 5px 0;
+                font-size: 1.5rem;
+            }
 
-        .equation {
-            font-size: 3rem;
-            font-weight: 900;
-            color: #073642;
-            margin: 10px 0;
-        }
+            .equation {
+                font-size: 3rem;
+                font-weight: 900;
+                color: #073642;
+                margin: 10px 0;
+            }
 
-        .workspace {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            padding: 10px;
-        }
+            .workspace {
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+                padding: 10px;
+            }
 
-        .ten-frame {
-            display: grid;
-            grid-template-columns: repeat(5, 60px);
-            grid-template-rows: repeat(2, 60px);
-            gap: 10px;
-            background: var(--frame);
-            padding: 12px;
-            border-radius: 12px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
-        }
+            .ten-frame {
+                display: grid;
+                grid-template-columns: repeat(5, 60px);
+                grid-template-rows: repeat(2, 60px);
+                gap: 10px;
+                background: var(--frame);
+                padding: 12px;
+                border-radius: 12px;
+                box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+            }
 
-        .slot {
-            background: var(--slot);
-            border-radius: 50%; /* Round slots feel more natural */
-            width: 60px;
-            height: 60px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+            .slot {
+                background: var(--slot);
+                border-radius: 50%; /* Round slots feel more natural */
+                width: 60px;
+                height: 60px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
 
-        .dot {
-            width: 52px;
-            height: 52px;
-            border-radius: 50%;
-            position: absolute; /* Allows smooth movement */
-            touch-action: none;
-            cursor: pointer;
-            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
-            z-index: 10;
-        }
+            .dot {
+                width: 52px;
+                height: 52px;
+                border-radius: 50%;
+                position: absolute; /* Allows smooth movement */
+                touch-action: none;
+                cursor: pointer;
+                box-shadow: 0 4px 0 rgba(0, 0, 0, 0.2);
+                z-index: 10;
+            }
 
-        .blue { background-color: var(--blue); }
-        .red { background-color: var(--red); }
+            .blue {
+                background-color: var(--blue);
+            }
+            .red {
+                background-color: var(--red);
+            }
 
-        .controls {
-            margin-top: 20px;
-            display: flex;
-            gap: 10px;
-            z-index: 100;
-        }
+            .controls {
+                margin-top: 20px;
+                display: flex;
+                gap: 10px;
+                z-index: 100;
+            }
 
-        input {
-            width: 70px;
-            font-size: 1.5rem;
-            padding: 10px;
-            border-radius: 10px;
-            border: 2px solid #93a1a1;
-            text-align: center;
-        }
+            input {
+                width: 70px;
+                font-size: 1.5rem;
+                padding: 10px;
+                border-radius: 10px;
+                border: 2px solid #93a1a1;
+                text-align: center;
+            }
 
-        button {
-            padding: 12px 20px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            background: #859900;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            box-shadow: 0 4px 0 #586e00;
-        }
+            button {
+                padding: 12px 20px;
+                font-size: 1.1rem;
+                font-weight: bold;
+                background: #859900;
+                color: white;
+                border: none;
+                border-radius: 10px;
+                box-shadow: 0 4px 0 #586e00;
+            }
 
-        button:active { transform: translateY(2px); box-shadow: none; }
+            button:active {
+                transform: translateY(2px);
+                box-shadow: none;
+            }
 
-        #msg {
-            margin-top: 15px;
-            font-weight: bold;
-            font-size: 1.2rem;
-            color: #268bd2;
-            height: 25px;
-        }
+            #msg {
+                margin-top: 15px;
+                font-weight: bold;
+                font-size: 1.2rem;
+                color: #268bd2;
+                height: 25px;
+            }
 
-        /* Responsive sizing */
-        @media (min-width: 768px) {
-            .workspace { flex-direction: row; gap: 40px; }
-            .ten-frame { grid-template-columns: repeat(5, 80px); grid-template-rows: repeat(2, 80px); }
-            .slot { width: 80px; height: 80px; }
-            .dot { width: 70px; height: 70px; }
-        }
-    </style>
-</head>
-<body>
+            /* Responsive sizing */
+            @media (min-width: 768px) {
+                .workspace {
+                    flex-direction: row;
+                    gap: 40px;
+                }
+                .ten-frame {
+                    grid-template-columns: repeat(5, 80px);
+                    grid-template-rows: repeat(2, 80px);
+                }
+                .slot {
+                    width: 80px;
+                    height: 80px;
+                }
+                .dot {
+                    width: 70px;
+                    height: 70px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Make a Ten!</h1>
+        <div class="equation" id="eq">...</div>
 
-    <h1>Make a Ten!</h1>
-    <div class="equation" id="eq">...</div>
+        <div class="workspace">
+            <div class="ten-frame" id="f1"></div>
+            <div class="ten-frame" id="f2"></div>
+        </div>
 
-    <div class="workspace">
-        <div class="ten-frame" id="f1"></div>
-        <div class="ten-frame" id="f2"></div>
-    </div>
+        <div class="controls">
+            <input type="number" id="ans" pattern="\d*" inputmode="numeric" />
+            <button onclick="check()">Check</button>
+            <!---button onclick="init()" style="background: #2aa198; box-shadow: 0 4px 0 #1c6b65">Next</!---button--->
+        </div>
+        <div>
+            <h1 id="scoreboard">score: 0 missed: 0</h1>
+        </div>
+        <div id="certOverlay">
+            <div id="cert">
+                <h1 style="font-size: 50px; color: #1a3a5f; margin: 0">MATH EXCELLENCE</h1>
+                <p style="font-size: 24px">This award is proudly presented to</p>
+                <h2
+                    id="certName"
+                    style="
+                        font-size: 45px;
+                        border-bottom: 2px solid #1a3a5f;
+                        display: inline-block;
+                        padding: 0 50px;
+                        margin: 20px 0;
+                    ">
+                    Student Name
+                </h2>
+                <p style="font-size: 20px">For successfully solving 100 Ten-Frame problems!</p>
+                <p style="font-size: 20px" id="gradeMsg"></p>
+                <div style="margin-top: 30px; font-size: 80px">⭐ 100 ⭐</div>
 
-    <div class="controls">
-        <input type="number" id="ans" pattern="\d*" inputmode="numeric">
-        <button onclick="check()">Check</button>
-        <button onclick="init()" style="background:#2aa198; box-shadow: 0 4px 0 #1c6b65;">Next</button>
-    </div>
+                <div class="no-print" style="margin-top: 30px">
+                    <button onclick="window.print()" style="background: #859900">Print Certificate</button>
+                    <button
+                        onclick="document.getElementById('certOverlay').style.display='none'"
+                        style="background: #93a1a1">
+                        Back to Game
+                    </button>
+                </div>
+            </div>
+        </div>
 
-    <div id="msg"></div>
-    <script src="../assets/JS/GameOverlay.js"></script>
-    <script>
-        let total, activeDot = null, offsetX, offsetY;
-        var score = 0;
-        var missed= 0;
+        <div id="msg"></div>
+        <script src="../assets/JS/GameOverlay.js"></script>
+        <script>
+            let total,
+                activeDot = null,
+                offsetX,
+                offsetY, checked=false;
+            
+            setGameName("tenframes");
+            showScore();
 
-        function init() {
-            const v1 = Math.floor(Math.random() * 4) + 6; // 6-9
-            const v2 = Math.floor(Math.random() * 5) + 4; // 4-8
-            total = v1 + v2;
-            document.getElementById('eq').innerText = `${v1} + ${v2} = ?`;
-            document.getElementById('ans').value = "";
-            document.getElementById('msg').innerText = "";
+            function init() {
+                const v1 = Math.floor(Math.random() * 4) + 6; // 6-9
+                const v2 = Math.floor(Math.random() * 5) + 4; // 4-8
+                total = v1 + v2;
+                document.getElementById("eq").innerText = `${v1} + ${v2} = ?`;
+                document.getElementById("ans").value = "";
+                document.getElementById("msg").innerText = "";
 
-            renderFrame('f1', v1, 'blue');
-            renderFrame('f2', v2, 'red');
-        }
+                renderFrame("f1", v1, "blue");
+                renderFrame("f2", v2, "red");
+            }
 
-        function renderFrame(id, count, color) {
-            const frame = document.getElementById(id);
-            frame.innerHTML = '';
-            for (let i = 0; i < 10; i++) {
-                const slot = document.createElement('div');
-                slot.className = 'slot';
-                frame.appendChild(slot);
-                
-                if (i < count) {
-                    const dot = document.createElement('div');
-                    dot.className = `dot ${color}`;
-                    addTouchListeners(dot);
+            function renderFrame(id, count, color) {
+                const frame = document.getElementById(id);
+                frame.innerHTML = "";
+                for (let i = 0; i < 10; i++) {
+                    const slot = document.createElement("div");
+                    slot.className = "slot";
+                    frame.appendChild(slot);
+
+                    if (i < count) {
+                        const dot = document.createElement("div");
+                        dot.className = `dot ${color}`;
+                        addTouchListeners(dot);
+
+                        // Position dot inside slot
+                        slot.appendChild(dot);
+                    }
+                }
+            }
+
+            function addTouchListeners(dot) {
+                const start = (e) => {
+                    activeDot = dot;
+                    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+                    const rect = dot.getBoundingClientRect();
+                    offsetX = clientX - rect.left;
+                    offsetY = clientY - rect.top;
+
+                    dot.style.zIndex = 1000;
+                    dot.style.position = "fixed";
+                    moveAt(clientX, clientY);
+                };
+
+                const move = (e) => {
+                    if (!activeDot) return;
+                    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                    moveAt(clientX, clientY);
+                };
+
+                const end = (e) => {
+                    if (!activeDot) return;
+                    const dot = activeDot;
+                    activeDot = null;
+                    dot.style.display = "none"; // Hide briefly to see what's under
+                    const elemBelow = document.elementFromPoint(
+                        e.changedTouches ? e.changedTouches[0].clientX : e.clientX,
+                        e.changedTouches ? e.changedTouches[0].clientY : e.clientY
+                    );
+                    dot.style.display = "block";
+
+                    const slot = elemBelow ? elemBelow.closest(".slot") : null;
+
+                    if (slot && !slot.hasChildNodes()) {
+                        dot.style.position = "relative";
+                        dot.style.left = "0";
+                        dot.style.top = "0";
+                        slot.appendChild(dot);
+                        checkTen();
+                    } else {
+                        // Snap back
+                        dot.style.position = "relative";
+                        dot.style.left = "0";
+                        dot.style.top = "0";
+                    }
+                };
+
+                function moveAt(x, y) {
+                    activeDot.style.left = x - offsetX + "px";
+                    activeDot.style.top = y - offsetY + "px";
+                }
+
+                dot.onmousedown = start;
+                dot.ontouchstart = start;
+                window.onmousemove = move;
+                window.ontouchmove = move;
+                dot.onmouseup = end;
+                dot.ontouchend = end;
+            }
+
+            function checkTen() {
+                const f1 = document.getElementById("f1").querySelectorAll(".dot").length;
+                const f2 = document.getElementById("f2").querySelectorAll(".dot").length;
+                if (f1 === 10 || f2 === 10) {
+                    document.getElementById("msg").innerText = "You made a 10! ✨";
+                }
+            }
+
+            function check() {
+                const user = parseInt(document.getElementById("ans").value);
+                if (user === total) {
+                    document.getElementById("msg").innerText = "Awesome! 10 + " + (total - 10) + " = " + total;
+                    if(!checked){
+                        correct();
+                    }
+                    checked = true;
+                    setTimeout(() => {
+                       init();
+                        checked = false;
+                    }, 1000);
                     
-                    // Position dot inside slot
-                    slot.appendChild(dot);
-                }
-            }
-        }
-
-        function addTouchListeners(dot) {
-            const start = (e) => {
-                activeDot = dot;
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-                
-                const rect = dot.getBoundingClientRect();
-                offsetX = clientX - rect.left;
-                offsetY = clientY - rect.top;
-                
-                dot.style.zIndex = 1000;
-                dot.style.position = 'fixed';
-                moveAt(clientX, clientY);
-            };
-
-            const move = (e) => {
-                if (!activeDot) return;
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-                moveAt(clientX, clientY);
-            };
-
-            const end = (e) => {
-                if (!activeDot) return;
-                const dot = activeDot;
-                activeDot = null;
-                dot.style.display = 'none'; // Hide briefly to see what's under
-                const elemBelow = document.elementFromPoint(
-                    e.changedTouches ? e.changedTouches[0].clientX : e.clientX,
-                    e.changedTouches ? e.changedTouches[0].clientY : e.clientY
-                );
-                dot.style.display = 'block';
-
-                const slot = elemBelow ? elemBelow.closest('.slot') : null;
-                
-                if (slot && !slot.hasChildNodes()) {
-                    dot.style.position = 'relative';
-                    dot.style.left = '0';
-                    dot.style.top = '0';
-                    slot.appendChild(dot);
-                    checkTen();
                 } else {
-                    // Snap back
-                    dot.style.position = 'relative';
-                    dot.style.left = '0';
-                    dot.style.top = '0';
+                    document.getElementById("msg").innerText = "Try counting again!";
+                    wrong();
                 }
-            };
-
-            function moveAt(x, y) {
-                activeDot.style.left = x - offsetX + 'px';
-                activeDot.style.top = y - offsetY + 'px';
+                showScore();
             }
 
-            dot.onmousedown = start;
-            dot.ontouchstart = start;
-            window.onmousemove = move;
-            window.ontouchmove = move;
-            dot.onmouseup = end;
-            dot.ontouchend = end;
-        }
-
-        function checkTen() {
-            const f1 = document.getElementById('f1').querySelectorAll('.dot').length;
-            const f2 = document.getElementById('f2').querySelectorAll('.dot').length;
-            if (f1 === 10 || f2 === 10) {
-                document.getElementById('msg').innerText = "You made a 10! ✨";
-            }
-        }
-
-        function check() {
-            const user = parseInt(document.getElementById('ans').value);
-            if (user === total) {
-                document.getElementById('msg').innerText = "Awesome! 10 + " + (total-10) + " = " + total;
-                score ++;
-                if(score===20){
-                    launchGame('../restingGames/simon_party.html');
-                }
-            } else {
-                document.getElementById('msg').innerText = "Try counting again!";
-                missed ++;
-            }
-        }
-
-        init();
-    </script>
-</body>
+            init();
+        </script>
+    </body>
 </html>

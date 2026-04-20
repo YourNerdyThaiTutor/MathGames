@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Ten Frame Builder</title>
+    <link rel="stylesheet" href="../assets/css/certification.css" />
     <style>
         :root {
             --bg: #fdf6e3;
@@ -146,14 +147,49 @@
     <div class="controls" id="finalControls" style="visibility: hidden;">
         <input type="number" id="ans" pattern="\d*" inputmode="numeric" placeholder="?">
         <button onclick="checkResult()">Check</button>
-        <button onclick="initGame()" style="background:#2aa198; box-shadow: 0 4px 0 #1c6b65;">Next</button>
+        <!---button onclick="initGame()" style="background:#2aa198; box-shadow: 0 4px 0 #1c6b65;">Next</!---button--->
     </div>
+    <div>
+            <h1 id="scoreboard">score: 0 missed: 0</h1>
+        </div>
+        <div id="certOverlay">
+            <div id="cert">
+                <h1 style="font-size: 50px; color: #1a3a5f; margin: 0">MATH EXCELLENCE</h1>
+                <p style="font-size: 24px">This award is proudly presented to</p>
+                <h2
+                    id="certName"
+                    style="
+                        font-size: 45px;
+                        border-bottom: 2px solid #1a3a5f;
+                        display: inline-block;
+                        padding: 0 50px;
+                        margin: 20px 0;
+                    ">
+                    Student Name
+                </h2>
+                <p style="font-size: 20px">For successfully solving 100 Ten-Frame problems!</p>
+                <p style="font-size: 20px" id="gradeMsg"></p>
+                <div style="margin-top: 30px; font-size: 80px">⭐ 100 ⭐</div>
+
+                <div class="no-print" style="margin-top: 30px">
+                    <button onclick="window.print()" style="background: #859900">Print Certificate</button>
+                    <button
+                        onclick="document.getElementById('certOverlay').style.display='none'"
+                        style="background: #93a1a1">
+                        Back to Game
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <script src="../assets/JS/GameOverlay.js"></script>
 
     <script>
-        let v1, v2, targetTotal, mode = null;
+        let v1, v2, targetTotal, mode = null, checked = false;
         let placedBlue = 0, placedRed = 0;
         let activeDot = null, offsetX, offsetY;
-
+        setGameName("tenframeslv2");
+        showScore();
         function initGame() {
             v1 = Math.floor(Math.random() * 4) + 6; 
             v2 = Math.floor(Math.random() * 5) + 4;
@@ -280,9 +316,19 @@
             const user = parseInt(document.getElementById('ans').value);
             if (user === targetTotal) {
                 document.getElementById('msg').innerText = "Correct! You built it and solved it! ⭐";
+                if(!checked){
+                        correct();
+                    }
+                    checked = true;
+                    setTimeout(() => {
+                       initGame();
+                        checked = false;
+                    }, 1000);
             } else {
                 document.getElementById('msg').innerText = "Count one more time!";
+                wrong();
             }
+            showScore();
         }
 
         initGame();

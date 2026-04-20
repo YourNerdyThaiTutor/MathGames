@@ -47,6 +47,7 @@
 
     let bubbles = [];
     let score = 0;
+    let timeLeft = 20;
     const colors = ['#FFADAD', '#FFD6A5', '#FDFFB6', '#CAFFBF', '#9BF6FF', '#A0C4FF', '#BDB2FF', '#FFC6FF'];
 
     class Bubble {
@@ -130,6 +131,16 @@
         requestAnimationFrame(animate);
     }
 
+    const countdown = setInterval(() => {
+        timeLeft--;
+        if (timeLeft <= 0) {
+            clearInterval(countdown);
+            setTimeout(() => {
+                window.parent.postMessage('closeIframe', '*');
+            }, 2000);
+        }
+    }, 1000);
+    
     window.addEventListener('mousedown', checkPop);
     window.addEventListener('touchstart', checkPop);
     

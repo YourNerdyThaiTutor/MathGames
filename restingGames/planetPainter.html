@@ -51,6 +51,9 @@
             clearInterval(countdown);
             active = false;
             document.getElementById('finish-screen').style.display = 'block';
+            setTimeout(() => {
+                window.parent.postMessage('closeIframe', '*');
+            }, 2000);
         }
     }, 1000);
 
