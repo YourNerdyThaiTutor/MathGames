@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Visual FOIL Tool</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; background: #f8fafc; padding: 20px; }
+        .card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; width: 750px;}
+        .formula { font-size: 32px; font-weight: bold; margin-bottom: 10px; color: #1e293b; font-family: 'Cambria', serif; }
+        .instructions { background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e2e8f0; color: #475569; min-height: 48px; font-weight: 500;}
+        svg { background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; }
+        .btn-group { margin-top: 20px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+        button { background: #6366f1; color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; transition: 0.2s;}
+        button:hover { background: #4f46e5; }
+        button.active { background: #10b981; }
+        .new-btn { background: #64748b; }
+        .label { font-size: 14px; font-weight: bold; pointer-events: none; }
+        .grid-line { stroke: #f1f5f9; stroke-width: 1; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div id="formulaDisplay" class="formula">(a + b)(c + d)</div>
+    <div id="guide" class="instructions">Click the FOIL buttons to see the areas!</div>
+
+    <svg id="canvas" width="600" height="400">
+        <defs>
+            <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e2e8f0" stroke-width="1"/>
+            </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grid)" />
+
+        <g id="rectContainer">
+            <rect id="rectF" fill="none" stroke="#6366f1" stroke-width="2" stroke-dasharray="4" />
+            <text id="textF" class="label" text-anchor="middle" fill="#4338ca"></text>
+
+            <rect id="rectO" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4" />
+            <text id="textO" class="label" text-anchor="middle" fill="#b45309"></text>
+
+            <rect id="rectI" fill="none" stroke="#ec4899" stroke-width="2" stroke-dasharray="4" />
+            <text id="textI" class="label" text-anchor="middle" fill="#be185d"></text>
+
+            <rect id="rectL" fill="none" stroke="#10b981" stroke-width="2" stroke-dasharray="4" />
+            <text id="textL" class="label" text-anchor="middle" fill="#047857"></text>
+
+            <text id="lblA" class="label" fill="#64748b" text-anchor="middle"></text>
+            <text id="lblB" class="label" fill="#64748b" text-anchor="middle"></text>
+            <text id="lblC" class="label" fill="#64748b" text-anchor="end"></text>
+            <text id="lblD" class="label" fill="#64748b" text-anchor="end"></text>
+        </g>
+    </svg>
+
+    <div class="btn-group">
+        <button id="btnF" onclick="toggle('F')">First (a·c)</button>
+        <button id="btnO" onclick="toggle('O')">Outer (a·d)</button>
+        <button id="btnI" onclick="toggle('I')">Inner (b·c)</button>
+        <button id="btnL" onclick="toggle('L')">Last (b·d)</button>
+        <button class="new-btn" onclick="init()">🔄 Randomize</button>
+    </div>
+    
+    <div id="totalDisplay" style="margin-top:15px; font-weight:bold; font-size:18px; color:#1e293b;"></div>
+</div>
+
+<script>
+    let a, b, c, d, unit = 20;
+    const startX = 120, startY = 80;
+    const activeParts = { F: false, O: false, I: false, L: false };
+
+    function init() {
+        // Randomize dimensions
+        a = Math.floor(Math.random() * 6) + 4; // 4-9
+        b = Math.floor(Math.random() * 4) + 2; // 2-5
+        c = Math.floor(Math.random() * 6) + 4; // 4-9
+        d = Math.floor(Math.random() * 4) + 2; // 2-5
+
+        activeParts.F = activeParts.O = activeParts.I = activeParts.L = false;
+        document.querySelectorAll('.btn-group button').forEach(b => b.classList.remove('active'));
+        
+        document.getElementById('formulaDisplay').textContent = `(${a} + ${b})(${c} + ${d})`;
+        document.getElementById('totalDisplay').textContent = "";
+        document.getElementById('guide').textContent = "Click a step to reveal its area.";
+
+        updateRects();
+    }
+
+    function updateRects() {
+        // F: a * c
+        setupRect('F', startX, startY, a*unit, c*unit, activeParts.F, "#e0e7ff", `${a}×${c}=${a*c}`);
+        // O: a * d
+        setupRect('O', startX, startY + c*unit, a*unit, d*unit, activeParts.O, "#fef3c7", `${a}×${d}=${a*d}`);
+        // I: b * c
+        setupRect('I', startX + a*unit, startY, b*unit, c*unit, activeParts.I, "#fce7f3", `${b}×${c}=${b*c}`);
+        // L: b * d
+        setupRect('L', startX + a*unit, startY + c*unit, b*unit, d*unit, activeParts.L, "#dcfce7", `${b}×${d}=${b*d}`);
+
+        // Update Labels
+        setLabel('lblA', startX + (a*unit)/2, startY - 10, `a = ${a}`);
+        setLabel('lblB', startX + a*unit + (b*unit)/2, startY - 10, `b = ${b}`);
+        setLabel('lblC', startX - 10, startY + (c*unit)/2 + 5, `c = ${c}`);
+        setLabel('lblD', startX - 10, startY + c*unit + (d*unit)/2 + 5, `d = ${d}`);
+    }
+
+    function setupRect(id, x, y, w, h, active, color, labelText) {
+        const r = document.getElementById('rect' + id);
+        const t = document.getElementById('text' + id);
+        r.setAttribute('x', x); r.setAttribute('y', y);
+        r.setAttribute('width', w); r.setAttribute('height', h);
+        r.setAttribute('fill', active ? color : "none");
+        r.setAttribute('stroke-dasharray', active ? "0" : "4");
+        
+        t.setAttribute('x', x + w/2);
+        t.setAttribute('y', y + h/2 + 5);
+        t.textContent = active ? labelText : "";
+    }
+
+    function setLabel(id, x, y, text) {
+        const el = document.getElementById(id);
+        el.setAttribute('x', x); el.setAttribute('y', y);
+        el.textContent = text;
+    }
+
+    function toggle(part) {
+        activeParts[part] = !activeParts[part];
+        document.getElementById('btn' + part).classList.toggle('active');
+        updateRects();
+
+        const allActive = Object.values(activeParts).every(v => v);
+        if(allActive) {
+            const total = (a+b)*(c+d);
+            document.getElementById('totalDisplay').textContent = `Total Area: ${a+b} × ${c+d} = ${total}`;
+            document.getElementById('guide').textContent = "All parts found! The sum of the pieces equals the whole.";
+        }
+    }
+
+    function getMousePos(e) {
+        const CTM = svg.getScreenCTM();
+        return { x: (e.clientX - CTM.e) / CTM.a, y: (e.clientY - CTM.f) / CTM.d };
+    }
+
+    init();
+</script>
+</body>
+</html>

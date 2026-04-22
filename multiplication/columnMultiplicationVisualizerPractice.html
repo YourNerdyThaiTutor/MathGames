@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Multiplication Step-by-Step</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; background: #0f172a; color: white; padding: 20px; }
+        .card { background: #1e293b; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 850px; text-align: center; border: 1px solid #334155;}
+        .main-ui { display: flex; gap: 40px; margin-top: 20px; justify-content: center; align-items: flex-start;}
+        
+        /* Column Math Styles */
+        .column-math { font-family: 'Courier New', monospace; font-size: 32px; font-weight: bold; text-align: right; width: 180px; padding: 20px; background: #0f172a; border-radius: 12px; border: 2px solid #334155;}
+        .bar { border-bottom: 4px solid white; display: block; width: 100%; margin: 5px 0;}
+        .col-input { background: transparent; border: 1px solid #475569; color: #38bdf8; width: 140px; text-align: right; font-family: inherit; font-size: 32px; outline: none; border-radius: 4px;}
+        .col-input:focus { border-color: #38bdf8; }
+
+        /* Area Model Styles */
+        .area-container { position: relative; width: 400px; height: 300px; }
+        svg { border-radius: 8px; background: #1e293b; border: 1px solid #475569; }
+        .box-input { position: absolute; width: 70px; height: 30px; background: #0f172a; border: 2px solid #475569; color: white; text-align: center; font-weight: bold; border-radius: 4px; }
+        .box-input:focus { border-color: #f59e0b; outline: none; }
+        
+        .dim { fill: #94a3b8; font-size: 18px; font-weight: bold; }
+        .correct { border-color: #10b981 !important; color: #10b981; }
+        .error { border-color: #ef4444 !important; }
+
+        .btn { background: #38bdf8; color: #0f172a; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 20px;}
+        #msg { margin-top: 20px; font-weight: bold; padding: 15px; border-radius: 8px; background: #334155; min-height: 24px;}
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2 id="probTitle">42 × 13</h2>
+    
+    <div class="main-ui">
+        <div class="area-container">
+            <svg width="400" height="300">
+                <text x="120" y="30" class="dim" id="dimT1">40</text>
+                <text x="310" y="30" class="dim" id="dimT2">2</text>
+                <text x="30" y="115" class="dim" id="dimL1">10</text>
+                <text x="30" y="225" class="dim" id="dimL2">3</text>
+                <g fill="none" stroke="#475569" stroke-width="2">
+                    <rect x="70" y="50" width="180" height="110" />
+                    <rect x="250" y="50" width="110" height="110" />
+                    <rect x="70" y="160" width="180" height="110" />
+                    <rect x="250" y="160" width="110" height="110" />
+                </g>
+            </svg>
+            <input type="number" id="q1" class="box-input" style="top: 90px; left: 125px;" placeholder="">
+            <input type="number" id="q2" class="box-input" style="top: 90px; left: 270px;" placeholder="">
+            <input type="number" id="q3" class="box-input" style="top: 200px; left: 125px;" placeholder="">
+            <input type="number" id="q4" class="box-input" style="top: 200px; left: 270px;" placeholder="">
+        </div>
+
+        <div class="column-math">
+            <div id="colN1">42</div>
+            <div id="colN2">× 13</div>
+            <span class="bar"></span>
+            <input type="number" id="row1" class="col-input" placeholder="0">
+            <input type="number" id="row2" class="col-input" placeholder="0">
+            <span class="bar"></span>
+            <input type="number" id="final" class="col-input" placeholder="Total">
+        </div>
+    </div>
+
+    <div id="msg">Step 1: Fill in the 4 area boxes. Multiply the top numbers by the side numbers.</div>
+    <button class="btn" onclick="checkAll()">Verify Progress</button>
+    <button class="btn" style="background:#475569; color:white;" onclick="init()">New Problem</button>
+</div>
+
+<script>
+    let N1, N2, t1, t2, l1, l2, ans;
+
+    function init() {
+        N1 = Math.floor(Math.random() * 40) + 11;
+        N2 = Math.floor(Math.random() * 40) + 11;
+        t1 = Math.floor(N1/10)*10; t2 = N1%10;
+        l1 = Math.floor(N2/10)*10; l2 = N2%10;
+        ans = {
+            q1: t1*l1, q2: t2*l1, q3: t1*l2, q4: t2*l2,
+            row1: N1 * l2, row2: N1 * l1, total: N1 * N2
+        };
+
+        document.getElementById('probTitle').textContent = `${N1} × ${N2}`;
+        document.getElementById('dimT1').textContent = t1;
+        document.getElementById('dimT2').textContent = t2;
+        document.getElementById('dimL1').textContent = l1;
+        document.getElementById('dimL2').textContent = l2;
+        document.getElementById('colN1').textContent = N1;
+        document.getElementById('colN2').textContent = "× " + N2;
+
+        document.querySelectorAll('input').forEach(i => { i.value = ""; i.className = i.className.replace('correct','').replace('error','').trim(); });
+        updateMsg("Step 1: Fill in the 4 area boxes. Multiply the top labels by the side labels.", "white");
+    }
+
+    function checkAll() {
+        let u = {
+            q1: parseInt(document.getElementById('q1').value),
+            q2: parseInt(document.getElementById('q2').value),
+            q3: parseInt(document.getElementById('q3').value),
+            q4: parseInt(document.getElementById('q4').value),
+            row1: parseInt(document.getElementById('row1').value),
+            row2: parseInt(document.getElementById('row2').value),
+            total: parseInt(document.getElementById('final').value)
+        };
+
+        let boxesCorrect = (u.q1 === ans.q1 && u.q2 === ans.q2 && u.q3 === ans.q3 && u.q4 === ans.q4);
+        
+        // Highlighting Area Boxes
+        ['q1','q2','q3','q4'].forEach(id => {
+            if(parseInt(document.getElementById(id).value) === ans[id]) document.getElementById(id).classList.add('correct');
+            else if(document.getElementById(id).value !== "") document.getElementById(id).classList.add('error');
+        });
+
+        if (!boxesCorrect) {
+            updateMsg("Check your area boxes. Remember: Box Area = Top Number × Side Number.", "#ef4444");
+            return;
+        }
+
+        updateMsg("Boxes are correct! Now, look at the bottom two boxes. Add them together and put the result in the first row of the column math.", "#38bdf8");
+
+        // Highlighting Column Rows
+        if (u.row1 === ans.row1) document.getElementById('row1').classList.add('correct');
+        if (u.row2 === ans.row2) document.getElementById('row2').classList.add('correct');
+
+        if (u.row1 === ans.row1 && u.row2 === ans.row2) {
+            updateMsg("Great! The column rows match the partial sums of the boxes. Now add those rows for the final total.", "#10b981");
+            if (u.total === ans.total) {
+                document.getElementById('final').classList.add('correct');
+                updateMsg("🎉 Perfect! You've connected the Area Model to the Standard Algorithm.", "#10b981");
+            }
+        }
+    }
+
+    function updateMsg(m, c) { let el = document.getElementById('msg'); el.textContent = m; el.style.color = c; }
+    init();
+</script>
+</body>
+</html>

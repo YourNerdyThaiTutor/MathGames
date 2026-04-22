@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Precision Factoring</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; background: #0f172a; color: white; padding: 20px; }
+        .card { background: #1e293b; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; width: 620px; border: 1px solid #334155; }
+        .formula { font-size: 36px; font-weight: bold; margin-bottom: 20px; color: #38bdf8; }
+        .step-box { background: #334155; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 2px solid #475569; }
+        .step-box.complete { border-color: #10b981; background: #064e3b; }
+        .container { position: relative; width: 450px; height: 350px; margin: 0 auto; opacity: 0.2; pointer-events: none; transition: 0.3s; }
+        .container.active { opacity: 1; pointer-events: auto; }
+        input { background: #0f172a; border: 2px solid #475569; color: #f8fafc; font-weight: bold; border-radius: 6px; outline: none; text-align: center; }
+        .gcf-input { width: 60px; padding: 10px; font-size: 22px; color: #38bdf8; }
+        .box-input { position: absolute; width: 80px; height: 35px; }
+        .correct { border-color: #10b981 !important; color: #10b981 !important; }
+        .error { border-color: #ef4444 !important; background: #451212 !important; }
+        .btn { padding: 12px 24px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; margin-top: 10px;}
+        .btn-blue { background: #38bdf8; color: #0f172a; }
+        #msg { margin-top: 15px; font-weight: bold; padding: 10px; min-height: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div id="probDisplay" class="formula">Calculating...</div>
+
+    <div id="step1" class="step-box">
+        <p style="margin-top:0;"><b>Step 1: Pull out the GREATEST Common Factor</b></p>
+        <input type="number" id="gcfVal" class="gcf-input" placeholder="?">
+        <span style="font-size: 24px;"> ( <span id="term1">?</span>x² + <span id="term2">?</span>x + <span id="term3">?</span> )</span>
+        <br><button class="btn btn-blue" onclick="checkGCF()">Verify GCF</button>
+    </div>
+
+    <div id="step2Container" class="container">
+        <p><b>Step 2: Factor the inside using the Box Method</b></p>
+        <svg width="400" height="320">
+            <g fill="none" stroke="#475569" stroke-width="2">
+                <rect x="130" y="50" width="110" height="100" /><rect x="240" y="50" width="110" height="100" />
+                <rect x="130" y="150" width="110" height="100" /><rect x="240" y="150" width="110" height="100" />
+            </g>
+            <text x="185" y="105" text-anchor="middle" fill="#94a3b8" id="boxTL" font-weight="bold"></text>
+            <text x="295" y="205" text-anchor="middle" fill="#94a3b8" id="boxBR" font-weight="bold"></text>
+        </svg>
+        <input type="text" id="inTR" class="box-input" style="top: 120px; left: 280px;" placeholder="nx">
+        <input type="text" id="inBL" class="box-input" style="top: 220px; left: 170px;" placeholder="mx">
+        <input type="text" id="fTopL" class="box-input" style="top: 28px; left: 170px;" placeholder="Factor">
+        <input type="text" id="fTopR" class="box-input" style="top: 28px; left: 280px;" placeholder="Factor">
+        <input type="text" id="fSideT" class="box-input" style="top: 120px; left: 42px;" placeholder="Factor">
+        <input type="text" id="fSideB" class="box-input" style="top: 220px; left: 42px;" placeholder="Factor">
+    </div>
+
+    <div id="msg">Find the GCF of the three numbers.</div>
+    <button class="btn btn-blue" id="finalBtn" onclick="verifyBox()" style="display:none;">Check Factors</button>
+    <button class="btn" style="background:#475569; color:white;" onclick="init()">New Problem</button>
+</div>
+
+<script>
+    let A, B, C, realG, aR, bR, cR;
+    const gcd = (a, b) => b ? gcd(b, a % b) : Math.abs(a);
+
+    function init() {
+        // Create (x+p)(qx+r)
+        let q = Math.random() > 0.5 ? 1 : 2;
+        let p = Math.floor(Math.random() * 4) + 1;
+        let r = Math.floor(Math.random() * 4) + 1;
+        aR = q; bR = r + (q * p); cR = p * r;
+        
+        realG = Math.floor(Math.random() * 3) + 2; 
+        A = aR * realG; B = bR * realG; C = cR * realG;
+
+        document.getElementById('probDisplay').textContent = `${A}x² + ${B}x + ${C}`;
+        document.getElementById('term1').textContent = "?";
+        document.getElementById('term2').textContent = "?";
+        document.getElementById('term3').textContent = "?";
+        document.getElementById('step1').className = "step-box";
+        document.getElementById('step2Container').classList.remove('active');
+        document.getElementById('finalBtn').style.display = "none";
+        document.querySelectorAll('input').forEach(i => { i.value = ""; i.className = i.id==='gcfVal'?'gcf-input':'box-input'; });
+        updateMsg("Step 1: Divide all three terms by their Greatest Common Factor.", "white");
+    }
+
+    function checkGCF() {
+        let val = parseInt(document.getElementById('gcfVal').value);
+        if (val === realG) {
+            document.getElementById('step1').className = "step-box complete";
+            document.getElementById('gcfVal').className = "gcf-input correct";
+            document.getElementById('term1').textContent = aR === 1 ? "" : aR;
+            document.getElementById('term2').textContent = bR;
+            document.getElementById('term3').textContent = cR;
+            
+            document.getElementById('boxTL').textContent = (aR===1?"":aR) + "x²";
+            document.getElementById('boxBR').textContent = cR;
+            
+            document.getElementById('step2Container').classList.add('active');
+            document.getElementById('finalBtn').style.display = "inline-block";
+            updateMsg("Great! Now use the Box Method for the expression in the parentheses.", "#10b981");
+        } else {
+            document.getElementById('gcfVal').className = "gcf-input error";
+            updateMsg("Incorrect. Try dividing " + A + ", " + B + ", and " + C + " by a larger common number.", "#ef4444");
+        }
+    }
+
+    function parse(v) {
+        v = v.replace(/\s/g, "").toLowerCase();
+        if (!v) return {n: NaN, x: false};
+        let hasX = v.includes('x');
+        let nStr = v.replace('x', '');
+        let n = (nStr === "" || nStr === "+") ? 1 : (nStr === "-") ? -1 : parseInt(nStr);
+        return { n, x: hasX };
+    }
+
+    function verifyBox() {
+        let tr = parse(document.getElementById('inTR').value);
+        let bl = parse(document.getElementById('inBL').value);
+        let tL = parse(document.getElementById('fTopL').value);
+        let tR = parse(document.getElementById('fTopR').value);
+        let sT = parse(document.getElementById('fSideT').value);
+        let sB = parse(document.getElementById('fSideB').value);
+
+        if (tr.n + bl.n === bR && tr.n * bl.n === aR * cR) {
+            if (tL.n*sT.n === aR && tR.n*sT.n === tr.n && tL.n*sB.n === bl.n && tR.n*sB.n === cR) {
+                updateMsg("🎉 PERFECT! Factored form: " + realG + "(" + document.getElementById('fTopL').value + " + " + document.getElementById('fTopR').value + ")(" + document.getElementById('fSideT').value + " + " + document.getElementById('fSideB').value + ")", "#10b981");
+                return;
+            }
+        }
+        updateMsg("The math doesn't check out. Review your factors and signs.", "#ef4444");
+    }
+
+    function updateMsg(m, c) { let el = document.getElementById('msg'); el.textContent = m; el.style.color = c; }
+    init();
+</script>
+
+</body>
+</html>

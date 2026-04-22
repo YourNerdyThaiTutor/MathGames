@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Bulletproof Dynamic Proof</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; background: #f1f5f9; padding: 20px; }
+        .card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; width: 720px;}
+        .formula { font-size: 32px; font-weight: bold; margin-bottom: 10px; color: #1e293b; }
+        .instructions { background: #fffbeb; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #fef3c7; color: #92400e; min-height: 48px;}
+        svg { background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; touch-action: none; }
+        .btn-group { margin-top: 20px; display: flex; gap: 10px; justify-content: center; }
+        button { background: #2563eb; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: bold; }
+        button:hover { background: #1d4ed8; }
+        button:disabled { background: #cbd5e1; cursor: not-allowed; }
+        .btn-new { background: #64748b; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div id="formulaDisplay" class="formula">a² - b² = (a - b)(a + b)</div>
+    <div id="guide" class="instructions">Initializing...</div>
+
+    <svg id="canvas" width="660" height="420">
+        <defs>
+            <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e2e8f0" stroke-width="1"/>
+            </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grid)" />
+
+        <rect id="rectRed" fill="#fee2e2" stroke="#ef4444" stroke-width="2" />
+        <text id="textRed" text-anchor="middle" font-weight="bold" fill="#b91c1c" font-size="12"></text>
+
+        <rect id="rectBase" fill="#dbeafe" stroke="#2563eb" stroke-width="2" />
+        <text id="textBase" text-anchor="middle" font-weight="bold" fill="#1e40af" font-size="12"></text>
+
+        <rect id="rectGreen" fill="#dbeafe" stroke="#2563eb" stroke-width="2" style="cursor:pointer; visibility:hidden;" />
+        <text id="textGreen" text-anchor="middle" font-weight="bold" fill="#1e40af" font-size="12" style="visibility:hidden; pointer-events:none;"></text>
+
+        <text id="labelH" font-weight="bold" fill="#64748b" font-size="14"></text>
+        <text id="labelW" font-weight="bold" fill="#64748b" font-size="14" text-anchor="middle"></text>
+    </svg>
+
+    <div class="btn-group">
+        <button id="btn1" onclick="cut()">1. Cut Out b²</button>
+        <button id="btn2" onclick="breakAndRotate()" disabled>2. Break & Rotate</button>
+        <button class="btn-new" onclick="init()">🔄 New Example</button>
+    </div>
+</div>
+
+<script>
+    const svg = document.getElementById('canvas');
+    const guide = document.getElementById('guide');
+    let a, b, unit = 20;
+    let startX = 60, startY = 60; // Locked origin
+    let gPos = { x: 0, y: 0 }, gRot = 0, isDragging = false, offset = { x: 0, y: 0 };
+
+    function init() {
+        // Random a (7-12), b (2 to a-3)
+        a = Math.floor(Math.random() * 6) + 7;
+        b = Math.floor(Math.random() * (a - 4)) + 2;
+        
+        gRot = 0;
+        isDragging = false;
+        document.getElementById('btn1').disabled = false;
+        document.getElementById('btn2').disabled = true;
+        guide.style.background = "#fffbeb";
+        
+        // 1. Setup Red Square (b x b)
+        const red = document.getElementById('rectRed');
+        red.style.display = 'block';
+        red.setAttribute('x', startX);
+        red.setAttribute('y', startY);
+        red.setAttribute('width', b * unit);
+        red.setAttribute('height', b * unit);
+        document.getElementById('textRed').style.display = 'block';
+        document.getElementById('textRed').setAttribute('x', startX + (b*unit)/2);
+        document.getElementById('textRed').setAttribute('y', startY + (b*unit)/2 + 5);
+        document.getElementById('textRed').textContent = b + "²";
+
+        // 2. Setup Blue Base (a x a-b)
+        const base = document.getElementById('rectBase');
+        base.setAttribute('x', startX);
+        base.setAttribute('y', startY + b * unit);
+        base.setAttribute('width', a * unit);
+        base.setAttribute('height', (a - b) * unit);
+        document.getElementById('textBase').setAttribute('x', startX + (a*unit)/2);
+        document.getElementById('textBase').setAttribute('y', startY + b*unit + ((a-b)*unit)/2 + 5);
+        document.getElementById('textBase').textContent = a + " x " + (a-b);
+
+        // 3. Setup Green Piece (a-b x b)
+        const green = document.getElementById('rectGreen');
+        green.style.visibility = 'visible';
+        green.setAttribute('fill', '#dbeafe');
+        green.setAttribute('stroke', '#2563eb');
+        green.setAttribute('width', (a - b) * unit);
+        green.setAttribute('height', b * unit);
+        
+        const gLabel = document.getElementById('textGreen');
+        gLabel.style.visibility = 'visible';
+        gLabel.setAttribute('fill', '#1e40af');
+        gLabel.textContent = (a-b) + " x " + b;
+
+        gPos = { x: startX + b * unit, y: startY };
+        updateGreen();
+
+        // Formula & Guide
+        document.getElementById('formulaDisplay').textContent = `${a}² - ${b}² = (${a}-${b})(${a}+${b})`;
+        guide.innerHTML = `Step 1: Start with a ${a}x${a} square. Tap to cut out the ${b}x${b} red area.`;
+
+        // Outer Labels
+        document.getElementById('labelH').textContent = "H: " + a;
+        document.getElementById('labelH').setAttribute('x', startX - 35);
+        document.getElementById('labelH').setAttribute('y', startY + (a*unit)/2);
+        document.getElementById('labelH').setAttribute('transform', `rotate(-90 ${startX-35},${startY+(a*unit)/2})`);
+        
+        document.getElementById('labelW').textContent = "W: " + a;
+        document.getElementById('labelW').setAttribute('x', startX + (a*unit)/2);
+        document.getElementById('labelW').setAttribute('y', startY + (a*unit) + 30);
+    }
+
+    function cut() {
+        document.getElementById('rectRed').style.display = 'none';
+        document.getElementById('textRed').style.display = 'none';
+        guide.innerHTML = "Step 2: Red is gone. Now break and rotate the remaining top piece.";
+        document.getElementById('btn1').disabled = true;
+        document.getElementById('btn2').disabled = false;
+    }
+
+    function breakAndRotate() {
+        const green = document.getElementById('rectGreen');
+        green.setAttribute('fill', '#dcfce7');
+        green.setAttribute('stroke', '#16a34a');
+        document.getElementById('textGreen').setAttribute('fill', '#15803d');
+        
+        gRot = 90;
+        gPos.x = startX + (a + 2) * unit; // Move away
+        updateGreen();
+        
+        guide.innerHTML = "Step 3: Rotated! Drag Piece 2 to the right side of Piece 1.";
+        document.getElementById('btn2').disabled = true;
+        enableDrag();
+    }
+
+    function updateGreen() {
+        const green = document.getElementById('rectGreen');
+        const label = document.getElementById('textGreen');
+        green.setAttribute('transform', `translate(${gPos.x}, ${gPos.y}) rotate(${gRot})`);
+        
+        // Label logic for rotation
+        if (gRot === 90) {
+            label.setAttribute('transform', `translate(${gPos.x - (b*unit)/2}, ${gPos.y + ((a-b)*unit)/2})`);
+        } else {
+            label.setAttribute('transform', `translate(${gPos.x + ((a-b)*unit)/2}, ${gPos.y + (b*unit)/2 + 5})`);
+        }
+    }
+
+    function enableDrag() {
+        document.getElementById('rectGreen').onpointerdown = (e) => {
+            isDragging = true;
+            const pt = getMousePos(e);
+            offset.x = pt.x - gPos.x;
+            offset.y = pt.y - gPos.y;
+            document.getElementById('rectGreen').setPointerCapture(e.pointerId);
+        };
+        window.onpointermove = (e) => {
+            if (!isDragging) return;
+            const pt = getMousePos(e);
+            gPos.x = pt.x - offset.x;
+            gPos.y = pt.y - offset.y;
+            updateGreen();
+            
+            // SNAP: target is end of base (startX + a*unit) and top of base (startY + b*unit)
+            let tx = startX + a * unit;
+            let ty = startY + b * unit;
+            if (Math.abs(gPos.x - tx) < 20 && Math.abs(gPos.y - ty) < 20) {
+                gPos = { x: tx, y: ty };
+                updateGreen();
+                isDragging = false;
+                guide.style.background = "#dcfce7";
+                guide.innerHTML = `Success! Area is now ${a-b} x ${a+b} = ${ (a-b)*(a+b) }.`;
+            }
+        };
+        window.onpointerup = () => isDragging = false;
+    }
+
+    function getMousePos(e) {
+        const CTM = svg.getScreenCTM();
+        return { x: (e.clientX - CTM.e) / CTM.a, y: (e.clientY - CTM.f) / CTM.d };
+    }
+
+    init();
+</script>
+</body>
+</html>

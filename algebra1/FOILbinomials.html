@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Binomial FOIL Area Model</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; background: #f8fafc; padding: 20px; }
+        .card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; width: 750px;}
+        .formula { font-size: 32px; font-weight: bold; margin-bottom: 10px; color: #1e293b; font-family: 'Cambria', serif; }
+        .instructions { background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e2e8f0; color: #475569; min-height: 48px;}
+        svg { background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; }
+        .btn-group { margin-top: 20px; display: flex; gap: 8px; justify-content: center; }
+        button { background: #6366f1; color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; transition: 0.2s;}
+        button:hover { background: #4f46e5; }
+        button.active { background: #10b981; }
+        .label { font-size: 16px; font-weight: bold; pointer-events: none; }
+        .term-display { margin-top: 15px; font-size: 24px; font-weight: bold; color: #1e293b; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div id="formulaDisplay" class="formula">(x + a)(x + b)</div>
+    <div id="guide" class="instructions">Click buttons to FOIL the binomials.</div>
+
+    <svg id="canvas" width="500" height="400">
+        <defs>
+            <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f1f5f9" stroke-width="1"/>
+            </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grid)" />
+
+        <g transform="translate(100, 80)">
+            <rect id="rectF" x="0" y="0" width="160" height="160" fill="none" stroke="#6366f1" stroke-width="2" stroke-dasharray="4" />
+            <text id="textF" x="80" y="85" class="label" text-anchor="middle" fill="#4338ca"></text>
+
+            <rect id="rectO" x="160" y="0" width="80" height="160" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4" />
+            <text id="textO" x="200" y="85" class="label" text-anchor="middle" fill="#b45309"></text>
+
+            <rect id="rectI" x="0" y="160" width="160" height="80" fill="none" stroke="#ec4899" stroke-width="2" stroke-dasharray="4" />
+            <text id="textI" x="80" y="205" class="label" text-anchor="middle" fill="#be185d"></text>
+
+            <rect id="rectL" x="160" y="160" width="80" height="80" fill="none" stroke="#10b981" stroke-width="2" stroke-dasharray="4" />
+            <text id="textL" x="200" y="205" class="label" text-anchor="middle" fill="#047857"></text>
+
+            <text x="80" y="-15" class="label" text-anchor="middle" fill="#64748b">x</text>
+            <text id="lblA" x="200" y="-15" class="label" text-anchor="middle" fill="#64748b"></text>
+            <text x="-15" y="85" class="label" text-anchor="end" fill="#64748b">x</text>
+            <text id="lblB" x="-15" y="205" class="label" text-anchor="end" fill="#64748b"></text>
+        </g>
+    </svg>
+
+    <div class="btn-group">
+        <button id="btnF" onclick="toggle('F')">First (x·x)</button>
+        <button id="btnO" onclick="toggle('O')">Outer (x·b)</button>
+        <button id="btnI" onclick="toggle('I')">Inner (a·x)</button>
+        <button id="btnL" onclick="toggle('L')">Last (a·b)</button>
+        <button style="background:#64748b" onclick="randomize()">🔄 New Binomial</button>
+    </div>
+    
+    <div id="termDisplay" class="term-display"></div>
+</div>
+
+<script>
+    let a, b;
+    const states = { F:false, O:false, I:false, L:false };
+
+    function randomize() {
+        a = Math.floor(Math.random() * 4) + 2; // Constant a
+        b = Math.floor(Math.random() * 4) + 2; // Constant b
+        Object.keys(states).forEach(k => states[k] = false);
+        document.querySelectorAll('.btn-group button').forEach(btn => btn.classList.remove('active'));
+        
+        document.getElementById('formulaDisplay').textContent = `(x + ${a})(x + ${b})`;
+        document.getElementById('lblA').textContent = a;
+        document.getElementById('lblB').textContent = b;
+        document.getElementById('termDisplay').textContent = "";
+        document.getElementById('guide').textContent = "Click a FOIL step to visualize the area.";
+        update();
+    }
+
+    function toggle(p) {
+        states[p] = !states[p];
+        document.getElementById('btn' + p).classList.toggle('active');
+        update();
+    }
+
+    function update() {
+        const colors = { F:"#e0e7ff", O:"#fef3c7", I:"#fce7f3", L:"#dcfce7" };
+        const labels = { F:"x²", O: `${a}x`, I: `${b}x`, L: a*b };
+        
+        ['F','O','I','L'].forEach(p => {
+            const r = document.getElementById('rect' + p);
+            const t = document.getElementById('text' + p);
+            r.setAttribute('fill', states[p] ? colors[p] : "none");
+            r.setAttribute('stroke-dasharray', states[p] ? "0" : "4");
+            t.textContent = states[p] ? labels[p] : "";
+        });
+
+        // Dynamic result display
+        let terms = [];
+        if(states.F) terms.push("x²");
+        if(states.O) terms.push(`${a}x`);
+        if(states.I) terms.push(`${b}x`);
+        if(states.L) terms.push(a*b);
+        
+        if(terms.length > 0) {
+            let res = terms.join(" + ");
+            if(states.O && states.I) {
+                res += ` = x² + ${a+b}x + ${a*b}`;
+            }
+            document.getElementById('termDisplay').textContent = res;
+        } else {
+            document.getElementById('termDisplay').textContent = "";
+        }
+    }
+
+    randomize();
+</script>
+</body>
+</html>

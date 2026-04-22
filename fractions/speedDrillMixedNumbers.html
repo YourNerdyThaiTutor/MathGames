@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Mixed Number Speed Pro</title>
+    <link rel="stylesheet" href="../assets/css/certification.css" />
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; background: #0f172a; color: white; padding: 20px; }
+        .card { background: #1e293b; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; width: 620px; border: 1px solid #334155; }
+        
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+
+        .stats { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 14px; color: #94a3b8; }
+        .problem-container { display: flex; align-items: center; justify-content: center; gap: 15px; margin: 25px 0; }
+        
+        .q-mixed { display: flex; align-items: center; gap: 5px; font-size: 32px; font-weight: bold; }
+        .q-whole { font-size: 40px; color: #f8fafc; }
+        .frac { display: flex; flex-direction: column; align-items: center; font-size: 24px; }
+        .frac span { border-top: 3px solid white; width: 100%; padding-top: 2px; margin-top: 2px; }
+        
+        .op { font-size: 36px; font-weight: bold; color: #38bdf8; }
+
+        /* The Result Area */
+        .result-zone { display: flex; align-items: center; justify-content: center; gap: 10px; background: #334155; padding: 20px; border-radius: 12px; }
+        .answer-box { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        input { background: #0f172a; border: 2px solid #475569; color: white; width: 75px; padding: 10px; border-radius: 8px; text-align: center; font-size: 24px; outline: none; }
+        .whole-input { width: 65px; height: 65px; font-size: 32px; border-color: #38bdf8; }
+        .divider { width: 55px; height: 3px; background: white; }
+
+        .correct { border-color: #10b981 !important; color: #10b981; }
+        .error { border-color: #ef4444 !important; }
+        #msg { margin-top: 15px; font-weight: bold; min-height: 20px; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="stats">
+        <span id="timer">Time: 0.0s</span>
+        <span id="streak">Streak: 0</span>
+    </div>
+
+    <div class="problem-container">
+        <div class="q-mixed"><div id="qw1" class="q-whole">2</div><div class="frac"><div id="qn1">1</div><span id="qd1">2</span></div></div>
+        <div class="op" id="operator">+</div>
+        <div class="q-mixed"><div id="qw2" class="q-whole">1</div><div class="frac"><div id="qn2">1</div><span id="qd2">3</span></div></div>
+        <div class="op">=</div>
+    </div>
+
+    <div class="result-zone">
+        <input type="number" id="mixW" class="whole-input" placeholder="W">
+        <div class="answer-box">
+            <input type="number" id="mixN" style="width: 55px;" placeholder="n">
+            <div class="divider"></div>
+            <input type="number" id="mixD" style="width: 55px;" placeholder="d">
+        </div>
+    </div>
+
+    <div id="msg">Solve directly for +, - . Use Improper conversion for *, / !</div>
+</div>
+<!---cert--->
+    <div>
+            <h1 id="scoreboard">score: 0 missed: 0</h1>
+        </div>
+        <div id="certOverlay">
+            <div id="cert">
+                <h1 style="font-size: 50px; color: #1a3a5f; margin: 0">PREALGEBRA EXCELLENCE</h1>
+                <p style="font-size: 24px">This award is proudly presented to</p>
+                <h2
+                    id="certName"
+                    style="
+                        font-size: 45px;
+                        border-bottom: 2px solid #1a3a5f;
+                        display: inline-block;
+                        padding: 0 50px;
+                        margin: 20px 0;
+                    ">
+                    Student Name
+                </h2>
+                <p style="font-size: 20px">For successfully solving 100 fractions problems!</p>
+                <p style="font-size: 20px" id="gradeMsg"></p>
+                <div style="margin-top: 30px; font-size: 80px">⭐ 100 ⭐</div>
+
+                <div class="no-print" style="margin-top: 30px">
+                    <button onclick="window.print()" style="background: #859900">Print Certificate</button>
+                    <button
+                        onclick="document.getElementById('certOverlay').style.display='none'"
+                        style="background: #93a1a1">
+                        Back to Game
+                    </button>
+                </div>
+            </div>
+        </div>
+<script src="../assets/JS/GameOverlay.js"></script>
+<script>
+    let current = {};
+    let streak = 0;
+    let startTime = Date.now();
+    let checked = false;
+    setGameName("fractionSpeedDrillM");
+    showScore();
+
+    function getGCD(a, b) { return b ? getGCD(b, a % b) : Math.abs(a); }
+
+    function generate() {
+        const ops = ['+', '-', '*', '/'];
+        const op = ops[Math.floor(Math.random() * ops.length)];
+        const dens = [2, 3, 4, 5, 6, 8];
+        
+        let w1 = Math.floor(Math.random() * 3) + 1;
+        let d1 = dens[Math.floor(Math.random() * dens.length)];
+        let n1 = Math.floor(Math.random() * (d1 - 1)) + 1;
+
+        let w2 = Math.floor(Math.random() * 2) + 1;
+        let d2 = dens[Math.floor(Math.random() * dens.length)];
+        let n2 = Math.floor(Math.random() * (d2 - 1)) + 1;
+
+        let impN1 = w1 * d1 + n1;
+        let impN2 = w2 * d2 + n2;
+
+        if (op === '-' && (impN1/d1 < impN2/d2)) {
+            [w1, n1, d1, w2, n2, d2] = [w2, n2, d2, w1, n1, d1];
+            [impN1, impN2] = [impN2, impN1];
+        }
+
+        let resN, resD;
+        if (op === '+') { resN = impN1*d2 + impN2*d1; resD = d1*d2; }
+        else if (op === '-') { resN = impN1*d2 - impN2*d1; resD = d1*d2; }
+        else if (op === '*') { resN = impN1*impN2; resD = d1*d2; }
+        else { resN = impN1*d2; resD = d1*impN2; }
+
+        let common = getGCD(resN, resD);
+        let finalN = resN / common;
+        let finalD = resD / common;
+
+        current = {
+            w: Math.floor(finalN / finalD),
+            mn: finalN % finalD,
+            md: finalD
+        };
+
+        document.getElementById('qw1').textContent = w1;
+        document.getElementById('qn1').textContent = n1;
+        document.getElementById('qd1').textContent = d1;
+        document.getElementById('qw2').textContent = w2;
+        document.getElementById('qn2').textContent = n2;
+        document.getElementById('qd2').textContent = d2;
+        document.getElementById('operator').textContent = op;
+        
+        document.querySelectorAll('input').forEach(i => { i.value = ""; i.classList.remove('correct','error'); });
+        document.getElementById('mixW').focus();
+        startTime = Date.now();
+    }
+
+    function check() {
+        let uW = parseInt(document.getElementById('mixW').value) || 0;
+        let uN = parseInt(document.getElementById('mixN').value) || 0;
+        let uD = parseInt(document.getElementById('mixD').value) || 0;
+
+        let isCorrect = false;
+        if (current.mn === 0) {
+            isCorrect = (uW === current.w && uN === 0);
+        } else {
+            isCorrect = (uW === current.w && uN === current.mn && uD === current.md);
+        }
+
+        if (isCorrect) {
+            streak++;
+            document.getElementById('msg').textContent = "Nice! Streak: " + streak;
+            document.getElementById('msg').style.color = "#10b981";
+            document.querySelectorAll('input').forEach(i => i.classList.add('correct'));
+            //cert
+            if(!checked){
+                        correct();
+                    }
+                    checked = true;
+                    setTimeout(() => {
+                       generate();
+                       checked = false;
+                    }, 800);
+        } else {
+            streak = 0;
+            document.getElementById('msg').textContent = "Incorrect. Watch your simplifying!";
+            document.getElementById('msg').style.color = "#ef4444";
+            document.querySelectorAll('input').forEach(i => i.classList.add('error'));
+            wrong();
+        }
+        showScore();
+        document.getElementById('streak').textContent = streak;
+    }
+
+    const inputIds = ['mixW', 'mixN', 'mixD'];
+    inputIds.forEach((id, idx) => {
+        let el = document.getElementById(id);
+        el.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowRight') { e.preventDefault(); document.getElementById(inputIds[(idx + 1) % 3]).focus(); }
+            if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') { e.preventDefault(); document.getElementById(inputIds[(idx + 2) % 3]).focus(); }
+            if (e.key === 'Enter') check();
+        });
+    });
+
+    setInterval(() => {
+        let elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+        document.getElementById('timer').textContent = `Time: ${elapsed}s`;
+    }, 100);
+
+    generate();
+</script>
+</body>
+</html>

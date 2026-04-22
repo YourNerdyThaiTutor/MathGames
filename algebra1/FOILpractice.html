@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fixed FOIL Practice</title>
+    <link rel="stylesheet" href="../assets/css/certification.css" />
+    <style>
+        :root { --unit: 20px; }
+        body { font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; background: #f8fafc; padding: 20px; }
+        .card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 650px; position: relative;}
+        
+        /* The container that locks everything together */
+        #interactive-container { 
+            position: relative; 
+            width: 400px; 
+            height: 300px; 
+            margin: 20px auto;
+        }
+
+        svg { 
+            position: absolute; 
+            top: 0; left: 0; 
+            background: #fff; 
+            border: 2px solid #e2e8f0; 
+            border-radius: 8px; 
+            z-index: 1;
+        }
+
+        /* Input positioning - calibrated to the SVG rectangles */
+        .quad-input {
+            position: absolute;
+            z-index: 2;
+            width: 60px;
+            height: 30px;
+            text-align: center;
+            font-weight: bold;
+            border: 2px solid #cbd5e1;
+            border-radius: 4px;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Specific positions for each FOIL quadrant */
+        #inF { top: 120px; left: 160px; } /* Center of 160x160 box */
+        #inO { top: 120px; left: 280px; } /* Center of 80x160 box */
+        #inI { top: 240px; left: 160px; } /* Center of 160x80 box */
+        #inL { top: 240px; left: 280px; } /* Center of 80x80 box */
+
+        .status-correct { border-color: #10b981 !important; background: #ecfdf5; }
+        .status-wrong { border-color: #ef4444 !important; background: #fef2f2; }
+
+        .controls { display: flex; flex-direction: column; gap: 15px; align-items: center; margin-top: 20px;}
+        .formula { font-size: 32px; font-weight: bold; color: #1e293b; margin-bottom: 10px; }
+        
+        button { padding: 12px 24px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        #checkBtn { background: #2563eb; color: white; width: 200px; }
+        #checkBtn:hover { background: #1d4ed8; }
+        .new-btn { background: #64748b; color: white; }
+
+        #final-area { display: none; margin-top: 15px; border-top: 2px solid #f1f5f9; padding-top: 15px; }
+        #finalAns { padding: 10px; font-size: 18px; width: 250px; text-align: center; border: 2px solid #cbd5e1; border-radius: 6px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div id="displayFormula" class="formula">(x + a)(x + b)</div>
+    <p>Multiply the terms for each box. Use <b>x^2</b> for x².</p>
+
+    <div id="interactive-container">
+        <svg width="400" height="300" viewBox="0 0 400 300">
+            <rect x="80" y="40" width="160" height="160" fill="#f8fafc" stroke="#94a3b8" stroke-width="2" />
+            <rect x="240" y="40" width="80" height="160" fill="#f8fafc" stroke="#94a3b8" stroke-width="2" />
+            <rect x="80" y="200" width="160" height="80" fill="#f8fafc" stroke="#94a3b8" stroke-width="2" />
+            <rect x="240" y="200" width="80" height="80" fill="#f8fafc" stroke="#94a3b8" stroke-width="2" />
+
+            <text x="160" y="25" text-anchor="middle" font-weight="bold" fill="#475569">x</text>
+            <text id="lblA" x="280" y="25" text-anchor="middle" font-weight="bold" fill="#475569"></text>
+            <text x="65" y="125" text-anchor="end" font-weight="bold" fill="#475569">x</text>
+            <text id="lblB" x="65" y="245" text-anchor="end" font-weight="bold" fill="#475569"></text>
+        </svg>
+
+        <input type="text" id="inF" class="quad-input" placeholder="First">
+        <input type="text" id="inO" class="quad-input" placeholder="Inner">
+        <input type="text" id="inI" class="quad-input" placeholder="Outer">
+        <input type="text" id="inL" class="quad-input" placeholder="Last">
+    </div>
+
+    <div class="controls">
+        <button id="checkBtn" onclick="validateSteps()">Check Quadrants</button>
+        
+        <div id="final-area">
+            <p><b>Step 2: Combine Like Terms</b></p>
+            <input type="text" id="finalAns" placeholder="x^2 + ?x + ?">
+            <button id="finalCheckBtn" onclick="validateFinal()" style="background:#10b981; color:white; margin-top:10px;">Check Final Answer</button>
+        </div>
+
+        <button class="new-btn" onclick="generate()">🔄 New Problem</button>
+    </div>
+    <p id="feedback" style="font-weight:bold; margin-top:10px;"></p>
+</div>
+    
+    <!---cert--->
+    <div>
+            <h1 id="scoreboard">score: 0 missed: 0</h1>
+        </div>
+        <div id="certOverlay">
+            <div id="cert">
+                <h1 style="font-size: 50px; color: #1a3a5f; margin: 0">ALGEBRA EXCELLENCE</h1>
+                <p style="font-size: 24px">This award is proudly presented to</p>
+                <h2
+                    id="certName"
+                    style="
+                        font-size: 45px;
+                        border-bottom: 2px solid #1a3a5f;
+                        display: inline-block;
+                        padding: 0 50px;
+                        margin: 20px 0;
+                    ">
+                    Student Name
+                </h2>
+                <p style="font-size: 20px">For successfully solving 100 FOIL problems!</p>
+                <p style="font-size: 20px" id="gradeMsg"></p>
+                <div style="margin-top: 30px; font-size: 80px">⭐ 100 ⭐</div>
+
+                <div class="no-print" style="margin-top: 30px">
+                    <button onclick="window.print()" style="background: #859900">Print Certificate</button>
+                    <button
+                        onclick="document.getElementById('certOverlay').style.display='none'"
+                        style="background: #93a1a1">
+                        Back to Game
+                    </button>
+                </div>
+            </div>
+        </div>
+<div id="msg"></div>
+<script src="../assets/JS/GameOverlay.js"></script>
+<script>
+    let a, b, solutions = {};
+    let checked = false;
+    setGameName("FOILpractice");
+    showScore();
+    function generate() {
+        a = Math.floor(Math.random() * 6) + 2;
+        b = Math.floor(Math.random() * 6) + 2;
+        solutions = {
+            F: "x^2",
+            O: a + "x",
+            I: b + "x",
+            L: (a * b).toString(),
+            total: `x^2+${a+b}x+${a*b}`
+        };
+
+        document.getElementById('displayFormula').textContent = `(x + ${a})(x + ${b})`;
+        document.getElementById('lblA').textContent = a;
+        document.getElementById('lblB').textContent = b;
+
+        // Reset
+        document.querySelectorAll('.quad-input').forEach(i => {
+            i.value = "";
+            i.className = "quad-input";
+        });
+        document.getElementById('final-area').style.display = "none";
+        document.getElementById('feedback').textContent = "";
+        document.getElementById('finalAns').value = "";
+    }
+
+    function validateSteps() {
+        let inputs = {
+            F: document.getElementById('inF'),
+            O: document.getElementById('inO'),
+            I: document.getElementById('inI'),
+            L: document.getElementById('inL')
+        };
+
+        let allCorrect = true;
+        for (let key in inputs) {
+            let val = inputs[key].value.replace(/\s/g, "").toLowerCase();
+            // Handle Inner/Outer being swapped
+            let isCorrect = (val === solutions[key]);
+            if (key === 'O' || key === 'I') {
+                if (val === solutions.O || val === solutions.I) isCorrect = true;
+            }
+
+            if (isCorrect) {
+                inputs[key].className = "quad-input status-correct";
+            } else {
+                inputs[key].className = "quad-input status-wrong";
+                allCorrect = false;
+            }
+        }
+
+        if (allCorrect) {
+            document.getElementById('final-area').style.display = "block";
+            document.getElementById('feedback').textContent = "Quadrants are correct! Now simplify.";
+            document.getElementById('feedback').style.color = "#059669";
+        } else {
+            document.getElementById('feedback').textContent = "Some boxes are incorrect. Try again!";
+            document.getElementById('feedback').style.color = "#dc2626";
+        }
+    }
+
+    function validateFinal() {
+        let val = document.getElementById('finalAns').value.replace(/\s/g, "").toLowerCase();
+        if (val === solutions.total || val === `x^2+${a*b}+${a+b}x`) {
+            document.getElementById('feedback').textContent = "🎉 PERFECT! You expanded the binomial correctly.";
+            document.getElementById('feedback').style.color = "#059669";
+            
+            //cert
+            if(!checked){
+                        correct();
+                    }
+                    checked = true;
+                    setTimeout(() => {
+                       generate();
+                       checked = false;
+                    }, 1000);
+        } else {
+            document.getElementById('feedback').textContent = "Not quite. Combine the x terms (Outer + Inner).";
+            document.getElementById('feedback').style.color = "#dc2626";
+            wrong(); //cert
+        }
+        showScore(); //cert
+    }
+
+    generate();
+</script>
+</body>
+</html>

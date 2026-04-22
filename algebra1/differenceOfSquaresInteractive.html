@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Difference of Squares: Perfect Snap</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; background: #f8fafc; padding: 20px; }
+        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 700px;}
+        .formula { font-size: 32px; margin-bottom: 15px; font-weight: bold; font-family: 'Cambria', serif; color: #1e293b; }
+        .instructions { background: #eff6ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #bfdbfe; min-height: 50px; color: #1e40af; font-weight: 500; }
+        svg { background: #fff; border: 2px solid #e2e8f0; border-radius: 12px; touch-action: none; }
+        .draggable { cursor: grab; }
+        .draggable:active { cursor: grabbing; }
+        .btn-group { margin-top: 20px; display: flex; gap: 10px; justify-content: center; }
+        button { background: #2563eb; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold; transition: 0.2s;}
+        button:hover { background: #1d4ed8; transform: translateY(-1px); }
+        button:disabled { background: #cbd5e1; cursor: not-allowed; transform: none; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="formula">a² - b² = (a - b)(a + b)</div>
+    
+    <div id="guide" class="instructions">
+        <b>Step 1:</b> Here is square <b>a²</b>. <br>Subtract the small red square <b>b²</b>.
+    </div>
+
+    <svg id="canvas" width="640" height="420">
+        <rect id="rectMain" x="100" y="200" width="250" height="150" fill="#dbeafe" stroke="#2563eb" stroke-width="2" />
+        <text x="225" y="285" fill="#1e40af" font-weight="bold" font-size="18">Piece 1</text>
+
+        <g id="dragGroup" style="display:none;">
+            <rect width="150" height="100" fill="#dcfce7" stroke="#16a34a" stroke-width="2" />
+            <text x="75" y="55" text-anchor="middle" font-weight="bold" fill="#15803d">Piece 2</text>
+        </g>
+
+        <rect id="bSquare" x="100" y="100" width="100" height="100" fill="#fee2e2" stroke="#dc2626" stroke-width="2" />
+        <text id="bLabel" x="150" y="155" text-anchor="middle" font-weight="bold" fill="#991b1b">b²</text>
+
+        <rect id="placeholder" x="200" y="100" width="150" height="100" fill="#dbeafe" stroke="#2563eb" stroke-width="2" />
+
+        <line x1="80" y1="200" x2="80" y2="350" stroke="#475569" stroke-width="2" id="h-line" style="display:none;"/>
+        <text x="45" y="275" fill="#475569" font-weight="bold" id="h-text" style="display:none;">a - b</text>
+
+        <text id="labelA" x="225" y="80" font-weight="bold" fill="#2563eb" text-anchor="middle">Side a</text>
+    </svg>
+
+    <div class="btn-group">
+        <button id="btn1" onclick="cut()">1. Cut Out b²</button>
+        <button id="btn2" onclick="breakPiece()" disabled>2. Break Piece</button>
+        <button id="btn3" onclick="rotatePiece()" disabled>3. Rotate & Snap</button>
+    </div>
+</div>
+
+<script>
+    const svg = document.getElementById('canvas');
+    const dragGroup = document.getElementById('dragGroup');
+    const guide = document.getElementById('guide');
+    
+    let currentPos = { x: 200, y: 100 }; 
+    let rotation = 0;
+    let isDragging = false;
+    let offset = { x: 0, y: 0 };
+
+    function cut() {
+        document.getElementById('bSquare').style.display = 'none';
+        document.getElementById('bLabel').style.display = 'none';
+        guide.innerHTML = "<b>Step 2:</b> We've removed <b>b²</b>. We are left with <b>a² - b²</b>.<br>Now 'Break' the top piece off.";
+        document.getElementById('btn1').disabled = true;
+        document.getElementById('btn2').disabled = false;
+    }
+
+    function breakPiece() {
+        document.getElementById('placeholder').style.display = 'none';
+        dragGroup.style.display = 'block';
+        updateTransform();
+        
+        document.getElementById('h-line').style.display = 'block';
+        document.getElementById('h-text').style.display = 'block';
+        
+        guide.innerHTML = "<b>Step 3:</b> The piece is loose! It is <b>b</b> tall.<br>Rotate it so the side <b>(a-b)</b> becomes its new height.";
+        document.getElementById('btn2').disabled = true;
+        document.getElementById('btn3').disabled = false;
+    }
+
+    function rotatePiece() {
+        rotation = 90;
+        currentPos = { x: 450, y: 50 }; // Move it to the side for the user to see
+        updateTransform();
+        guide.innerHTML = "<b>Step 4:</b> Drag Piece 2 and snap it to the <b>Right</b> of Piece 1.<br>Watch the width become <b>a + b</b>!";
+        document.getElementById('btn3').disabled = true;
+        initDrag();
+    }
+
+    function initDrag() {
+        dragGroup.classList.add('draggable');
+        dragGroup.onpointerdown = (e) => {
+            isDragging = true;
+            const pt = getMousePos(e);
+            offset.x = pt.x - currentPos.x;
+            offset.y = pt.y - currentPos.y;
+            dragGroup.setPointerCapture(e.pointerId);
+        };
+
+        window.onpointermove = (e) => {
+            if (!isDragging) return;
+            const pt = getMousePos(e);
+            currentPos.x = pt.x - offset.x;
+            currentPos.y = pt.y - offset.y;
+            updateTransform();
+            
+            // MATH FOR THE SNAP:
+            // Piece 1 ends at X=350. Piece 1 top starts at Y=200.
+            // Piece 2 is rotated 90deg, its "new" width is 100, "new" height is 150.
+            if (Math.abs(currentPos.x - 350) < 30 && Math.abs(currentPos.y - 200) < 30) {
+                currentPos = { x: 350, y: 200 };
+                updateTransform();
+                isDragging = false;
+                finish();
+            }
+        };
+        window.onpointerup = () => isDragging = false;
+    }
+
+    function finish() {
+        guide.style.background = "#f0fdf4";
+        guide.style.borderColor = "#bbf7d0";
+        guide.style.color = "#166534";
+        guide.innerHTML = "<b>Success!</b> Piece 1 (width a) + Piece 2 (width b) = <b>(a + b)</b>.<br>The constant height is <b>(a - b)</b>.";
+        
+        // Add final Width Label
+        const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        label.setAttribute("x", "275");
+        label.setAttribute("y", "380");
+        label.setAttribute("text-anchor", "middle");
+        label.setAttribute("font-weight", "bold");
+        label.textContent = "Total Width: (a + b)";
+        svg.appendChild(label);
+    }
+
+    function updateTransform() {
+        dragGroup.setAttribute('transform', `translate(${currentPos.x}, ${currentPos.y}) rotate(${rotation})`);
+    }
+
+    function getMousePos(e) {
+        const CTM = svg.getScreenCTM();
+        return {
+            x: (e.clientX - CTM.e) / CTM.a,
+            y: (e.clientY - CTM.f) / CTM.d
+        };
+    }
+</script>
+
+</body>
+</html>

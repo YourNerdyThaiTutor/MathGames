@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizing Difference of Squares with Labeled Sides</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f7f9fc;
+            color: #333;
+            padding: 20px;
+        }
+
+        h1, h3 { color: #2c3e50; margin-bottom: 5px;}
+
+        .formula-card {
+            background: white;
+            padding: 20px 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .formula {
+            font-size: 28px;
+            font-weight: bold;
+            color: #d32f2f; /* Highlight Color */
+        }
+
+        .formula span { font-weight: normal; color: #555; }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+        }
+
+        .control-group { text-align: center; }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        input[type="range"] {
+            width: 200px;
+            cursor: pointer;
+        }
+
+        #visualization-container {
+            display: flex;
+            gap: 50px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .viz-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .viz-label {
+            margin-bottom: 15px;
+            font-style: italic;
+            color: #777;
+            max-width: 280px;
+        }
+
+        /* SVG Styling */
+        svg {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 2px 2px 8px rgba(0,0,0,0.05);
+        }
+
+        /* Label colors match the shapes */
+        .color-a { color: #2196F3; } /* Blue for A */
+        .color-b { color: #f44336; } /* Red for B */
+        
+        /* Stylized SVG brackets and text for side labeling */
+        .side-bracket { stroke: #333; stroke-width: 1.5; fill: none; }
+        .side-text { font-size: 14px; font-weight: bold; text-anchor: middle; fill: #333; }
+        
+    </style>
+</head>
+<body>
+
+    <h1>Math Visualizer</h1>
+    <h3>Difference of Squares Formula</h3>
+
+    <div class="formula-card">
+        <div class="formula">
+            <span class="color-a">a²</span> - <span class="color-b">b²</span> = 
+            <span>(<span class="color-a">a</span> - <span class="color-b">b</span>)(<span class="color-a">a</span> + <span class="color-b">b</span>)</span>
+        </div>
+        <p>Rearranging the remaining area into a rectangle.</p>
+    </div>
+
+    <div class="controls">
+        <div class="control-group">
+            <label for="sideA">Side length <span class="color-a">(a)</span>: <span id="valA">100</span></label>
+            <input type="range" id="sideA" min="100" max="250" value="180">
+        </div>
+        <div class="control-group">
+            <label for="sideB">Side length <span class="color-b">(b)</span>: <span id="valB">60</span></label>
+            <input type="range" id="sideB" min="30" max="90" value="60">
+        </div>
+    </div>
+
+    <div id="visualization-container">
+        
+        <div class="viz-step">
+            <div class="viz-label">
+                Start with Square <span class="color-a">a</span> (Area <span class="color-a">a²</span>). <br>
+                Cut out Square <span class="color-b">b</span> (Area <span class="color-b">b²</span>) from the corner.
+            </div>
+            <svg id="svgCut" width="300" height="300"></svg>
+            <p><strong>Remaining Area: <span class="color-a">a²</span> - <span class="color-b">b²</span></strong></p>
+        </div>
+
+        <div class="viz-arrow"><h2>→</h2></div>
+
+        <div class="viz-step">
+            <div class="viz-label">
+                Take the green piece, flip it 90 degrees, and put it next to the blue piece. 
+                Now we have one large rectangle!
+            </div>
+            <svg id="svgResult" width="450" height="300"></svg>
+            <p><strong>Rectangle Area: (<span class="color-a">a</span> - <span class="color-b">b</span>)(<span class="color-a">a</span> + <span class="color-b">b</span>)</strong></p>
+        </div>
+
+    </div>
+
+    <script>
+        const sliderA = document.getElementById('sideA');
+        const sliderB = document.getElementById('sideB');
+        const valA = document.getElementById('valA');
+        const valB = document.getElementById('valB');
+        
+        const svgCut = document.getElementById('svgCut');
+        const svgResult = document.getElementById('svgResult');
+
+        // Main update function
+        function drawVisualization() {
+            let a = parseInt(sliderA.value);
+            let b = parseInt(sliderB.value);
+
+            // Constraint: B must always be smaller than A
+            if (b >= a) {
+                b = a - 10;
+                sliderB.value = b;
+            }
+
+            valA.innerText = a;
+            valB.innerText = b;
+
+            updateSvgCut(a, b);
+            updateSvgResult(a, b);
+        }
+
+        // DRAWING STEP 1: The "Cut"
+        function updateSvgCut(a, b) {
+            svgCut.innerHTML = ''; // Clear existing drawing
+
+            // 1. The main "A" square (Light Blue)
+            // Position it with padding to accommodate outer labels
+            const mainA = createRect(50, 50, a, a, "#e3f2fd", "#2196F3");
+            svgCut.appendChild(mainA);
+
+            // 2. The "B" square (Transparent, dashed border, showing what's cut)
+            const cutB = createRect(50, 50, b, b, "none", "#f44336", "4,4");
+            svgCut.appendChild(cutB);
+
+            // 3. Labels and Brackets (Now on the Outside)
+            // Top side 'a'
+            addSideLabel(svgCut, 50, 30, a, 0, 'top', '#2196F3', 'a');
+            // Right side 'a'
+            addSideLabel(svgCut, a + 70, 50, 0, a, 'right', '#2196F3', 'a');
+            
+            // Left cut side 'b' (inner, showing the width of the cut)
+            addSideLabel(svgCut, 30, 50, 0, b, 'left', '#f44336', 'b');
+        }
+
+        // DRAWING STEP 2: The "Resulting Rectangle" (The Rearrangement)
+        function updateSvgResult(a, b) {
+            svgResult.innerHTML = ''; // Clear existing drawing
+
+            const remHeight = a - b; // The constant height for both pieces
+
+            // 1. The main body remaining (Blue Piece)
+            // It is (a wide, (a-b) high). Set with padding for outer labels
+            const bluePiece = createRect(50, 50, a, remHeight, "#e3f2fd", "#2196F3");
+            svgResult.appendChild(bluePiece);
+
+            // 2. The Remainder Piece (Green - rotated and shifted)
+            // It used to be (b wide, (a-b) high). New Dim: ((a-b) wide, b high)
+            const greenPiece = createRect(0, 0, b, remHeight, "#e8f5e9", "#4CAF50");
+            // Position it next to the blue piece
+            greenPiece.setAttribute('transform', `translate(${a + 50}, 50)`);
+            svgResult.appendChild(greenPiece);
+
+            // 3. New Labels showing the algebra in action
+            const totalWidth = a + b;
+            const newHeight = remHeight;
+
+            // LABEL THE NEW WIDTH: "a + b"
+            // Top overall bracket (showing the combined length)
+            addSideLabel(svgResult, 50, 30, totalWidth, 0, 'top', '#333', 'a + b');
+            // Inner labels showing the segments
+            addText(svgResult, 50 + (a/2), 70, 'a', '#2196F3');
+            addText(svgResult, 50 + a + (b/2), 70, 'b', '#f44336');
+
+            // LABEL THE NEW HEIGHT: "a - b"
+            // A bracket on the right side
+            addSideLabel(svgResult, 50 + a + b + 20, 50, 0, newHeight, 'right', '#333', 'a - b');
+        }
+
+        // Helper: Create an SVG rectangle
+        function createRect(x, y, w, h, fill, stroke, dashArray="") {
+            const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            rect.setAttribute("x", x);
+            rect.setAttribute("y", y);
+            rect.setAttribute("width", w);
+            rect.setAttribute("height", h);
+            rect.setAttribute("fill", fill);
+            rect.setAttribute("stroke", stroke);
+            rect.setAttribute("stroke-width", "2");
+            if(dashArray) rect.setAttribute("stroke-dasharray", dashArray);
+            return rect;
+        }
+
+        // Helper: Create SVG text label
+        function addText(svg, x, y, content, color, transform="") {
+            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            text.setAttribute("x", x);
+            text.setAttribute("y", y);
+            text.setAttribute("fill", color);
+            text.setAttribute("font-size", "14");
+            text.setAttribute("font-weight", "bold");
+            text.setAttribute("text-anchor", "middle");
+            if(transform) text.setAttribute("transform", transform);
+            text.textContent = content;
+            svg.appendChild(text);
+        }
+
+        // Complex Helper: Creates a curly bracket and text for a side
+        // side: 'top', 'bottom', 'left', 'right'
+        function addSideLabel(svg, startX, startY, deltaX, deltaY, side, color, label) {
+            const bracketSize = 8;
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute('class', 'side-bracket');
+            path.setAttribute('stroke', color);
+            
+            let d = ""; // The SVG path definition (M=Move To, L=Line To)
+            let textX, textY, rotation = "";
+
+            if (side === 'top') {
+                // Bracket opening downwards
+                d = `M ${startX} ${startY + bracketSize} L ${startX} ${startY} L ${startX + deltaX} ${startY} L ${startX + deltaX} ${startY + bracketSize}`;
+                textX = startX + (deltaX / 2);
+                textY = startY - 5;
+            } else if (side === 'bottom') {
+                d = `M ${startX} ${startY - bracketSize} L ${startX} ${startY} L ${startX + deltaX} ${startY} L ${startX + deltaX} ${startY - bracketSize}`;
+                textX = startX + (deltaX / 2);
+                textY = startY + 18;
+            } else if (side === 'right') {
+                d = `M ${startX - bracketSize} ${startY} L ${startX} ${startY} L ${startX} ${startY + deltaY} L ${startX - bracketSize} ${startY + deltaY}`;
+                textX = startX + 15;
+                textY = startY + (deltaY / 2);
+            } else if (side === 'left') {
+                d = `M ${startX + bracketSize} ${startY} L ${startX} ${startY} L ${startX} ${startY + deltaY} L ${startX + bracketSize} ${startY + deltaY}`;
+                textX = startX - 15;
+                textY = startY + (deltaY / 2);
+            }
+
+            path.setAttribute('d', d);
+            svg.appendChild(path);
+
+            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            text.setAttribute('class', 'side-text');
+            text.setAttribute('x', textX);
+            text.setAttribute('y', textY);
+            text.setAttribute('fill', color);
+            text.textContent = label;
+            svg.appendChild(text);
+        }
+
+        // Event listeners
+        sliderA.addEventListener('input', drawVisualization);
+        sliderB.addEventListener('input', drawVisualization);
+
+        // Initial draw
+        drawVisualization();
+
+    </script>
+</body>
+</html>

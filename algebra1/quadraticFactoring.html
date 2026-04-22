@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Perfect Box Factoring</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; background: #f8fafc; padding: 20px; }
+        .card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; width: 650px;}
+        .inputs { display: flex; gap: 10px; justify-content: center; align-items: center; margin-bottom: 20px; font-size: 20px; font-weight: bold; }
+        input { width: 50px; padding: 8px; border: 2px solid #cbd5e1; border-radius: 6px; text-align: center; font-size: 18px; }
+        svg { background: white; border: 1px solid #e2e8f0; border-radius: 12px; margin: 20px 0; }
+        .label { font-weight: bold; font-size: 14px; pointer-events: none; }
+        .factor-label { font-size: 18px; fill: #2563eb; font-weight: bold; }
+        #result { font-size: 22px; font-weight: bold; color: #059669; margin-top: 10px; }
+        button { background: #2563eb; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Factoring: The Box Method</h2>
+    <div class="inputs">
+        <input type="number" id="a" value="1"> <span>x² +</span>
+        <input type="number" id="b" value="5"> <span>x +</span>
+        <input type="number" id="c" value="6">
+    </div>
+    <button onclick="factor()">Factor & Align</button>
+
+    <div id="viz">
+        <svg id="canvas" width="500" height="350">
+            </svg>
+    </div>
+
+    <div id="result"></div>
+</div>
+
+<script>
+    function gcd(a, b) {
+        a = Math.abs(a); b = Math.abs(b);
+        while (b) { let t = b; b = a % b; a = t; }
+        return a;
+    }
+
+    function factor() {
+        const a = parseInt(document.getElementById('a').value);
+        const b = parseInt(document.getElementById('b').value);
+        const c = parseInt(document.getElementById('c').value);
+        const canvas = document.getElementById('canvas');
+        const resDiv = document.getElementById('result');
+        canvas.innerHTML = ''; 
+
+        // 1. Find factors of (a*c) that sum to b
+        let m = null, n = null;
+        const ac = a * c;
+        for (let i = -Math.abs(ac || b || 100); i <= Math.abs(ac || b || 100); i++) {
+            if (i === 0 && ac !== 0) continue;
+            let j = b - i;
+            if (i * j === ac) {
+                m = i; n = j;
+                break;
+            }
+        }
+
+        if (m === null) {
+            resDiv.textContent = "Not factorable with simple integers.";
+            resDiv.style.color = "#dc2626";
+            return;
+        }
+
+        // 2. The GCF Logic for Box Dimensions
+        // Box layout:
+        // [ ax^2 ] [ nx ]
+        // [ mx   ] [ c  ]
+        const col1_x = gcd(a, m);
+        const col2_x = gcd(n, c);
+        const row1_y = gcd(a, n);
+        const row2_y = gcd(m, c);
+
+        // Scale for visibility (px)
+        const scale = 40;
+        const w1 = col1_x * scale;
+        const w2 = col2_x * scale;
+        const h1 = row1_y * scale;
+        const h2 = row2_y * scale;
+        const offX = 150, offY = 80;
+
+        // 3. Draw the 4 Quadrants
+        drawBox(offX, offY, w1, h1, "#dbeafe", "#2563eb", `${a}x²`);
+        drawBox(offX + w1, offY, w2, h1, "#fef3c7", "#d97706", `${n}x`);
+        drawBox(offX, offY + h1, w1, h2, "#fce7f3", "#db2777", `${m}x`);
+        drawBox(offX + w1, offY + h1, w2, h2, "#dcfce7", "#16a34a", `${c}`);
+
+        // 4. Draw Outer Factor Labels
+        drawText(offX + w1/2, offY - 15, `${col1_x}x`, "factor-label");
+        drawText(offX + w1 + w2/2, offY - 15, `${n/row1_y}`, "factor-label");
+        drawText(offX - 40, offY + h1/2, `${row1_y}x`, "factor-label");
+        drawText(offX - 40, offY + h1 + h2/2, `${m/col1_x}`, "factor-label");
+
+        resDiv.textContent = `(${col1_x}x + ${n/row1_y})(${row1_y}x + ${m/col1_x})`;
+        resDiv.style.color = "#059669";
+    }
+
+    function drawBox(x, y, w, h, fill, stroke, txt) {
+        const svg = document.getElementById('canvas');
+        const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        r.setAttribute("x", x); r.setAttribute("y", y);
+        r.setAttribute("width", Math.abs(w)); r.setAttribute("height", Math.abs(h));
+        r.setAttribute("fill", fill); r.setAttribute("stroke", stroke); r.setAttribute("stroke-width", "2");
+        svg.appendChild(r);
+        drawText(x + w/2, y + h/2 + 5, txt, "label");
+    }
+
+    function drawText(x, y, txt, cls) {
+        const svg = document.getElementById('canvas');
+        const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        t.setAttribute("x", x); t.setAttribute("y", y);
+        t.setAttribute("text-anchor", "middle");
+        t.setAttribute("class", cls);
+        t.textContent = txt;
+        svg.appendChild(t);
+    }
+
+    factor(); // Initial run
+</script>
+</body>
+</html>

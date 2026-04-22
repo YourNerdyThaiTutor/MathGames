@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>FOIL Master Drill</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; background: #0f172a; color: white; padding: 40px; }
+        .drill-card { background: #1e293b; padding: 40px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); text-align: center; width: 550px; border: 1px solid #334155; }
+        .stats { display: flex; justify-content: space-between; margin-bottom: 20px; color: #94a3b8; font-weight: bold; font-size: 14px; text-transform: uppercase; }
+        .problem { font-size: 42px; font-weight: 800; margin-bottom: 30px; color: #f8fafc; }
+        input { background: #0f172a; border: 2px solid #334155; border-radius: 12px; color: #38bdf8; font-size: 24px; padding: 15px; width: 100%; text-align: center; outline: none; box-sizing: border-box; }
+        input.correct { border-color: #10b981; color: #10b981; }
+        input.wrong { border-color: #ef4444; color: #ef4444; }
+        .hint { margin-top: 20px; color: #64748b; font-size: 14px; line-height: 1.6; }
+        kbd { background: #334155; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+    </style>
+</head>
+<body>
+
+<div class="drill-card">
+    <div class="stats">
+        <span>Score: <span id="score">0</span></span>
+        <span>Streak: <span id="streak">0</span></span>
+    </div>
+    
+    <div id="problem" class="problem">(2x + 3)(x - 4)</div>
+    
+    <input type="text" id="answerInput" placeholder="e.g. 2x^2 - 5x - 12" autocomplete="off">
+    
+    <div class="hint">
+        Use <b>^2</b> for exponents. Example: <b>6x^2 - 2x + 10</b><br>
+        Press <kbd>Enter</kbd> to submit.
+    </div>
+</div>
+
+<script>
+    let c1, c2, n1, n2, score = 0, currentStreak = 0;
+    const input = document.getElementById('answerInput');
+    const problemEl = document.getElementById('problem');
+    const scoreEl = document.getElementById('score');
+    const streakEl = document.getElementById('streak');
+
+    function generate() {
+        // c = coefficients, n = constants
+        c1 = Math.random() > 0.5 ? Math.floor(Math.random() * 4) + 1 : 1; 
+        c2 = Math.random() > 0.7 ? Math.floor(Math.random() * 3) + 1 : 1;
+        n1 = Math.floor(Math.random() * 19) - 9; // -9 to 9
+        n2 = Math.floor(Math.random() * 19) - 9;
+        
+        // Avoid 0
+        if (n1 === 0) n1 = 1;
+        if (n2 === 0) n2 = -2;
+
+        const part1 = `${c1 === 1 ? '' : c1}x ${n1 >= 0 ? '+' : '-'} ${Math.abs(n1)}`;
+        const part2 = `${c2 === 1 ? '' : c2}x ${n2 >= 0 ? '+' : '-'} ${Math.abs(n2)}`;
+        
+        problemEl.textContent = `(${part1})(${part2})`;
+        input.value = "";
+        input.className = "";
+    }
+
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') check();
+    });
+
+    function check() {
+        const userVal = input.value.replace(/\s/g, "").toLowerCase();
+        
+        const firstCoeff = c1 * c2;
+        const middleCoeff = (c1 * n2) + (n1 * c2);
+        const lastConst = n1 * n2;
+
+        // Build string pieces carefully for negatives
+        let term1 = (firstCoeff === 1 ? "" : firstCoeff) + "x^2";
+        
+        let term2 = "";
+        if (middleCoeff > 0) term2 = "+" + middleCoeff + "x";
+        else if (middleCoeff < 0) term2 = middleCoeff + "x";
+        // if 0, term2 remains empty string
+
+        let term3 = "";
+        if (lastConst > 0) term3 = "+" + lastConst;
+        else if (lastConst < 0) term3 = lastConst;
+
+        const correctAns = (term1 + term2 + term3).toLowerCase();
+
+        if (userVal === correctAns) {
+            score++;
+            currentStreak++;
+            input.className = "correct";
+            scoreEl.textContent = score;
+            streakEl.textContent = currentStreak;
+            setTimeout(generate, 400);
+        } else {
+            currentStreak = 0;
+            streakEl.textContent = currentStreak;
+            input.className = "wrong";
+            // For learning: briefly show the correct answer in placeholder if wrong
+            console.log("Correct was: " + correctAns);
+        }
+    }
+
+    generate();
+</script>
+
+</body>
+</html>

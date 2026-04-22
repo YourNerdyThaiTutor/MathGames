@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Speed Factoring Practice</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; background: #0f172a; color: white; padding: 20px; }
+        .card { background: #1e293b; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; width: 550px; border: 1px solid #334155; }
+        
+        .options-bar { display: flex; gap: 10px; justify-content: center; margin-bottom: 25px; flex-wrap: wrap; }
+        .opt { background: #334155; padding: 8px 12px; border-radius: 20px; cursor: pointer; font-size: 13px; border: 2px solid transparent; transition: 0.2s; }
+        .opt.active { border-color: #38bdf8; background: #1e293b; color: #38bdf8; }
+
+        .stats { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; color: #94a3b8; width: 100%; }
+        .formula { font-size: 42px; font-weight: bold; margin: 20px 0; color: #f8fafc; min-height: 60px; }
+        
+        .answer-area { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 24px; }
+        input { background: #0f172a; border: 2px solid #475569; color: white; padding: 10px; width: 120px; border-radius: 8px; text-align: center; font-size: 20px; outline: none; }
+        input:focus { border-color: #38bdf8; }
+        input.flash-correct { border-color: #10b981; animation: pulse-g 0.3s; }
+        input.flash-error { border-color: #ef4444; animation: shake 0.3s; }
+
+        @keyframes pulse-g { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+        .hint { margin-top: 20px; color: #64748b; font-size: 14px; font-style: italic; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="options-bar">
+        <div class="opt active" id="opt-reg" onclick="toggle('reg')">Standard (x²+bx+c)</div>
+        <div class="opt active" id="opt-diff" onclick="toggle('diff')">Diff of Squares</div>
+        <div class="opt active" id="opt-perf" onclick="toggle('perf')">Perfect Squares</div>
+    </div>
+
+    <div class="stats">
+        <span id="timer">Time: 0.0s</span>
+        <span id="streak">Streak: 0</span>
+    </div>
+
+    <div id="display" class="formula">x² + 5x + 6</div>
+
+    <div class="answer-area">
+        ( x <input type="text" id="ans1" placeholder="+ 2" autofocus> )
+        ( x <input type="text" id="ans2" placeholder="+ 3"> )
+    </div>
+
+    <div class="hint">Press Enter to check</div>
+</div>
+
+<script>
+    let currentTask = {};
+    let streak = 0;
+    let startTime = Date.now();
+    let modes = { reg: true, diff: true, perf: true };
+
+    function toggle(m) {
+        modes[m] = !modes[m];
+        document.getElementById('opt-' + m).classList.toggle('active');
+        if (!modes.reg && !modes.diff && !modes.perf) toggle(m); // Force at least one
+        generate();
+    }
+
+    function generate() {
+        let pool = [];
+        if (modes.reg) pool.push('reg');
+        if (modes.diff) pool.push('diff');
+        if (modes.perf) pool.push('perf');
+        
+        let type = pool[Math.floor(Math.random() * pool.length)];
+        let a, b, c, f1, f2;
+
+        if (type === 'diff') {
+            let n = Math.floor(Math.random() * 11) + 1;
+            f1 = n; f2 = -n;
+            a = 1; b = 0; c = -(n * n);
+        } else if (type === 'perf') {
+            let n = Math.floor(Math.random() * 11) + 1;
+            if (Math.random() > 0.5) n = -n;
+            f1 = n; f2 = n;
+            a = 1; b = 2 * n; c = n * n;
+        } else {
+            f1 = Math.floor(Math.random() * 12) - 5;
+            f2 = Math.floor(Math.random() * 12) - 5;
+            if (f1 === 0) f1 = 6; if (f2 === 0) f2 = 4;
+            a = 1; b = f1 + f2; c = f1 * f2;
+        }
+
+        currentTask = { f1, f2, b, c };
+        let bPart = b === 0 ? "" : (b > 0 ? " + " + b : " - " + Math.abs(b)) + "x";
+        let cPart = c >= 0 ? " + " + c : " - " + Math.abs(c);
+        document.getElementById('display').innerHTML = `x²${bPart}${cPart}`;
+        
+        document.getElementById('ans1').value = "";
+        document.getElementById('ans2').value = "";
+        document.getElementById('ans1').focus();
+        startTime = Date.now();
+    }
+
+    function check() {
+        let v1 = document.getElementById('ans1').value.replace(/\s/g, "");
+        let v2 = document.getElementById('ans2').value.replace(/\s/g, "");
+        
+        // Convert input like "+3" or "-4" to integers
+        let n1 = parseInt(v1);
+        let n2 = parseInt(v2);
+
+        let win = (n1 === currentTask.f1 && n2 === currentTask.f2) || 
+                  (n1 === currentTask.f2 && n2 === currentTask.f1);
+
+        if (win) {
+            streak++;
+            document.getElementById('ans1').className = "flash-correct";
+            document.getElementById('ans2').className = "flash-correct";
+            setTimeout(() => {
+                document.getElementById('ans1').className = "";
+                document.getElementById('ans2').className = "";
+                generate();
+            }, 400);
+        } else {
+            streak = 0;
+            document.getElementById('ans1').className = "flash-error";
+            document.getElementById('ans2').className = "flash-error";
+            setTimeout(() => {
+                document.getElementById('ans1').className = "";
+                document.getElementById('ans2').className = "";
+            }, 400);
+        }
+        document.getElementById('streak').textContent = "Streak: " + streak;
+    }
+
+    // Keyboard support
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') check();
+    });
+
+    setInterval(() => {
+        let elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+        document.getElementById('timer').textContent = `Time: ${elapsed}s`;
+    }, 100);
+
+    generate();
+    // Selecting our two input boxes
+    const ans1 = document.getElementById('ans1');
+    const ans2 = document.getElementById('ans2');
+
+    // Function to handle the "jump"
+    function handleArrows(e) {
+        if (e.key === "ArrowRight") {
+            ans2.focus();
+        } else if (e.key === "ArrowLeft") {
+            ans1.focus();
+        }
+    }
+
+    // Attach the listener to both inputs
+    ans1.addEventListener('keydown', handleArrows);
+    ans2.addEventListener('keydown', handleArrows);
+</script>
+</body>
+</html>
