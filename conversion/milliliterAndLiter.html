@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liters to Milliliters Visualizer</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f8ff;
+            color: #333;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .input-group {
+            margin: 20px 0;
+        }
+
+        input {
+            padding: 10px;
+            font-size: 1.2rem;
+            width: 100px;
+            border: 2px solid #00aaff;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        .visual-area {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            margin-top: 40px;
+            height: 300px;
+        }
+
+        /* The Big Liter Tank */
+        .tank {
+            width: 120px;
+            height: 250px;
+            border: 4px solid #555;
+            border-top: none;
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 10px;
+            position: relative;
+            background: #eee;
+            overflow: hidden;
+        }
+
+        .water {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: #00aaff;
+            transition: height 0.5s ease-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .label {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .formula-box {
+            background: #e1f5fe;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-size: 1.1rem;
+        }
+
+        .highlight {
+            color: #0077cc;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>💧 Unit Explorer</h1>
+        <p>Enter a number of <strong>Liters</strong> to see how many <strong>Milliliters</strong> it makes!</p>
+
+        <div class="input-group">
+            <input type="number" id="literInput" value="1" min="0" max="10" step="0.1">
+            <span style="font-size: 1.5rem;"> L</span>
+        </div>
+
+        <div class="visual-area">
+            <div>
+                <div class="tank">
+                    <div id="literWater" class="water" style="height: 10%;"></div>
+                </div>
+                <div class="label">10 Liter Tank</div>
+            </div>
+
+            <div style="font-size: 2rem; padding-bottom: 100px;">=</div>
+
+            <div>
+                <div class="tank" style="border-color: #0077cc;">
+                    <div id="mlWater" class="water" style="height: 10%; background: #0077cc;"></div>
+                </div>
+                <div class="label" id="mlLabel">0 mL</div>
+            </div>
+        </div>
+
+        <div class="formula-box">
+            <div id="mathSentence">1 Liter × 1,000 = <span class="highlight">1,000 mL</span></div>
+        </div>
+    </div>
+
+    <script>
+        const input = document.getElementById('literInput');
+        const literWater = document.getElementById('literWater');
+        const mlWater = document.getElementById('mlWater');
+        const mlLabel = document.getElementById('mlLabel');
+        const mathSentence = document.getElementById('mathSentence');
+
+        function updateVisuals() {
+            let liters = parseFloat(input.value);
+            if (isNaN(liters)) liters = 0;
+            
+            // Limit to 10 for the visual scale
+            let displayLiters = Math.min(liters, 10);
+            let ml = liters * 1000;
+            
+            // Calculate height percentage (based on 10L max for the tank)
+            let heightPct = (displayLiters / 10) * 100;
+            
+            literWater.style.height = heightPct + '%';
+            mlWater.style.height = heightPct + '%';
+            
+            literWater.innerText = liters > 0 ? liters + 'L' : '';
+            mlLabel.innerText = ml.toLocaleString() + ' mL';
+            
+            mathSentence.innerHTML = `${liters} Liter(s) × 1,000 = <span class="highlight">${ml.toLocaleString()} mL</span>`;
+        }
+
+        input.addEventListener('input', updateVisuals);
+        
+        // Run once on load
+        updateVisuals();
+    </script>
+</body>
+</html>

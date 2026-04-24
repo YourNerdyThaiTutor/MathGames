@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metric Speed Challenge</title>
+    <style>
+        :root {
+            --primary: #2ecc71;
+            --secondary: #3498db;
+            --danger: #e74c3c;
+            --dark: #2c3e50;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            background-color: #f7f9fc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .game-card {
+            background: white;
+            padding: 40px;
+            border-radius: 25px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 400px;
+            border: 4px solid var(--secondary);
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            color: var(--dark);
+        }
+
+        .timer-bar {
+            width: 100%;
+            height: 10px;
+            background: #eee;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        #progress {
+            width: 100%;
+            height: 100%;
+            background: var(--primary);
+            transition: width 0.1s linear;
+        }
+
+        .question-box {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            min-height: 80px;
+        }
+
+        input {
+            width: 80%;
+            padding: 15px;
+            font-size: 1.5rem;
+            border: 3px solid #ddd;
+            border-radius: 15px;
+            text-align: center;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: var(--secondary);
+        }
+
+        .feedback {
+            height: 30px;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        .hidden { display: none; }
+
+        button {
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            background: var(--secondary);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover { transform: scale(1.05); }
+    </style>
+</head>
+<body>
+
+    <div class="game-card" id="start-screen">
+        <h1>💧 Speed Test!</h1>
+        <p>How many can you get right in a row?</p>
+        <p>Remember: <br><strong>1 Liter = 1,000 mL</strong></p>
+        <button onclick="startGame()">Start Challenge</button>
+    </div>
+
+    <div class="game-card hidden" id="game-screen">
+        <div class="stats">
+            <span>Score: <b id="score">0</b></span>
+            <span>High Score: <b id="high-score">0</b></span>
+        </div>
+        
+        <div class="timer-bar">
+            <div id="progress"></div>
+        </div>
+
+        <div class="question-box" id="question">
+            Loading...
+        </div>
+
+        <input type="number" id="answerInput" placeholder="???" autocomplete="off">
+        
+        <div class="feedback" id="feedback"></div>
+    </div>
+
+    <script>
+        let score = 0;
+        let highScore = 0;
+        let timeLeft = 100;
+        let timerInterval;
+        let currentAnswer = 0;
+        const timeLimit = 10; // seconds per question
+
+        const startScreen = document.getElementById('start-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const questionEl = document.getElementById('question');
+        const inputEl = document.getElementById('answerInput');
+        const scoreEl = document.getElementById('score');
+        const highScoreEl = document.getElementById('high-score');
+        const progressEl = document.getElementById('progress');
+        const feedbackEl = document.getElementById('feedback');
+
+        function startGame() {
+            score = 0;
+            scoreEl.innerText = score;
+            startScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            nextQuestion();
+            inputEl.focus();
+        }
+
+        function nextQuestion() {
+            inputEl.value = '';
+            feedbackEl.innerText = '';
+            timeLeft = 100;
+            
+            // Randomly choose Liters to mL (0) or mL to Liters (1)
+            const type = Math.floor(Math.random() * 2);
+            let val;
+
+            if (type === 0) {
+                // L to mL
+                val = Math.floor(Math.random() * 12) + 1;
+                questionEl.innerHTML = `${val} L = <span style="color:var(--secondary)">?</span> mL`;
+                currentAnswer = val * 1000;
+            } else {
+                // mL to L
+                val = (Math.floor(Math.random() * 12) + 1) * 1000;
+                questionEl.innerHTML = `${val.toLocaleString()} mL = <span style="color:var(--secondary)">?</span> L`;
+                currentAnswer = val / 1000;
+            }
+
+            startTimer();
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft -= 1; // Decrease by 1% every 100ms
+                progressEl.style.width = timeLeft + '%';
+                
+                if (timeLeft <= 0) {
+                    gameOver("Time's up!");
+                }
+            }, timeLimit * 10); 
+        }
+
+        inputEl.addEventListener('input', () => {
+            if (parseInt(inputEl.value) === currentAnswer) {
+                score++;
+                scoreEl.innerText = score;
+                feedbackEl.style.color = "var(--primary)";
+                feedbackEl.innerText = "Correct! ✨";
+                clearInterval(timerInterval);
+                setTimeout(nextQuestion, 600);
+            }
+        });
+
+        function gameOver(msg) {
+            clearInterval(timerInterval);
+            if (score > highScore) {
+                highScore = score;
+                highScoreEl.innerText = highScore;
+            }
+            alert(`${msg}\nYour score: ${score}`);
+            gameScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Junior Decimal All-Stars</title>
+    <link rel="stylesheet" href="../assets/css/certification.css" />
+    <style>
+        body { font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif; display: flex; flex-direction: column; align-items: center; background: #0f172a; color: white; padding: 20px; }
+        .card { background: #1e293b; padding: 30px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; width: 500px; border: 4px solid #38bdf8; }
+        
+        .stats { display: flex; justify-content: space-around; margin-bottom: 20px; font-weight: bold; color: #94a3b8; }
+        .problem-display { font-size: 54px; margin: 20px 0; display: flex; align-items: center; justify-content: center; gap: 15px; min-height: 80px;}
+        .op { color: #fbbf24; width: 50px; text-align: center; }
+
+        input { 
+            background: #0f172a; 
+            border: 4px solid #475569; 
+            color: #38bdf8; 
+            width: 220px; 
+            padding: 12px; 
+            border-radius: 15px; 
+            text-align: center; 
+            font-size: 36px; 
+            outline: none; 
+            transition: border 0.3s;
+        }
+        input:focus { border-color: #38bdf8; }
+        
+        .hint-text { 
+            margin-top: 20px; 
+            padding: 15px; 
+            background: rgba(251, 191, 36, 0.1); 
+            border-radius: 12px; 
+            font-size: 16px; 
+            line-height: 1.5;
+            color: #e2e8f0;
+            border-left: 4px solid #fbbf24;
+        }
+
+        .correct { border-color: #10b981 !important; animation: pop 0.4s ease-out; }
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        #msg { margin-top: 15px; font-size: 20px; height: 25px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="stats">
+        <span>⭐ Stars: <span id="streak">0</span></span>
+        <span id="mode-label" style="color: #38bdf8;">Mixed Mode</span>
+    </div>
+
+    <div class="problem-display">
+        <span id="num1">0.0</span>
+        <span class="op" id="operator">+</span>
+        <span id="num2">0.0</span>
+    </div>
+
+    <div class="input-container">
+        <input type="number" id="ans" step="0.01" placeholder="???" autocomplete="off">
+    </div>
+
+    <div id="msg"></div>
+
+    <div class="hint-text" id="hint">
+        Loading...
+    </div>
+</div>
+<!---cert--->
+    <div>
+            <h1 id="scoreboard">score: 0 missed: 0</h1>
+        </div>
+        <div id="certOverlay">
+            <div id="cert">
+                <h1 style="font-size: 50px; color: #1a3a5f; margin: 0">ALGEBRA EXCELLENCE</h1>
+                <p style="font-size: 24px">This award is proudly presented to</p>
+                <h2
+                    id="certName"
+                    style="
+                        font-size: 45px;
+                        border-bottom: 2px solid #1a3a5f;
+                        display: inline-block;
+                        padding: 0 50px;
+                        margin: 20px 0;
+                    ">
+                    Student Name
+                </h2>
+                <p style="font-size: 20px">For successfully solving 100 Fractions problems!</p>
+                <p style="font-size: 20px" id="gradeMsg"></p>
+                <div style="margin-top: 30px; font-size: 80px">⭐ 100 ⭐</div>
+
+                <div class="no-print" style="margin-top: 30px">
+                    <button onclick="window.print()" style="background: #859900">Print Certificate</button>
+                    <button
+                        onclick="document.getElementById('certOverlay').style.display='none'"
+                        style="background: #93a1a1">
+                        Back to Game
+                    </button>
+                </div>
+            </div>
+        </div>
+<script src="../assets/JS/GameOverlay.js"></script>
+
+<script>
+    let currentAns = 0;
+    let streak = 0;
+    let checked = false;
+    setGameName("decimalSpeedDrillJR");
+    showScore();
+
+
+    function generate() {
+        const ops = ['+', '-', '×', '÷'];
+        const op = ops[Math.floor(Math.random() * ops.length)];
+        let n1, n2, hint;
+
+        // Logic to keep numbers simple and positive
+        switch(op) {
+            case '+':
+                // Whole + Tenths (e.g., 5 + 0.4) or Tenths + Tenths (e.g., 1.2 + 0.8)
+                n1 = (Math.floor(Math.random() * 9) + 1) + (Math.random() > 0.5 ? 0.5 : 0.2);
+                n2 = (Math.floor(Math.random() * 5) + 1) + 0.3;
+                currentAns = n1 + n2;
+                hint = "Tip: Line up the dots! Add tenths to tenths.";
+                break;
+
+            case '-':
+                // Big number minus small number
+                currentAns = (Math.floor(Math.random() * 5) + 1) + 0.5;
+                n2 = (Math.floor(Math.random() * 3) + 1) + 0.2;
+                n1 = currentAns + n2; // Generate n1 so subtraction is clean
+                hint = "Tip: Subtract like normal, but keep the decimal in line!";
+                break;
+
+            case '×':
+                // Small decimal times a whole number (e.g., 0.5 x 4)
+                n2 = Math.floor(Math.random() * 5) + 2; // Whole number 2-6
+                currentAns = (Math.floor(Math.random() * 9) + 1) * 0.5; // Multiples of 0.5
+                n1 = (currentAns / n2).toFixed(1); 
+                // Let's simplify for Junior:
+                n1 = [0.2, 0.5, 1.5, 2.5][Math.floor(Math.random()*4)];
+                currentAns = n1 * n2;
+                hint = `Think: If you have ${n2} groups of $${n1.toFixed(2)}, how much in total?`;
+                break;
+
+            case '÷':
+                // The logic you liked: Result * Divisor = Problem
+                const divBy = [2, 4, 5, 10][Math.floor(Math.random() * 4)];
+                currentAns = (Math.floor(Math.random() * 10) + 1) * 0.5; 
+                n1 = (currentAns * divBy).toFixed(1);
+                n2 = divBy;
+                hint = `Think: Share $${parseFloat(n1).toFixed(2)} equally among ${n2} people.`;
+                break;
+        }
+
+        // Precision fix
+        currentAns = Math.round(currentAns * 100) / 100;
+
+        document.getElementById('num1').textContent = parseFloat(n1);
+        document.getElementById('num2').textContent = parseFloat(n2);
+        document.getElementById('operator').textContent = op === '×' ? '×' : (op === '÷' ? '÷' : op);
+        document.getElementById('hint').innerHTML = `<strong>Hint:</strong> ${hint}`;
+        
+        const input = document.getElementById('ans');
+        input.value = "";
+        input.classList.remove('correct');
+        input.focus();
+        document.getElementById('msg').textContent = "";
+    }
+
+    function check() {
+        const userValue = document.getElementById('ans').value;
+        if (userValue === "") return;
+
+        const userAns = parseFloat(userValue);
+        const input = document.getElementById('ans');
+
+        if (Math.abs(userAns - currentAns) < 0.01) {
+            input.classList.add('correct');
+            document.getElementById('msg').textContent = "Excellent! ✨";
+            document.getElementById('msg').style.color = "#10b981";
+            streak++;
+            document.getElementById('streak').textContent = streak;
+            //cert
+            if(!checked){
+                        correct();
+                    }
+                    checked = true;
+                    setTimeout(() => {
+                       generate();
+                       checked = false;
+                    }, 800);
+        } else {
+            document.getElementById('msg').textContent = "Try again! You can do it.";
+            document.getElementById('msg').style.color = "#f87171";
+            // Flash red on the input
+            input.style.borderColor = "#f87171";
+            setTimeout(() => input.style.borderColor = "#475569", 500);
+            wrong();
+        }
+        showScore();
+    }
+
+    document.getElementById('ans').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') check();
+    });
+
+    generate();
+</script>
+
+</body>
+</html>
