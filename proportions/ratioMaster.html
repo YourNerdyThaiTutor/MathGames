@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../assets/css/certification.css" />
+    <title>Advanced Ratio Challenge</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f7f9fc; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background-color: white; padding: 2rem; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); text-align: center; max-width: 550px; width: 90%; border: 3px solid #2e86de; }
+        h1 { color: #2e86de; margin-top: 0; }
+        .question-box { font-size: 1.3rem; margin-bottom: 1.5rem; padding: 1.5rem; background-color: #fff9db; border-radius: 12px; min-height: 90px; display: flex; align-items: center; justify-content: center; border: 1px solid #ffe066; color: #444; }
+        input { font-size: 1.2rem; padding: 12px; width: 140px; text-align: center; border: 2px solid #ced4da; border-radius: 8px; outline: none; }
+        input:focus { border-color: #2e86de; }
+        button { background-color: #2e86de; color: white; border: none; padding: 12px 24px; font-size: 1rem; border-radius: 8px; cursor: pointer; margin: 10px 5px; transition: 0.2s; }
+        button:hover { background-color: #2171c1; transform: translateY(-2px); }
+        #feedback { margin-top: 1rem; font-weight: bold; min-height: 30px; padding: 10px; border-radius: 8px; }
+        .score-board { margin-top: 20px; font-size: 1rem; font-weight: bold; color: #2e86de; }
+        .instruction { font-size: 0.9rem; color: #777; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🧠 Advanced Ratios</h1>
+    <p class="instruction">Read carefully! Sometimes I'll ask for the <b>total</b> or flip the order.</p>
+    
+    <div class="question-box" id="question">Preparing your challenge...</div>
+    
+    <input type="text" id="answerInput" placeholder="e.g. 1:3" autocomplete="off">
+    <br>
+    <button onclick="checkAnswer()">Submit Answer</button>
+    
+    <div id="feedback"></div>
+    
+    <!---cert--->
+    <div>
+            <h3 id="scoreboard">score: 0 missed: 0</h3>
+        </div>
+        <div id="certOverlay">
+            <div id="cert">
+                <h1 style="font-size: 50px; color: #1a3a5f; margin: 0">MATH EXCELLENCE</h1>
+                <p style="font-size: 24px">This award is proudly presented to</p>
+                <h2
+                    id="certName"
+                    style="
+                        font-size: 45px;
+                        border-bottom: 2px solid #1a3a5f;
+                        display: inline-block;
+                        padding: 0 50px;
+                        margin: 20px 0;
+                    ">
+                    Student Name
+                </h2>
+                <p style="font-size: 20px">For successfully solving 100 decimal problems!</p>
+                <p style="font-size: 20px" id="gradeMsg"></p>
+                <div style="margin-top: 30px; font-size: 80px">⭐ 100 ⭐</div>
+
+                <div class="no-print" style="margin-top: 30px">
+                    <button onclick="window.print()" style="background: #859900">Print Certificate</button>
+                    <button
+                        onclick="document.getElementById('certOverlay').style.display='none'"
+                        style="background: #93a1a1">
+                        Back to Game
+                    </button>
+                </div>
+            </div>
+        </div>
+    
+</div>
+<script src="../assets/JS/GameOverlay.js"></script>
+<script>
+    const items = ["blue marbles", "red marbles", "green grapes", "purple grapes", "soccer balls", "basketballs", "cats", "dogs"];
+    let targetVal1, targetVal2 = 0;
+    let checked = false;
+    setGameName("AdvancedRatio");
+    showScore();
+
+    function getGCD(a, b) {
+        return b === 0 ? a : getGCD(b, a % b);
+    }
+
+    function generateQuestion() {
+        // Reset feedback
+        document.getElementById('feedback').innerText = "";
+        document.getElementById('feedback').style.backgroundColor = "transparent";
+        document.getElementById('answerInput').value = "";
+        document.getElementById('answerInput').focus();
+
+        // Pick two items
+        const idx1 = Math.floor(Math.random() * items.length);
+        let idx2 = Math.floor(Math.random() * items.length);
+        while (idx1 === idx2) idx2 = Math.floor(Math.random() * items.length);
+        
+        const item1 = items[idx1];
+        const item2 = items[idx2];
+
+        // Generate quantities (2 to 15)
+        const qty1 = Math.floor(Math.random() * 14) + 2;
+        const qty2 = Math.floor(Math.random() * 14) + 2;
+        const total = qty1 + qty2;
+
+        // Choose question type
+        const type = Math.floor(Math.random() * 3); 
+        let questionText = "";
+
+        switch(type) {
+            case 0: // Standard: Item 1 to Item 2
+                questionText = `A box has ${qty1} ${item1} and ${qty2} ${item2}. What is the ratio of ${item1} to ${item2}?`;
+                targetVal1 = qty1;
+                targetVal2 = qty2;
+                break;
+            case 1: // Flipped: Item 2 to Item 1
+                questionText = `There are ${qty1} ${item1} and ${qty2} ${item2}. What is the ratio of ${item2} to ${item1}?`;
+                targetVal1 = qty2;
+                targetVal2 = qty1;
+                break;
+            case 2: // Part-to-Whole: Item 1 to Total
+                questionText = `In a group, there are ${qty1} ${item1} and ${qty2} ${item2}. What is the ratio of ${item1} to the total number of items?`;
+                targetVal1 = qty1;
+                targetVal2 = total;
+                break;
+        }
+
+        document.getElementById('question').innerHTML = questionText;
+    }
+
+    function checkAnswer() {
+        const input = document.getElementById('answerInput').value.trim();
+        const feedback = document.getElementById('feedback');
+        
+        if (!input.includes(":")) {
+            feedback.innerText = "Format Error: Use a colon (:) like 1:2";
+            feedback.style.color = "#e67e22";
+            return;
+        }
+
+        const parts = input.split(":").map(Number);
+        if (parts.length !== 2 || isNaN(parts[0]) || isNaN(parts[1])) {
+            feedback.innerText = "Please enter two numbers separated by a colon.";
+            return;
+        }
+
+        const userV1 = parts[0];
+        const userV2 = parts[1];
+
+        // 1. Check Equivalence
+        if (userV1 / userV2 === targetVal1 / targetVal2) {
+            // 2. Check Simplification
+            if (getGCD(userV1, userV2) === 1) {
+                feedback.innerText = "🌟 Perfect! Correct and simplified.";
+                feedback.style.color = "#27ae60";
+                //cert
+            if(!checked){
+                        correct();
+                    }
+                    checked = true;
+                    setTimeout(() => {
+                       generateQuestion();
+                       checked = false;
+                    }, 800);
+            } else {
+                feedback.innerText = "📏 Right numbers, but you need to simplify/reduce!";
+                feedback.style.color = "#2980b9";
+            }
+        } else {
+            feedback.innerText = "❌ Incorrect. Read the labels carefully!";
+            feedback.style.color = "#c0392b";
+            wrong();
+
+        }
+        showScore();
+    }
+
+    document.getElementById("answerInput").addEventListener("keyup", (e) => { if (e.key === "Enter") checkAnswer(); });
+    generateQuestion();
+</script>
+
+</body>
+</html>

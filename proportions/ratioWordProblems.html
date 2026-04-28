@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../assets/css/certification.css" />
+    <title>Ratio Practice: Simplify Edition</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f0f8ff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background-color: white; padding: 2rem; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; max-width: 500px; width: 90%; }
+        h1 { color: #2e86de; margin-top: 0; }
+        .question-box { font-size: 1.2rem; margin-bottom: 1.5rem; padding: 1.5rem; background-color: #e1f5fe; border-radius: 8px; min-height: 60px; line-height: 1.5; }
+        input { font-size: 1.1rem; padding: 10px; width: 120px; text-align: center; border: 2px solid #ddd; border-radius: 5px; }
+        button { background-color: #2e86de; color: white; border: none; padding: 10px 20px; font-size: 1rem; border-radius: 5px; cursor: pointer; margin: 10px 5px; }
+        button:hover { background-color: #2171c1; }
+        #feedback { margin-top: 1rem; font-weight: bold; min-height: 24px; padding: 5px; border-radius: 5px; }
+        .score-board { margin-top: 20px; font-size: 0.9rem; color: #555; }
+        .hint { font-size: 0.85rem; color: #7f8c8d; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🍎 Ratio Master</h1>
+    <div class="hint">Always simplify your ratio! (Example: 2:4 should be 1:2)</div>
+    
+    <div class="question-box" id="question">Loading...</div>
+    
+    <input type="text" id="answerInput" placeholder="e.g. 1:2" autocomplete="off">
+    <br>
+    <button onclick="checkAnswer()">Submit Answer</button>
+    
+    <div id="feedback"></div>
+    <!---cert--->
+    <div>
+            <h1 id="scoreboard">score: 0 missed: 0</h1>
+        </div>
+        <div id="certOverlay">
+            <div id="cert">
+                <h1 style="font-size: 50px; color: #1a3a5f; margin: 0">MATH EXCELLENCE</h1>
+                <p style="font-size: 24px">This award is proudly presented to</p>
+                <h2
+                    id="certName"
+                    style="
+                        font-size: 45px;
+                        border-bottom: 2px solid #1a3a5f;
+                        display: inline-block;
+                        padding: 0 50px;
+                        margin: 20px 0;
+                    ">
+                    Student Name
+                </h2>
+                <p style="font-size: 20px">For successfully solving 100 decimal problems!</p>
+                <p style="font-size: 20px" id="gradeMsg"></p>
+                <div style="margin-top: 30px; font-size: 80px">⭐ 100 ⭐</div>
+
+                <div class="no-print" style="margin-top: 30px">
+                    <button onclick="window.print()" style="background: #859900">Print Certificate</button>
+                    <button
+                        onclick="document.getElementById('certOverlay').style.display='none'"
+                        style="background: #93a1a1">
+                        Back to Game
+                    </button>
+                </div>
+            </div>
+        </div>
+
+
+</div>
+
+<script src="../assets/JS/GameOverlay.js"></script>
+<script>
+    const items = ["apples", "bananas", "stars", "pencils", "cats", "dogs", "balloons", "robots"];
+    let val1, val2 = 0;
+    let checked = false;
+    setGameName("ratioMaster");
+    showScore();
+
+    // Helper: Find Greatest Common Divisor
+    function getGCD(a, b) {
+        return b === 0 ? a : getGCD(b, a % b);
+    }
+
+    function generateQuestion() {
+        const item1 = items[Math.floor(Math.random() * items.length)];
+        let item2 = items[Math.floor(Math.random() * items.length)];
+        while (item1 === item2) item2 = items[Math.floor(Math.random() * items.length)];
+
+        // Generate numbers that are likely to be reducible (2-12)
+        val1 = Math.floor(Math.random() * 11) + 2;
+        val2 = Math.floor(Math.random() * 11) + 2;
+
+        const scenarios = [
+            `There are ${val1} ${item1} and ${val2} ${item2}. What is the ratio of ${item1} to ${item2}?`,
+            `A bag has ${val1} ${item1} and ${val2} ${item2}. Write the simplest ratio of ${item1} to ${item2}.`
+        ];
+
+        document.getElementById('question').innerText = scenarios[Math.floor(Math.random() * scenarios.length)];
+        document.getElementById('feedback').innerText = "";
+        document.getElementById('answerInput').value = "";
+        document.getElementById('feedback').style.backgroundColor = "transparent";
+    }
+
+    function checkAnswer() {
+        const input = document.getElementById('answerInput').value.trim();
+        const feedback = document.getElementById('feedback');
+        
+        // Basic format check
+        if (!input.includes(":")) {
+            feedback.innerText = "⚠️ Use a colon (:) between numbers";
+            feedback.style.color = "#d35400";
+            return;
+        }
+
+        const parts = input.split(":").map(Number);
+        const userVal1 = parts[0];
+        const userVal2 = parts[1];
+
+        // 1. Check if the ratio is mathematically equivalent
+        if (userVal1 / userVal2 === val1 / val2) {
+            
+            // 2. Check if it's fully reduced
+            const commonFactor = getGCD(userVal1, userVal2);
+            
+            if (commonFactor === 1) {
+                // Correct and Simplified
+                feedback.innerText = "🌟 Correct and fully simplified!";
+                feedback.style.color = "#27ae60";
+                
+                //cert
+                if(!checked){
+                        correct();
+                    }
+                    checked = true;
+                    setTimeout(() => {
+                       generateQuestion();
+                       checked = false;
+                    }, 800);
+            } else {
+                // Correct but Not Simplified
+                feedback.innerText = "💡 Correct ratio, but you can reduce it further!";
+                feedback.style.color = "#2980b9";
+            }
+        } else {
+            // Flat out wrong
+            feedback.innerText = "❌ That's not the right ratio. Try again!";
+            feedback.style.color = "#c0392b";
+            wrong();
+        }
+        showScore();
+    }
+
+    document.getElementById("answerInput").addEventListener("keyup", (e) => { if (e.key === "Enter") checkAnswer(); });
+    generateQuestion();
+</script>
+
+</body>
+</html>
