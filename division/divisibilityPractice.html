@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Divisibility Rule Trainer</title>
+    <link rel="stylesheet" href="../assets/css/certification.css" />
+    <style>
+        :root {
+            --primary: #6c5ce7;
+            --success: #00b894;
+            --error: #d63031;
+            --bg: #f9f9fb;
+        }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); display: flex; justify-content: center; padding: 20px; }
+        .card { background: white; padding: 2rem; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); max-width: 600px; width: 100%; text-align: center; }
+        .number-display { font-size: 4rem; font-weight: 800; color: var(--primary); margin: 20px 0; letter-spacing: 2px; }
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0; }
+        .rule-btn { 
+            padding: 15px; border: 2px solid #dfe6e9; border-radius: 12px; 
+            background: white; cursor: pointer; font-size: 1.2rem; font-weight: bold;
+            transition: all 0.2s; position: relative;
+        }
+        .rule-btn.selected { background-color: var(--primary); color: white; border-color: var(--primary); }
+        .hint-btn { 
+            font-size: 0.7rem; display: block; margin-top: 5px; color: #636e72; 
+            text-decoration: underline; cursor: help;
+        }
+        .rule-btn.selected .hint-btn { color: #eee; }
+        
+        .controls { margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px; }
+        button.check-btn { 
+            background: var(--success); color: white; border: none; 
+            padding: 12px 30px; font-size: 1.1rem; border-radius: 50px; cursor: pointer;
+        }
+        #feedback { margin-top: 15px; font-weight: bold; min-height: 40px; }
+        
+        /* Hint Modal Styling */
+        #hintModal { 
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: white; padding: 20px; border-radius: 15px; border: 3px solid var(--primary);
+            box-shadow: 0 0 100px rgba(0,0,0,0.5); z-index: 10; width: 80%; max-width: 400px;
+        }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 5; }
+    </style>
+</head>
+<body>
+
+<div class="overlay" id="overlay" onclick="closeHint()"></div>
+<div id="hintModal">
+    <h3 id="hintTitle">Rule</h3>
+    <p id="hintText"></p>
+    <button onclick="closeHint()">Got it!</button>
+</div>
+
+<div class="card">
+    <h1>🔢 Divisibility Dash</h1>
+    <p>Which numbers can divide this number perfectly?</p>
+    
+    <div class="number-display" id="mainNum">--</div>
+
+    <div class="grid" id="buttonGrid">
+        </div>
+
+    <div class="controls">
+        <div id="feedback"></div>
+        <button class="check-btn" onclick="checkAnswers()">Check My Choices</button>
+        <button style="background:#b2bec3" class="check-btn" onclick="nextQuestion()">New Number</button>
+    </div>
+    <!---cert--->
+    <div>
+            <h3 id="scoreboard">score: 0 missed: 0</h3>
+        </div>
+        <div id="certOverlay">
+            <div id="cert">
+                <h1 style="font-size: 50px; color: #1a3a5f; margin: 0">MATH EXCELLENCE</h1>
+                <p style="font-size: 24px">This award is proudly presented to</p>
+                <h2
+                    id="certName"
+                    style="
+                        font-size: 45px;
+                        border-bottom: 2px solid #1a3a5f;
+                        display: inline-block;
+                        padding: 0 50px;
+                        margin: 20px 0;
+                    ">
+                    Student Name
+                </h2>
+                <p style="font-size: 20px">For successfully solving 100 decimal problems!</p>
+                <p style="font-size: 20px" id="gradeMsg"></p>
+                <div style="margin-top: 30px; font-size: 80px">⭐ 100 ⭐</div>
+
+                <div class="no-print" style="margin-top: 30px">
+                    <button onclick="window.print()" style="background: #859900">Print Certificate</button>
+                    <button
+                        onclick="document.getElementById('certOverlay').style.display='none'"
+                        style="background: #93a1a1">
+                        Back to Game
+                    </button>
+                </div>
+            </div>
+        </div>
+</div>
+    
+<script src="../assets/JS/GameOverlay.js"></script>
+<script>
+    const divisors = [2, 3, 4, 5, 6, 7, 8, 9, 10];
+    let currentNumber = 0;
+    let selectedDivisors = new Set();
+    let checked = false;
+    setGameName("divisibility");
+    showScore();
+
+    const rules = {
+        2: (n) => ({ text: `Is ${n} even? Look at the last digit. If it's 0, 2, 4, 6, or 8, it's divisible by 2.`, pass: n % 2 === 0 }),
+        3: (n) => {
+            const digits = String(n).split('').map(Number);
+            const sum = digits.reduce((a, b) => a + b, 0);
+            return { text: `Sum of digits: ${digits.join(' + ')} = ${sum}. Is ${sum} divisible by 3?`, pass: n % 3 === 0 };
+        },
+        4: (n) => {
+            const lastTwo = n % 100;
+            return { text: `Look at the last two digits: ${lastTwo.toString().padStart(2, '0')}. Is ${lastTwo} divisible by 4?`, pass: n % 4 === 0 };
+        },
+        5: (n) => ({ text: `Does the number end in 0 or 5?`, pass: n % 5 === 0 }),
+        6: (n) => ({ text: `Is it divisible by BOTH 2 (even) and 3 (sum of digits)?`, pass: n % 6 === 0 }),
+        7: (n) => {
+            const lastDigit = n % 10;
+            const rest = Math.floor(n / 10);
+            const calc = rest - (2 * lastDigit);
+            return { text: `Take the last digit (${lastDigit}), double it (${lastDigit * 2}), and subtract it from the rest (${rest}). Is ${calc} divisible by 7? (This one is tricky!)`, pass: n % 7 === 0 };
+        },
+        8: (n) => {
+            const lastThree = n % 1000;
+            return { text: `Look at the last three digits: ${lastThree}. Is ${lastThree} divisible by 8?`, pass: n % 8 === 0 };
+        },
+        9: (n) => {
+            const digits = String(n).split('').map(Number);
+            const sum = digits.reduce((a, b) => a + b, 0);
+            return { text: `Sum of digits: ${sum}. Is ${sum} divisible by 9?`, pass: n % 9 === 0 };
+        },
+        10: (n) => ({ text: `Does the number end in 0?`, pass: n % 10 === 0 })
+    };
+
+    function initButtons() {
+        const grid = document.getElementById('buttonGrid');
+        divisors.forEach(d => {
+            const btn = document.createElement('div');
+            btn.className = 'rule-btn';
+            btn.id = `btn-${d}`;
+            btn.innerHTML = `
+                ${d}
+                <span class="hint-btn" onclick="showHint(event, ${d})">How to check?</span>
+            `;
+            btn.onclick = (e) => toggleSelection(d);
+            grid.appendChild(btn);
+        });
+    }
+
+    function toggleSelection(d) {
+        const btn = document.getElementById(`btn-${d}`);
+        if (selectedDivisors.has(d)) {
+            selectedDivisors.delete(d);
+            btn.classList.remove('selected');
+        } else {
+            selectedDivisors.add(d);
+            btn.classList.add('selected');
+        }
+    }
+
+    function showHint(e, d) {
+        e.stopPropagation();
+        document.getElementById('hintTitle').innerText = `Rule for ${d}`;
+        document.getElementById('hintText').innerText = rules[d](currentNumber).text;
+        document.getElementById('hintModal').style.display = 'block';
+        document.getElementById('overlay').style.display = 'block';
+    }
+
+    function closeHint() {
+        document.getElementById('hintModal').style.display = 'none';
+        document.getElementById('overlay').style.display = 'none';
+    }
+
+    function nextQuestion() {
+        // Generate numbers between 10 and 1000
+        currentNumber = Math.floor(Math.random() * 990) + 10;
+        document.getElementById('mainNum').innerText = currentNumber;
+        selectedDivisors.clear();
+        document.querySelectorAll('.rule-btn').forEach(b => b.classList.remove('selected'));
+        document.getElementById('feedback').innerText = "";
+    }
+
+    function checkAnswers() {
+        let corrects = [];
+        let missing = [];
+        let wrong = [];
+
+        divisors.forEach(d => {
+            const isDivisible = (currentNumber % d === 0);
+            const isSelected = selectedDivisors.has(d);
+
+            if (isDivisible && isSelected) corrects.push(d);
+            if (isDivisible && !isSelected) missing.push(d);
+            if (!isDivisible && isSelected) wrong.push(d);
+        });
+
+        const feedback = document.getElementById('feedback');
+        if (missing.length === 0 && wrong.length === 0) {
+            feedback.innerHTML = "🌟 <span style='color:var(--success)'>Perfect! You found them all!</span>";
+            if(!checked){
+                        correct();
+                    }
+                    checked = true;
+                    setTimeout(() => {
+                       nextQuestion();
+                       checked = false;
+                    }, 800);
+        } else {
+            feedback.innerHTML = `<span style='color:var(--error)'>Not quite.</span> Missing: ${missing.join(', ') || 'none'}. Wrong: ${wrong.join(', ') || 'none'}.`;
+            wrong();
+        }
+        showScore();
+    }
+
+    initButtons();
+    nextQuestion();
+</script>
+
+</body>
+</html>
