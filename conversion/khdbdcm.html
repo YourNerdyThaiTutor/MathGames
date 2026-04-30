@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Metric Master: Grams, Meters & Liters</title>
+    <link rel="stylesheet" href="../assets/css/certification.css" />
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --accent: #e74c3c;
+            --slot-width: 60px;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background-color: #f0f4f8;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            touch-action: none;
+        }
+
+        .card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            width: 95%;
+            max-width: 800px;
+            text-align: center;
+        }
+
+        .track-container {
+            position: relative;
+            background: #fff9c4;
+            padding: 20px 0;
+            border-radius: 20px;
+            margin: 15px 0;
+            border: 4px solid #fbc02d;
+            display: flex;
+        }
+
+        .chart-slot { flex: 1; pointer-events: none; }
+        .chart-slot b { font-size: 1.4rem; display: block; }
+        .chart-slot span { font-size: 0.65rem; color: #666; font-weight: bold; text-transform: uppercase; }
+        .base-highlight { color: #d35400; font-weight: 800 !important; }
+
+        .number-box {
+            background: #2c3e50;
+            border-radius: 15px;
+            margin: 20px auto;
+            display: inline-flex;
+            padding: 25px 10px;
+            position: relative;
+        }
+
+        .digit-cell {
+            width: var(--slot-width);
+            color: white;
+            font-size: 3rem;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .knob {
+            position: absolute;
+            width: 46px;
+            height: 46px;
+            background: var(--accent);
+            border-radius: 50%;
+            cursor: grab;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            z-index: 10;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            top: 110%;
+            transform: translate(-50%, -50%);
+        }
+
+        #num-knob { top: 90%; }
+
+        .answer-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #eef2f7;
+            border-radius: 15px;
+        }
+
+        input[type="number"] {
+            font-size: 1.5rem;
+            padding: 10px;
+            width: 160px;
+            border: 3px solid var(--primary);
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .btn-row { display: flex; gap: 10px; justify-content: center; }
+        button {
+            padding: 12px 25px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-check { background: #2ecc71; color: white; }
+        .btn-next { background: var(--primary); color: white; }
+
+        #feedback { font-size: 1.2rem; margin-top: 10px; min-height: 1.5em; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2 id="question">Loading...</h2>
+
+    <div class="track-container" id="chart-track">
+        <div class="chart-slot"><b>K</b><span>King</span><b>Kilo</b></div>
+        <div class="chart-slot"><b>h</b><span>Henry</span><b>hecto</b></div>
+        <div class="chart-slot"><b>Da</b><span>Died</span><b>Deca</b></div>
+        <div class="chart-slot"><b id="base-letter">B</b><span  class="base-highlight">By(base)</span><b id="base-word">base</b></div>
+        <div class="chart-slot"><b>d</b><span>Drinking</span><b>deci</b></div>
+        <div class="chart-slot"><b>c</b><span>Chocolate</span><b>centi</b></div>
+        <div class="chart-slot"><b>m</b><span>Milk</span><b>milli</b></div>
+        <div id="chart-knob" class="knob">.</div>
+    </div>
+
+    <div class="number-box" id="num-container">
+        <div id="num-knob" class="knob">.</div>
+    </div>
+
+    <div class="answer-section">
+        <span id="unit-hint" style="font-weight:bold; color:var(--primary)"></span>
+        <input type="number" id="manual-answer" placeholder="0.00" step="any">
+    </div>
+
+    <div id="feedback"></div>
+
+    <div class="btn-row">
+        <button class="btn-check" onclick="check()">Check Answer</button>
+        <button class="btn-next" onclick="init()">New Problem</button>
+    </div>
+    <!---cert--->
+    <div>
+            <h3 id="scoreboard">score: 0 missed: 0</h3>
+        </div>
+        <div id="certOverlay">
+            <div id="cert">
+                <h1 style="font-size: 50px; color: #1a3a5f; margin: 0">MATH EXCELLENCE</h1>
+                <p style="font-size: 24px">This award is proudly presented to</p>
+                <h2
+                    id="certName"
+                    style="
+                        font-size: 45px;
+                        border-bottom: 2px solid #1a3a5f;
+                        display: inline-block;
+                        padding: 0 50px;
+                        margin: 20px 0;
+                    ">
+                    Student Name
+                </h2>
+                <p style="font-size: 20px">For successfully solving 100 metric conversion problems!</p>
+                <p style="font-size: 20px" id="gradeMsg"></p>
+                <div style="margin-top: 30px; font-size: 80px">⭐ 100 ⭐</div>
+
+                <div class="no-print" style="margin-top: 30px">
+                    <button onclick="window.print()" style="background: #859900">Print Certificate</button>
+                    <button
+                        onclick="document.getElementById('certOverlay').style.display='none'"
+                        style="background: #93a1a1">
+                        Back to Game
+                    </button>
+                </div>
+            </div>
+        </div>
+</div>
+<script src="../assets/JS/GameOverlay.js"></script>
+<script>
+    const chartTrack = document.getElementById('chart-track');
+    const chartKnob = document.getElementById('chart-knob');
+    const numContainer = document.getElementById('num-container');
+    const numKnob = document.getElementById('num-knob');
+    const manualInput = document.getElementById('manual-answer');
+    let checked = false;
+    setGameName("divisibility");
+    showScore();
+    const baseUnits = [
+        { name: "Meters", sym: "m" },
+        { name: "Grams", sym: "g" },
+        { name: "Liters", sym: "L" }
+    ];
+
+    const prefixes = [
+        { p: "kilo", s: "k" }, { p: "hecto", s: "h" }, { p: "deka", s: "da" },
+        { p: "", s: "" }, // Base index 3
+        { p: "deci", s: "d" }, { p: "centi", s: "c" }, { p: "milli", s: "m" }
+    ];
+
+    let gameData = { digits: [], targetVal: 0, currentDecimalIdx: 0 };
+
+    function setupDraggable(el, track, onMove) {
+        let isDragging = false;
+        const handleMove = (e) => {
+            if (!isDragging) return;
+            const rect = track.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            onMove(clientX - rect.left, rect.width);
+        };
+        el.onpointerdown = (e) => { isDragging = true; el.setPointerCapture(e.pointerId); };
+        el.onpointermove = handleMove;
+        el.onpointerup = () => isDragging = false;
+    }
+
+    function updateChartKnob(x, width) {
+        const step = width / 7;
+        const idx = Math.max(0, Math.min(6, Math.floor(x / step)));
+        chartKnob.style.left = `${(idx * step) + (step / 2)}px`;
+    }
+
+    function updateNumKnob(x, width) {
+        const count = gameData.digits.length;
+        const step = width / count;
+        const idx = Math.max(0, Math.min(count, Math.round(x / step)));
+        gameData.currentDecimalIdx = idx;
+        numKnob.style.left = `${idx * step}px`;
+    }
+
+    function init() {
+        const base = baseUnits[Math.floor(Math.random() * baseUnits.length)];
+        const start = Math.floor(Math.random() * 7);
+        let end; do { end = Math.floor(Math.random() * 7); } while (start === end);
+        
+        // Update Chart labels for "By"
+        document.getElementById('base-letter').innerText = base.sym.toUpperCase();
+        document.getElementById('base-word').innerText = base.name;
+
+        const val = Math.floor(Math.random() * 90) + 10;
+        gameData.targetVal = val * Math.pow(10, (3-start) - (3-end));
+        
+        const unitStart = prefixes[start].s + (start === 3 ? base.sym : base.sym.toLowerCase());
+        const unitEnd = prefixes[end].s + (end === 3 ? base.sym : base.sym.toLowerCase());
+
+        const fullNumStr = "0000" + val + "000000";
+        gameData.digits = fullNumStr.split('');
+        
+        const knobRef = numKnob;
+        numContainer.innerHTML = '';
+        numContainer.appendChild(knobRef);
+        gameData.digits.forEach(d => {
+            const div = document.createElement('div');
+            div.className = 'digit-cell';
+            div.innerText = d;
+            numContainer.appendChild(div);
+        });
+
+        document.getElementById('question').innerHTML = `Convert: ${val}${unitStart} ➔ ? ${unitEnd}`;
+        document.getElementById('unit-hint').innerText = `Final ${unitEnd}: `;
+        document.getElementById('feedback').innerText = "";
+        manualInput.value = "";
+
+        setTimeout(() => {
+            const trackWidth = chartTrack.offsetWidth;
+            updateChartKnob((start * (trackWidth/7)) + 5, trackWidth);
+            updateNumKnob(6 * 60, numContainer.offsetWidth);
+        }, 50);
+    }
+
+    function check() {
+        const left = gameData.digits.slice(0, gameData.currentDecimalIdx).join('');
+        const right = gameData.digits.slice(gameData.currentDecimalIdx).join('');
+        const sliderVal = parseFloat(left + "." + right);
+        const typedVal = parseFloat(manualInput.value);
+        const fb = document.getElementById('feedback');
+        
+        if (isNaN(typedVal)) {
+            fb.innerText = "✍️ Don't forget to type your answer!";
+            fb.style.color = "#f39c12"; return;
+        }
+
+        const sliderCorrect = Math.abs(sliderVal - gameData.targetVal) < 0.00001;
+        const typedCorrect = Math.abs(typedVal - gameData.targetVal) < 0.00001;
+
+        if (typedCorrect) {
+            fb.innerText = "🌟 Amazing! You're a Metric Master!";
+            fb.style.color = "#2ecc71";
+            if(!checked){
+                        correct();
+                    }
+                    checked = true;
+                    setTimeout(() => {
+                       init();
+                       checked = false;
+                    }, 800);
+        } else {
+            fb.innerText = `❌ Keep trying! The answer is ${gameData.targetVal}`;
+            fb.style.color = "#e74c3c";
+            wrong();
+        }
+        showScore();
+    }
+    // --- NEW: Add Enter Key Support ---
+    manualInput.addEventListener("keypress", function(event) {
+        if (event.key === "Enter") {
+            event.preventDefault(); // Prevents page reload if inside a form
+            check();
+        }
+    });
+    window.addEventListener('keydown', e => { if(e.key.toLowerCase()==='Enter') check(); });
+    setupDraggable(chartKnob, chartTrack, updateChartKnob);
+    setupDraggable(numKnob, numContainer, updateNumKnob);
+    window.onload = init;
+</script>
+
+</body>
+</html>
