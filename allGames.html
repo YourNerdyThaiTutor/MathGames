@@ -1,143 +1,404 @@
-<!DOCTYPE HTML>
-<!--
-	Editorial by HTML5 UP
-	html5up.net | @ajlkn
-	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
--->
-<html lang ="en">
-	<head>
-		<!-- Google tag (gtag.js) -->
-		<script async src="https://www.googletagmanager.com/gtag/js?id=G-BQ56JZ1LM4"></script>
-		<script>
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-BQ56JZ1LM4"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
 
-            gtag('config', 'G-BQ56JZ1LM4');
-		</script>
-		<title>Math Games</title>
-		<link rel="icon" type="image/x-icon" href="./Img/Logo.png">
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-		<link rel="stylesheet" href="assets/css/main.css" />
-		<script 
-            async 
-            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2893492306157134"      
-            crossorigin="anonymous">
-        </script>  
-	
-		<meta property="og:title" content="Math Games">
-		<meta property="og:description" content="Math Games for all levels of Math and Science. Including Algebra, Addition, Subtraction, Multiplication, Division...">
-		<meta property="og:image" content="https://yournerdythaitutor.github.io/Lessons/Img/Logo.png">
-		<meta property="og:type" content="article">
-		<meta property="og:url" content="https://yournerdythaitutor.github.io/MathGames/allGames.html">
+        gtag('config', 'G-BQ56JZ1LM4');
+    </script>
+    
+    <script 
+        async 
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2893492306157134"
+        crossorigin="anonymous">
+    </script>
+    
+    <meta property="og:title" content="Math Learning Games and Tools">
+    <meta property="og:description" content="Math Learning Games and Tools for all levels of Math and Science">
+    <meta property="og:image" content="https://i.imgur.com/WdP5oUx.png">
+    <meta property="og:type" content="article">
 
-	</head>
-	<body class="is-preload">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Educational Games Directory</title>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --secondary: #f39c12;
+            --bg: #f4f7f6;
+            --text: #333;
+            --white: #ffffff;
+            --shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
 
-		<!-- Wrapper --><a href="https://yournerdythaitutor.github.io/"><img src="./Img/Logo.png" style="width: 70pt; margin:auto; display: block;" onmouseover="this.src='./Img/Logo.gif';" onmouseout="this.src='./Img/Logo.png';"></a>
-			<div id="wrapper">
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
 
-				<!-- Main -->
-					<div id="main">
-						<div class="inner">
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
 
-							<!-- Header -->
-                            <header id="header">
-                                <a href="index.html" class="logo"><strong>Math Games </strong> </a>
-                            </header>
+        h1 {
+            text-align: center;
+            color: var(--primary);
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+        }
 
-							<!-- Section -->
-                            <section class="google-anno-skip">
-                                <style>
-                                    .game-grid {
-                                        display: flex;
-                                        flex-wrap: wrap;
-                                        gap: 40px 20px; /* 40px vertical gap, 20px horizontal */
-                                        list-style: none;
-                                        padding: 0;
-                                    }
-                                    .game-item {
-                                        flex: 1 1 100%; /* Full width on mobile */
-                                        margin-bottom: 20pt;
-                                    }
-                                    @media screen and (min-width: 736px) {
-                                        .game-item {
-                                            /* This ensures exactly 2 items per row on medium screens */
-                                            flex: 0 0 calc(50% - 20px); 
-                                        }
-                                    }
-                                    @media screen and (min-width: 1200px) {
-                                        .game-item {
-                                            /* This ensures 3 items per row on large screens */
-                                            flex: 0 0 calc(33.33% - 20px);
-                                        }
-                                    }
-                                    .preview-img {
-                                        width: 100%;
-                                        max-width: 250px; /* Slightly increased for better visibility */
-                                        height: auto;
-                                        border-radius: 4px;
-                                        display: block;
-                                        border: 1px solid #eee;
-                                        margin-top: 10pt;
-                                        transition: transform 0.2s;
-                                    }
-                                    .preview-img:hover {
-                                        transform: scale(1.02); /* Subtle zoom instead of just fading */
-                                    }
-                                    .button {
-                                        display: inline-block;
-                                        white-space: normal; /* Allows long titles to wrap if needed */
-                                        height: auto;
-                                        line-height: 1.5;
-                                        padding: 10px 20px;
-                                    }
-                                </style>
-                            
-                                <ul class="game-grid">
+        /* Filter Section */
+        .filter-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 40px;
+            background: var(--white);
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+        }
 
-                                    <li class="game-item">
-                                        <a href="https://yournerdythaitutor.github.io/MathGames/index.html" class="button">Math Tug of War (Side by Side)</a>
-                                        <a href="https://yournerdythaitutor.github.io/MathGames/index.html">
-                                            <img src="https://i.imgur.com/H95m7ZK.png" alt="Side by Side Preview" class="preview-img">
-                                        </a>
-                                    </li>
-                                    
-                                    <li class="game-item">
-                                        <a href="https://yournerdythaitutor.github.io/MathGames/algebratug.html" class="button">Algebra Tug Of War (2 Players)</a>
-                                        <a href="https://yournerdythaitutor.github.io/MathGames/algebratug.html">
-                                            <img src="https://i.imgur.com/7gxEMVe.png" alt="Algebra Tug Preview" class="preview-img">
-                                        </a>
-                                    </li>
-                                                        
-                                    <li class="game-item">
-                                        <a href="https://yournerdythaitutor.github.io/MathGames/verticalTugOfWar.html" class="button">Math Tug of War (Vertical VS)</a>
-                                        <a href="https://yournerdythaitutor.github.io/MathGames/verticalTugOfWar.html">
-                                            <img src="https://i.imgur.com/IsElkpY.png" alt="Vertical VS Preview" class="preview-img">
-                                        </a>
-                                    </li>
+        .filter-btn {
+            padding: 10px 20px;
+            border: 2px solid var(--primary);
+            background: var(--white);
+            color: var(--primary);
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
-                                    <li class="game-item">
-                                        <a href="https://yournerdythaitutor.github.io/MathGames/equationsBalance.html" class="button">Equations Visualizer For Algebra</a>
-                                        <a href="https://yournerdythaitutor.github.io/MathGames/equationsBalance.html">
-                                            <img src="https://i.imgur.com/fHMNE3i.png" alt="Equations Visualizer Preview" class="preview-img">
-                                        </a>
-                                    </li>
+        .filter-btn:hover {
+            transform: scale(1.05);
+            background: #eef5ff;
+        }
 
-                                    <li class="game-item">
-                                        <a href="https://yournerdythaitutor.github.io/MathGames/big6stats-ipad.html" class="button">Big 6 Statistical Measures (ipad)</a>
-                                        <a href="https://yournerdythaitutor.github.io/MathGames/big6stats-ipad.html">
-                                            <img src="https://i.imgur.com/R35BBTY.png" alt="Big 6 Statistical Measures" class="preview-img">
-                                        </a>
-                                    </li>
-                            
-                                </ul>
-                            </section>
-						</div>
-					</div>
+        .filter-btn.active {
+            background: var(--primary);
+            color: var(--white);
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
+        }
 
-			</div>
+        /* Games Grid */
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+        }
 
-	</body>
+        .game-card {
+            background: var(--white);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.06);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+
+        .game-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 25px rgba(0,0,0,0.1);
+        }
+
+        .game-card.hidden {
+            display: none;
+        }
+
+        .game-info {
+            padding: 25px;
+            text-align: center;
+        }
+
+        .game-category {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--secondary);
+            font-weight: 800;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .game-title {
+            font-size: 1.3rem;
+            margin: 0 0 20px 0;
+            color: var(--text);
+        }
+
+        .play-btn {
+            display: inline-block;
+            padding: 12px 25px;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .play-btn:hover {
+            background: #357abd;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            .filter-container {
+                padding: 15px;
+                gap: 8px;
+            }
+            .filter-btn {
+                padding: 8px 14px;
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Math Games Explorer</h1>
+
+    <div class="filter-container" id="filter-buttons">
+        <button class="filter-btn active" onclick="filterSelection('all')">🌟 Show All</button>
+        <button class="filter-btn" onclick="filterSelection('Addition')">➕ Addition</button>
+        <button class="filter-btn" onclick="filterSelection('Algebra1')">🔑 Algebra 1</button>
+        <button class="filter-btn" onclick="filterSelection('Conversion')">🔄 Conversion</button>
+        <button class="filter-btn" onclick="filterSelection('Coordinates')">📍 Coordinates</button>
+        <button class="filter-btn" onclick="filterSelection('Decimals')">🎯 Decimals</button>
+        <button class="filter-btn" onclick="filterSelection('Division')">➗ Division</button>
+        <button class="filter-btn" onclick="filterSelection('Fractions')">🍰 Fractions</button>
+        <button class="filter-btn" onclick="filterSelection('Geometry')">📐 Geometry</button>
+        <button class="filter-btn" onclick="filterSelection('Multiplication')">✖️ Multiplication</button>
+        <button class="filter-btn" onclick="filterSelection('Percentages')">📊 Percentages</button>
+        <button class="filter-btn" onclick="filterSelection('Place Values')">🔢 Place Values</button>
+        <button class="filter-btn" onclick="filterSelection('Pre-Algebra')">📝 Pre-Algebra</button>
+        <button class="filter-btn" onclick="filterSelection('Proportions')">⚖️ Proportions</button>
+        <button class="filter-btn" onclick="filterSelection('Resting Games')">🎮 Resting Games</button>
+        <button class="filter-btn" onclick="filterSelection('Simple Statistics')">📈 Simple Statistics</button>
+        <button class="filter-btn" onclick="filterSelection('Skip Counting')">🏃 Skip Counting</button>
+        <button class="filter-btn" onclick="filterSelection('Subtraction')">➖ Subtraction</button>
+    </div>
+
+    <div class="games-grid">
+        
+        <div class="game-card Addition">
+            <div class="game-info">
+                <span class="game-category">➕ Addition</span>
+                <h3 class="game-title">Adding Berries</h3>
+                <a href="https://yournerdythaitutor.github.io/MathGames/addition/addingBerries.html" class="play-btn">Play Now</a>
+            </div>
+        </div>
+
+        <div class="game-card Addition">
+            <div class="game-info">
+                <span class="game-category">➕ Addition</span>
+                <h3 class="game-title">Adding Berries (iPad)</h3>
+                <a href="https://yournerdythaitutor.github.io/MathGames/addition/addingBerriesiPad.html" class="play-btn">Play Now</a>
+            </div>
+        </div>
+
+        <div class="game-card Addition">
+            <div class="game-info">
+                <span class="game-category">➕ Addition</span>
+                <h3 class="game-title">Ten Frame</h3>
+                <a href="https://yournerdythaitutor.github.io/MathGames/addition/tenFramelevel2.html" class="play-btn">Play Now</a>
+            </div>
+        </div>
+
+        <div class="game-card Addition">
+            <div class="game-info">
+                <span class="game-category">➕ Addition</span>
+                <h3 class="game-title">Ten Frame (iPad)</h3>
+                <a href="https://yournerdythaitutor.github.io/MathGames/addition/tenframes.html" class="play-btn">Play Now</a>
+            </div>
+        </div>
+
+        <div class="game-card Algebra1">
+            <div class="game-info">
+                <span class="game-category">🔑 Algebra 1</span>
+                <h3 class="game-title">Complete The Square</h3>
+                <a href="https://yournerdythaitutor.github.io/MathGames/algebra1/completeTheSquare.html" class="play-btn">Play Now</a>
+            </div>
+        </div>
+
+        <div class="game-card Algebra1">
+            <div class="game-info">
+                <span class="game-category">🔑 Algebra 1</span>
+                <h3 class="game-title">Differece Of Squares Visualizer</h3>
+                <a href="https://yournerdythaitutor.github.io/MathGames/algebra1/differenceOfSquares.html" class="play-btn">Play Now</a>
+            </div>
+        </div>
+
+        <div class="game-card Algebra1">
+            <div class="game-info">
+                <span class="game-category">🔑 Algebra 1</span>
+                <h3 class="game-title">Differece Of Squares Interactive</h3>
+                <a href="https://yournerdythaitutor.github.io/MathGames/algebra1/differenceOfSquaresInteractive.html" class="play-btn">Play Now</a>
+            </div>
+        </div>
+
+        <div class="game-card Algebra1">
+            <div class="game-info">
+                <span class="game-category">🔑 Algebra 1</span>
+                <h3 class="game-title">Differece Of Squares Real Numbers</h3>
+                <a href="https://yournerdythaitutor.github.io/MathGames/algebra1/differenceOfSquaresRealNumbers.html" class="play-btn">Play Now</a>
+            </div>
+        </div>
+
+        <div class="game-card Algebra1">
+            <div class="game-info">
+                <span class="game-category">🔑 Algebra 1</span>
+                <h3 class="game-title">Factoring Quadratics Practice</h3>
+                <a href="https://yournerdythaitutor.github.io/MathGames/algebra1/factoringQuadraticsPractice.html" class="play-btn">Play Now</a>
+            </div>
+        </div>
+
+        <div class="game-card Algebra1">
+            <div class="game-info">
+                <span class="game-category">🔑 Algebra 1</span>
+                <h3 class="game-title">Factoring Speed Practice</h3>
+                <a href="https://yournerdythaitutor.github.io/MathGames/algebra1/factoringSpeedPractice.html" class="play-btn">Play Now</a>
+            </div>
+        </div>
+
+        <div class="game-card Algebra1">
+            <div class="game-info">
+                <span class="game-category">🔑 Algebra 1</span>
+                <h3 class="game-title">FOIL Binomials</h3>
+                <a href="https://yournerdythaitutor.github.io/MathGames/algebra1/FOILbinomials.html" class="play-btn">Play Now</a>
+            </div>
+        </div>
+
+        <div class="game-card Algebra1">
+            <div class="game-info">
+                <span class="game-category">🔑 Algebra 1</span>
+                <h3 class="game-title">FOIL Practice</h3>
+                <a href="https://yournerdythaitutor.github.io/MathGames/algebra1/FOILpractice.html" class="play-btn">Play Now</a>
+            </div>
+        </div>
+
+        <div class="game-card Algebra1">
+            <div class="game-info">
+                <span class="game-category">🔑 Algebra 1</span>
+                <h3 class="game-title">FOIL Speed Practice</h3>
+                <a href="https://yournerdythaitutor.github.io/MathGames/algebra1/FOILspeedPractice.html" class="play-btn">Play Now</a>
+            </div>
+        </div>
+
+        <div class="game-card Algebra1">
+            <div class="game-info">
+                <span class="game-category">🔑 Algebra 1</span>
+                <h3 class="game-title">FOIL Speed Practice Hard</h3>
+                <a href="https://yournerdythaitutor.github.io/MathGames/algebra1/FOILspeedPracticeHard.html" class="play-btn">Play Now</a>
+            </div>
+        </div>
+
+        <div class="game-card Algebra1">
+            <div class="game-info">
+                <span class="game-category">🔑 Algebra 1</span>
+                <h3 class="game-title">FOIL With Numbers</h3>
+                <a href="https://yournerdythaitutor.github.io/MathGames/algebra1/FOILwithnumbers.html" class="play-btn">Play Now</a>
+            </div>
+        </div>
+
+        <div class="game-card Algebra1">
+            <div class="game-info">
+                <span class="game-category">🔑 Algebra 1</span>
+                <h3 class="game-title">Quadratic Factoring</h3>
+                <a href="https://yournerdythaitutor.github.io/MathGames/algebra1/quadraticFactoring.html" class="play-btn">Play Now</a>
+            </div>
+        </div>
+
+        <div class="game-card Conversion">
+            <div class="game-info">
+                <span class="game-category">🔄 Conversion</span>
+                <h3 class="game-title">KHDBDCM</h3>
+                <a href="https://yournerdythaitutor.github.io/MathGames/conversion/khdbdcm.html" class="play-btn">Play Now</a>
+            </div>
+        </div>
+
+        <div class="game-card Conversion">
+            <div class="game-info">
+                <span class="game-category">🔄 Conversion</span>
+                <h3 class="game-title">Milliliter And Liter</h3>
+                <a href="https://yournerdythaitutor.github.io/MathGames/conversion/milliliterAndLiter.html" class="play-btn">Play Now</a>
+            </div>
+        </div>
+
+        <div class="game-card Conversion">
+            <div class="game-info">
+                <span class="game-category">🔄 Conversion</span>
+                <h3 class="game-title">mL and L Drill</h3>
+                <a href="https://yournerdythaitutor.github.io/MathGames/conversion/mLandLdrill.html" class="play-btn">Play Now</a>
+            </div>
+        </div>
+
+        <div class="game-card Coordinates">
+            <div class="game-info">
+                <span class="game-category">📍 Coordinates</span>
+                <h3 class="game-title">Coordinate Placement Game</h3>
+                <a href="https://yournerdythaitutor.github.io/MathGames/coordinates/coordinate.html" class="play-btn">Play Now</a>
+            </div>
+        </div>
+
+        <div class="game-card Coordinates">
+            <div class="game-info">
+                <span class="game-category">📍 Coordinates</span>
+                <h3 class="game-title">Coordinate Placement Test</h3>
+                <a href="https://yournerdythaitutor.github.io/MathGames/coordinates/emojiCoordinate.html" class="play-btn">Play Now</a>
+            </div>
+        </div>
+        
+    </div>
+</div>
+
+<script>
+    function filterSelection(c) {
+        var x, i;
+        x = document.getElementsByClassName("game-card");
+        var filterCategory = c;
+        
+        // If "all" is selected, we want to show everything
+        if (c == "all") filterCategory = "";
+        
+        for (i = 0; i < x.length; i++) {
+            // Check if the card's class list contains the selected category
+            if (x[i].className.indexOf(filterCategory) > -1) {
+                x[i].classList.remove("hidden");
+            } else {
+                x[i].classList.add("hidden");
+            }
+        }
+
+        // Handle Active Button State
+        var btns = document.getElementsByClassName("filter-btn");
+        for (var i = 0; i < btns.length; i++) {
+            btns[i].classList.remove("active");
+            // Highlight button if the onclick matches the selected category 'c'
+            if (btns[i].getAttribute('onclick').includes("'" + c + "'")) {
+                btns[i].classList.add("active");
+            }
+        }
+    }
+</script>
+
+</body>
 </html>
