@@ -192,7 +192,7 @@
     function checkAnswers() {
         let corrects = [];
         let missing = [];
-        let wrong = [];
+        let wrongs = [];
 
         divisors.forEach(d => {
             const isDivisible = (currentNumber % d === 0);
@@ -200,11 +200,11 @@
 
             if (isDivisible && isSelected) corrects.push(d);
             if (isDivisible && !isSelected) missing.push(d);
-            if (!isDivisible && isSelected) wrong.push(d);
+            if (!isDivisible && isSelected) wrongs.push(d);
         });
 
         const feedback = document.getElementById('feedback');
-        if (missing.length === 0 && wrong.length === 0) {
+        if (missing.length === 0 && wrongs.length === 0) {
             feedback.innerHTML = "🌟 <span style='color:var(--success)'>Perfect! You found them all!</span>";
             if(!checked){
                         correct();
@@ -215,7 +215,7 @@
                        checked = false;
                     }, 800);
         } else {
-            feedback.innerHTML = `<span style='color:var(--error)'>Not quite.</span> Missing: ${missing.join(', ') || 'none'}. Wrong: ${wrong.join(', ') || 'none'}.`;
+            feedback.innerHTML = `<span style='color:var(--error)'>Not quite.</span> Missing: ${missing.join(', ') || 'none'}. Wrong: ${wrongs.join(', ') || 'none'}.`;
             wrong();
         }
         showScore();
