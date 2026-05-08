@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Geometry: 5 Shapes</title>
+    <style>
+        :root { --primary: #6c5ce7; --bg: #f8f9fa; --text: #2d3436; }
+        body { font-family: 'Segoe UI', sans-serif; background: #eef2f7; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 550px; text-align: center; }
+        
+        .shape-selector { display: flex; justify-content: center; gap: 5px; margin-bottom: 20px; flex-wrap: wrap; }
+        .shape-btn { padding: 6px 10px; border: 2px solid var(--primary); border-radius: 8px; cursor: pointer; background: white; color: var(--primary); font-size: 0.8rem; font-weight: bold; transition: 0.2s; }
+        .shape-btn.active { background: var(--primary); color: white; }
+
+        canvas { background: #fff; border: 1px solid #eee; border-radius: 12px; margin-bottom: 20px; max-width: 100%; }
+        
+        .input-row { display: flex; gap: 15px; margin-bottom: 15px; text-align: left; }
+        .input-group { flex: 1; }
+        label { display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; color: #636e72; }
+        input { width: 100%; padding: 12px; border: 2px solid #dfe6e9; border-radius: 8px; box-sizing: border-box; font-size: 1rem; outline: none; }
+        input.correct { border-color: #00b894; background: #e8f8f5; }
+        input.wrong { border-color: #d63031; background: #fceae9; }
+
+        button.main-btn { background: var(--primary); color: white; border: none; padding: 15px; width: 100%; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; }
+        .hint-btn { font-size: 0.8rem; color: #b2bec3; margin-top: 15px; display: block; cursor: pointer; border: none; background: none; text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Geometry Visualizer</h2>
+    
+    <div class="shape-selector">
+        <button class="shape-btn active" id="btn-cube" onclick="toggleShape('cube')">Cube</button>
+        <button class="shape-btn active" id="btn-rect" onclick="toggleShape('rect')">Prism</button>
+        <button class="shape-btn active" id="btn-cyl" onclick="toggleShape('cyl')">Cylinder</button>
+        <button class="shape-btn active" id="btn-pyram" onclick="toggleShape('pyram')">Pyramid</button>
+        <button class="shape-btn active" id="btn-tri" onclick="toggleShape('tri')">Tri-Prism</button>
+    </div>
+
+    <canvas id="shapeCanvas" width="300" height="220"></canvas>
+
+    <div class="input-row">
+        <div class="input-group">
+            <label>Surface Area</label>
+            <input type="number" id="ansSA" placeholder="SA" step="0.01">
+        </div>
+        <div class="input-group">
+            <label>Volume</label>
+            <input type="number" id="ansVol" placeholder="V" step="0.01">
+        </div>
+    </div>
+
+    <button class="main-btn" id="actionBtn" onclick="checkAnswers()">Check Answers</button>
+    <button class="hint-btn" onclick="showHelp()">Show Formulas</button>
+</div>
+
+<script>
+    let activeShapes = ['cube', 'rect', 'cyl', 'pyram', 'tri'];
+    let current = {};
+    const canvas = document.getElementById('shapeCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function toggleShape(type) {
+        const btn = document.getElementById('btn-' + type);
+        if (activeShapes.includes(type)) {
+            if (activeShapes.length === 1) return;
+            activeShapes = activeShapes.filter(s => s !== type);
+            btn.classList.remove('active');
+        } else {
+            activeShapes.push(type);
+            btn.classList.add('active');
+        }
+        generate();
+    }
+
+    function resetCtx() {
+        ctx.clearRect(0, 0, 300, 220);
+        ctx.strokeStyle = '#2d3436';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([]);
+        ctx.fillStyle = "#6c5ce7";
+        ctx.font = "bold 14px Arial";
+    }
+
+    function drawPyramid(s, h, l) {
+        resetCtx();
+        const x = 150, y = 180, w = 100, depth = 40;
+        const peakX = x, peakY = 50;
+
+        // Base
+        ctx.beginPath();
+        ctx.moveTo(x - w/2, y); ctx.lineTo(x + w/2, y);
+        ctx.lineTo(x + w/2 + depth, y - depth);
+        ctx.setLineDash([5, 5]);
+        ctx.lineTo(x - w/2 + depth, y - depth); ctx.lineTo(x - w/2, y);
+        ctx.stroke();
+
+        // Peaks
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.moveTo(peakX, peakY); ctx.lineTo(x - w/2, y);
+        ctx.moveTo(peakX, peakY); ctx.lineTo(x + w/2, y);
+        ctx.moveTo(peakX, peakY); ctx.lineTo(x + w/2 + depth, y - depth);
+        ctx.stroke();
+
+        ctx.fillText(`base side (s): ${s}`, x - 40, y + 20);
+        ctx.fillText(`height (h): ${h}`, x - 80, y - 60);
+        ctx.fillText(`slant (l): ${l}`, x + 50, y - 80);
+    }
+
+    function drawTriPrism(b, h, L) {
+        resetCtx();
+        const x = 80, y = 160, base = 80, height = 70, len = 100;
+        
+        // Front triangle
+        ctx.beginPath();
+        ctx.moveTo(x, y); ctx.lineTo(x + base, y); ctx.lineTo(x, y - height); ctx.closePath();
+        ctx.stroke();
+
+        // Back triangle lines
+        ctx.beginPath();
+        ctx.moveTo(x, y - height); ctx.lineTo(x + len, y - height);
+        ctx.moveTo(x + base, y); ctx.lineTo(x + base + len, y);
+        ctx.lineTo(x + len, y - height);
+        ctx.stroke();
+
+        ctx.fillText(`base (b): ${b}`, x + 20, y + 20);
+        ctx.fillText(`height (h): ${h}`, x - 45, y - 30);
+        ctx.fillText(`length (L): ${L}`, x + 90, y - 20);
+    }
+
+    function drawCube(s) {
+        resetCtx();
+        const x = 100, y = 80, size = 80, d = 40;
+        ctx.strokeRect(x+d, y-d, size, size);
+        ctx.beginPath();
+        ctx.moveTo(x, y); ctx.lineTo(x+d, y-d);
+        ctx.moveTo(x+size, y); ctx.lineTo(x+size+d, y-d);
+        ctx.moveTo(x, y+size); ctx.lineTo(x+d, y+size-d);
+        ctx.moveTo(x+size, y+size); ctx.lineTo(x+size+d, y+size-d);
+        ctx.stroke();
+        ctx.fillStyle = "white"; ctx.fillRect(x, y, size, size); ctx.strokeRect(x, y, size, size);
+        ctx.fillStyle = "#6c5ce7"; ctx.fillText(`s = ${s}`, x + 20, y + size + 25);
+    }
+
+    function drawRect(l, w, h) {
+        resetCtx();
+        const x = 80, y = 90, width = 110, height = 60, d = 30;
+        ctx.strokeRect(x+d, y-d, width, height);
+        ctx.beginPath();
+        ctx.moveTo(x,y); ctx.lineTo(x+d, y-d); ctx.moveTo(x+width,y); ctx.lineTo(x+width+d, y-d);
+        ctx.moveTo(x,y+height); ctx.lineTo(x+d, y+height-d); ctx.moveTo(x+width,y+height); ctx.lineTo(x+width+d, y+height-d);
+        ctx.stroke();
+        ctx.fillStyle = "white"; ctx.fillRect(x, y, width, height); ctx.strokeRect(x, y, width, height);
+        ctx.fillStyle = "#6c5ce7";
+        ctx.fillText(`l: ${l}`, x + 40, y + height + 20);
+        ctx.fillText(`w: ${w}`, x + width + 35, y + height/2);
+        ctx.fillText(`h: ${h}`, x - 35, y + height/2);
+    }
+
+    function drawCyl(r, h) {
+        resetCtx();
+        const x = 150, y = 50, radX = 60, radY = 20, height = 90;
+        ctx.beginPath(); ctx.ellipse(x, y + height, radX, radY, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x-radX, y); ctx.lineTo(x-radX, y+height); ctx.moveTo(x+radX, y); ctx.lineTo(x+radX, y+height); ctx.stroke();
+        ctx.fillStyle = "white"; ctx.beginPath(); ctx.ellipse(x, y, radX, radY, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.setLineDash([5, 3]); ctx.moveTo(x, y); ctx.lineTo(x + radX, y); ctx.stroke();
+        ctx.fillStyle = "#6c5ce7"; ctx.setLineDash([]);
+        ctx.fillText(`r: ${r}`, x + 10, y - 5); ctx.fillText(`h: ${h}`, x + radX + 10, y + height/2);
+    }
+
+    function generate() {
+        const type = activeShapes[Math.floor(Math.random() * activeShapes.length)];
+        const saIn = document.getElementById('ansSA');
+        const volIn = document.getElementById('ansVol');
+        saIn.value = ''; volIn.value = ''; saIn.className = ''; volIn.className = '';
+        document.getElementById('actionBtn').innerText = "Check Answers";
+        document.getElementById('actionBtn').onclick = checkAnswers;
+
+        if (type === 'cube') {
+            let s = Math.floor(Math.random() * 8) + 2;
+            current = { sa: 6*s*s, vol: s**3 };
+            drawCube(s);
+        } else if (type === 'rect') {
+            let l = Math.floor(Math.random() * 7) + 3, w = Math.floor(Math.random() * 5) + 2, h = Math.floor(Math.random() * 6) + 2;
+            current = { sa: 2*(l*w + l*h + w*h), vol: l*w*h };
+            drawRect(l, w, h);
+        } else if (type === 'cyl') {
+            let r = Math.floor(Math.random() * 4) + 2, h = Math.floor(Math.random() * 8) + 3;
+            current = { sa: round(2*3.14*r*r + 2*3.14*r*h), vol: round(3.14*r*r*h) };
+            drawCyl(r, h);
+        } else if (type === 'pyram') {
+            let s = Math.floor(Math.random() * 6) + 4, h = Math.floor(Math.random() * 6) + 4;
+            // Calculate slant height l for the user to make SA easier
+            let l = round(Math.sqrt((s/2)**2 + h**2));
+            current = { sa: round(s*s + 2*s*l), vol: round((1/3)*s*s*h) };
+            drawPyramid(s, h, l);
+        } else if (type === 'tri') {
+            let b = Math.floor(Math.random() * 6) + 3, h = Math.floor(Math.random() * 5) + 3, L = Math.floor(Math.random() * 7) + 4;
+            let hyp = round(Math.sqrt(b*b + h*h));
+            // SA = 2*AreaOfTri + AreaOf3Rects
+            current = { sa: round((b*h) + (b*L + h*L + hyp*L)), vol: round(0.5*b*h*L) };
+            drawTriPrism(b, h, L);
+        }
+    }
+
+    function round(n) { return Math.round(n * 100) / 100; }
+
+    function checkAnswers() {
+        const sa = parseFloat(document.getElementById('ansSA').value);
+        const vol = parseFloat(document.getElementById('ansVol').value);
+        let correct = (sa === current.sa && vol === current.vol);
+        
+        document.getElementById('ansSA').className = (sa === current.sa) ? 'correct' : 'wrong';
+        document.getElementById('ansVol').className = (vol === current.vol) ? 'correct' : 'wrong';
+
+        if (correct) {
+            document.getElementById('actionBtn').innerText = "Correct! Next Shape";
+            document.getElementById('actionBtn').onclick = generate;
+        }
+    }
+
+    function showHelp() {
+        alert("Formulas:\n\n" + 
+              "Cube: SA=6s², V=s³\n" +
+              "Rect Prism: SA=2(lw+lh+wh), V=lwh\n" +
+              "Cylinder: SA=2πr²+2πrh, V=πr²h (π=3.14)\n" +
+              "Pyramid: SA=BaseArea + 2sl, V=1/3BaseArea*h\n" +
+              "Tri Prism: SA=Sum of all faces, V=1/2bh*L");
+    }
+
+    generate();
+</script>
+</body>
+</html>
