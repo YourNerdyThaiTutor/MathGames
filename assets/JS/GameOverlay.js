@@ -22,7 +22,20 @@ function launchGame(gameUrl) {
     const iframe = document.createElement('iframe');
     iframe.src = gameUrl;
     iframe.style.cssText = `width: 100%; height: 100%; border: none;`;
-
+    //create close button
+    // Add a close button to the overlay for iPad safety
+    const closeBtn = document.createElement('button');
+    closeBtn.innerText = "× Close Game";
+    closeBtn.style.cssText = `
+        position: absolute; top: 10px; right: 10px; 
+        z-index: 10001; padding: 10px; background: rgba(0,0,0,0.5); 
+        color: white; border: none; border-radius: 5px; cursor: pointer;
+    `;
+    closeBtn.onclick = () => {
+        document.body.removeChild(overlay);
+        document.body.style.overflow = 'auto';
+    };
+    overlay.appendChild(closeBtn);
     // 3. Prevent the background page from scrolling
     document.body.style.overflow = 'hidden';
 
