@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speed Math: Multiplication</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f0f2f5; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+        .card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 100%; max-width: 400px; margin-bottom: 20px; transition: background-color 0.2s; }
+        
+        .hidden { display: none; }
+        .equation { font-size: 3.5rem; font-weight: bold; margin: 15px 0; color: #2c3e50; }
+        input { font-size: 1.5rem; width: 80%; padding: 10px; border: 2px solid #ddd; border-radius: 10px; text-align: center; margin-bottom: 15px; transition: all 0.2s; }
+        
+        /* Feedback Colors */
+        .wrong-flash { background-color: #f8d7da !important; border-color: #dc3545 !important; color: #721c24; }
+        .correct-flash { background-color: #d4edda !important; border-color: #28a745 !important; color: #155724; }
+
+        button { background: #3498db; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 1rem; cursor: pointer; width: 100%; font-weight: bold; }
+        button:hover { background: #2980b9; }
+
+        .stats { display: flex; justify-content: space-between; color: #7f8c8d; font-weight: bold; margin-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; border-radius: 10px; overflow: hidden; }
+        th, td { padding: 10px; border-bottom: 1px solid #eee; text-align: left; font-size: 0.9rem; }
+        th { background: #34495e; color: white; }
+        .timer { color: #e67e22; font-family: monospace; font-size: 1.2rem; }
+    </style>
+</head>
+<body>
+
+<div class="card" id="mainCard">
+    <!-- SETUP SCREEN -->
+    <div id="setup">
+        <h2>Math Challenge</h2>
+        <p>Target Table (0-12):</p>
+        <input type="number" id="focusNum" value="5" min="0" max="12" style="width: 50px;">
+        <p>Mode:</p>
+        <select id="orderStyle" style="width: 100%; padding: 10px; margin-bottom: 20px;">
+            <option value="random">Random Mix</option>
+            <option value="ordered">In Order (0-12)</option>
+        </select>
+        <button onclick="startQuiz()">Start 100 Questions</button>
+    </div>
+
+    <!-- QUIZ SCREEN -->
+    <div id="quiz" class="hidden">
+        <div class="stats">
+            <span id="progressText">Q: 1/100</span>
+            <span class="timer" id="timerDisplay">00:00</span>
+        </div>
+        <div class="equation" id="displayEquation">--</div>
+        <input type="number" id="userAnswer" placeholder="?" autocomplete="off">
+        <button id="nextBtn" onclick="handleAnswer()">Next</button>
+    </div>
+
+    <!-- END SCREEN -->
+    <div id="end" class="hidden">
+        <h2>Results</h2>
+        <p id="finalScore" style="font-size: 1.2rem; margin: 5px;"></p>
+        <p id="finalTime" style="font-size: 1.2rem; color: #e67e22; font-weight: bold;"></p>
+        <button onclick="location.reload()">New Challenge</button>
+    </div>
+</div>
+
+<div class="card" id="leaderboardContainer">
+    <h3>Personal Bests</h3>
+    <table id="scoreTable">
+        <thead>
+            <tr>
+                <th>Table</th>
+                <th>Mode</th>
+                <th>Score</th>
+                <th>Time</th>
+            </tr>
+        </thead>
+        <tbody id="leaderboardBody"></tbody>
+    </table>
+</div>
+
+<script>
+    let questions = [], currentIndex = 0, score = 0;
+    let startTime, timerInterval;
+    let focus, order;
+    let isProcessing = false; // Prevents double-submitting during the "red" flash
+
+    window.onload = updateLeaderboardTable;
+
+    function startQuiz() {
+        focus = parseInt(document.getElementById('focusNum').value);
+        order = document.getElementById('orderStyle').value;
+        questions = [];
+        currentIndex = 0;
+        score = 0;
+        
+        for (let i = 0; i < 100; i++) {
+            let mult = (order === 'ordered') ? (i % 13) : Math.floor(Math.random() * 13);
+            questions.push({ q: `${focus} &times; ${mult}`, a: focus * mult });
+        }
+
+        document.getElementById('setup').classList.add('hidden');
+        document.getElementById('quiz').classList.remove('hidden');
+        
+        startTime = Date.now();
+        timerInterval = setInterval(updateTimer, 1000);
+        showQuestion();
+    }
+
+    function updateTimer() {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+        const secs = String(elapsed % 60).padStart(2, '0');
+        document.getElementById('timerDisplay').innerText = `${mins}:${secs}`;
+    }
+
+    function showQuestion() {
+        if (currentIndex < 100) {
+            document.getElementById('progressText').innerText = `Q: ${currentIndex + 1}/100`;
+            document.getElementById('displayEquation').innerHTML = questions[currentIndex].q;
+            const input = document.getElementById('userAnswer');
+            input.value = '';
+            input.className = ''; // Reset colors
+            input.focus();
+            isProcessing = false;
+        } else {
+            finishQuiz();
+        }
+    }
+
+    function handleAnswer() {
+        if (isProcessing) return;
+        
+        const input = document.getElementById('userAnswer');
+        const val = parseInt(input.value);
+        const correct = questions[currentIndex].a;
+
+        isProcessing = true;
+
+        if (val === correct) {
+            score++;
+            input.classList.add('correct-flash');
+            // Quick move if correct
+            setTimeout(() => {
+                currentIndex++;
+                showQuestion();
+            }, 150);
+        } else {
+            input.classList.add('wrong-flash');
+            // Longer pause if wrong so they see the red
+            setTimeout(() => {
+                currentIndex++;
+                showQuestion();
+            }, 600);
+        }
+    }
+
+    document.getElementById('userAnswer').addEventListener('keypress', (e) => { 
+        if (e.key === 'Enter') handleAnswer(); 
+    });
+
+    function finishQuiz() {
+        clearInterval(timerInterval);
+        const totalTime = document.getElementById('timerDisplay').innerText;
+        document.getElementById('quiz').classList.add('hidden');
+        document.getElementById('end').classList.remove('hidden');
+        document.getElementById('finalScore').innerText = `Score: ${score}/100`;
+        document.getElementById('finalTime').innerText = `Time: ${totalTime}`;
+        saveScore(focus, order, score, totalTime);
+    }
+
+    function saveScore(table, mode, score, time) {
+        let history = JSON.parse(localStorage.getItem('mathBests') || "[]");
+        const existingIdx = history.findIndex(item => item.table === table && item.mode === mode);
+        const newEntry = { table, mode, score, time };
+
+        if (existingIdx > -1) {
+            // Logic: Better score OR same score with faster time
+            const old = history[existingIdx];
+            if (score > old.score || (score === old.score && time < old.time)) {
+                history[existingIdx] = newEntry;
+            }
+        } else {
+            history.push(newEntry);
+        }
+        localStorage.setItem('mathBests', JSON.stringify(history));
+        updateLeaderboardTable();
+    }
+
+    function updateLeaderboardTable() {
+        let history = JSON.parse(localStorage.getItem('mathBests') || "[]");
+        history.sort((a, b) => a.table - b.table);
+        const body = document.getElementById('leaderboardBody');
+        body.innerHTML = history.length ? history.map(h => `
+            <tr>
+                <td>${h.table}s</td>
+                <td>${h.mode}</td>
+                <td>${h.score}/100</td>
+                <td>${h.time}</td>
+            </tr>
+        `).join('') : '<tr><td colspan="4" style="text-align:center">No records yet!</td></tr>';
+    }
+</script>
+
+</body>
+</html>
