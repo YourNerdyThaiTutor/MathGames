@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chemical Equation Balancer Manipulative</title>
+    <style>
+        :root {
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --hydrogen-color: #3498db;
+            --oxygen-color: #e74c3c;
+            --border-radius: 12px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+
+        /* Equation Controls Area */
+        .equation-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: #edf2f7;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            margin-bottom: 30px;
+        }
+
+        .term {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .coeff-control {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .btn {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            width: 28px;
+            height: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: #34495e;
+            color: white;
+            border-color: #34495e;
+        }
+
+        .coeff-display {
+            min-width: 25px;
+            text-align: center;
+            font-size: 1.8rem;
+            color: #2c3e50;
+        }
+
+        .molecule-label {
+            font-size: 1.6rem;
+        }
+
+        .subscript {
+            font-size: 1rem;
+            vertical-align: sub;
+        }
+
+        .arrow {
+            font-size: 2rem;
+            color: #7f8c8d;
+            margin: 0 10px;
+        }
+
+        /* Visualization Canvas */
+        .visual-canvas {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 20px;
+            min-height: 250px;
+            border: 2px dashed #cbd5e1;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            background: #f8fafc;
+        }
+
+        .side {
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            justify-content: center;
+            gap: 20px;
+            padding: 10px;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: #cbd5e1;
+            font-weight: bold;
+        }
+
+        /* Atom Circles and Molecule Groups */
+        .molecule-group {
+            border: 2px solid #e2e8f0;
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .atom {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9rem;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+            box-shadow: inset -3px -3px 6px rgba(0,0,0,0.3), 2px 2px 4px rgba(0,0,0,0.15);
+        }
+
+        .atom.H { background-color: var(--hydrogen-color); }
+        .atom.O { background-color: var(--oxygen-color); }
+
+        /* Success/Status Banner */
+        .status-banner {
+            margin-top: 25px;
+            padding: 15px;
+            text-align: center;
+            border-radius: var(--border-radius);
+            font-size: 1.2rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .unbalanced {
+            background-color: #ffeece;
+            color: #b7791f;
+            border: 1px solid #fbd38d;
+        }
+
+        .balanced {
+            background-color: #def7ec;
+            color: #03543f;
+            border: 1px solid #84e1bc;
+            transform: scale(1.02);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Chemical Equation Manipulative</h1>
+    <p>Adjust the coefficients to balance the creation of water!</p>
+</header>
+
+<div class="container">
+    <div class="equation-container">
+        <div class="term">
+            <div class="coeff-control">
+                <button class="btn" onclick="changeCoeff('h2', 1)">+</button>
+                <button class="btn" onclick="changeCoeff('h2', -1)">-</button>
+            </div>
+            <div class="coeff-display" id="coeff-h2">1</div>
+            <div class="molecule-label">H<span class="subscript">2</span></div>
+        </div>
+
+        <div>+</div>
+
+        <div class="term">
+            <div class="coeff-control">
+                <button class="btn" onclick="changeCoeff('o2', 1)">+</button>
+                <button class="btn" onclick="changeCoeff('o2', -1)">-</button>
+            </div>
+            <div class="coeff-display" id="coeff-o2">1</div>
+            <div class="molecule-label">O<span class="subscript">2</span></div>
+        </div>
+
+        <div class="arrow">&rarr;</div>
+
+        <div class="term">
+            <div class="coeff-control">
+                <button class="btn" onclick="changeCoeff('h2o', 1)">+</button>
+                <button class="btn" onclick="changeCoeff('h2o', -1)">-</button>
+            </div>
+            <div class="coeff-display" id="coeff-h2o">1</div>
+            <div class="molecule-label">H<span class="subscript">2</span>O</div>
+        </div>
+    </div>
+
+    <div class="visual-canvas">
+        <div class="side" id="reactants-side"></div>
+
+        <div class="divider">|</div>
+
+        <div class="side" id="products-side"></div>
+    </div>
+
+    <div id="status" class="status-banner unbalanced">
+        Equation is Unbalanced
+    </div>
+</div>
+
+<script>
+    // Initial Coefficients State
+    const state = {
+        h2: 1,
+        o2: 1,
+        h2o: 1
+    };
+
+    function changeCoeff(molecule, amount) {
+        const newValue = state[molecule] + amount;
+        // Limit coefficients between 0 and 5 for display limits
+        if (newValue >= 0 && newValue <= 5) {
+            state[molecule] = newValue;
+            document.getElementById(`coeff-${molecule}`).innerText = newValue === 0 ? 0 : newValue;
+            updateVisualization();
+        }
+    }
+
+    function createAtom(type) {
+        const atom = document.createElement('div');
+        atom.className = `atom ${type}`;
+        atom.innerText = type;
+        return atom;
+    }
+
+    function updateVisualization() {
+        const reactantsSide = document.getElementById('reactants-side');
+        const productsSide = document.getElementById('products-side');
+        const statusBanner = document.getElementById('status');
+
+        // Clear previous visual items
+        reactantsSide.innerHTML = '';
+        productsSide.innerHTML = '';
+
+        // --- Render Reactants (Left Side) ---
+        // Render H2 molecules
+        for (let i = 0; i < state.h2; i++) {
+            const group = document.createElement('div');
+            group.className = 'molecule-group';
+            group.appendChild(createAtom('H'));
+            group.appendChild(createAtom('H'));
+            reactantsSide.appendChild(group);
+        }
+
+        // Render O2 molecules
+        for (let i = 0; i < state.o2; i++) {
+            const group = document.createElement('div');
+            group.className = 'molecule-group';
+            group.appendChild(createAtom('O'));
+            group.appendChild(createAtom('O'));
+            reactantsSide.appendChild(group);
+        }
+
+        // --- Render Products (Right Side) ---
+        // Render H2O molecules
+        for (let i = 0; i < state.h2o; i++) {
+            const group = document.createElement('div');
+            group.className = 'molecule-group';
+            group.appendChild(createAtom('H'));
+            group.appendChild(createAtom('O'));
+            group.appendChild(createAtom('H')); // Sandwiched structure for H2O look
+            productsSide.appendChild(group);
+        }
+
+        // --- Check Balance Math ---
+        const totalReactantH = state.h2 * 2;
+        const totalReactantO = state.o2 * 2;
+        
+        const totalProductH = state.h2o * 2;
+        const totalProductO = state.h2o * 1;
+
+        // Equations are balanced if totals match and coefficients are greater than 0
+        const isBalanced = (totalReactantH === totalProductH) && 
+                             (totalReactantO === totalProductO) && 
+                             (state.h2 > 0 && state.o2 > 0 && state.h2o > 0);
+
+        if (isBalanced) {
+            statusBanner.className = "status-banner balanced";
+            statusBanner.innerHTML = `🎉 Balanced! Total Atoms match: ${totalReactantH} Hydrogen (Blue) and ${totalReactantO} Oxygen (Red) on both sides.`;
+        } else {
+            statusBanner.className = "status-banner unbalanced";
+            statusBanner.innerHTML = `Not Balanced Yet | Left Side: ${totalReactantH}H, ${totalReactantO}O &nbsp;&bull;&nbsp; Right Side: ${totalProductH}H, ${totalProductO}O`;
+        }
+    }
+
+    // Run on initial page load
+    updateVisualization();
+</script>
+
+</body>
+</html>

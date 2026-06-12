@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Chemistry Lab: Sandbox Drag & Drop</title>
+    <style>
+        :root {
+            --bg-color: #f0f4f8;
+            --card-bg: #ffffff;
+            --text-color: #2c3e50;
+            
+            /* Periodic Table Element Colors */
+            --h-color: #3498db;  
+            --o-color: #e74c3c;  
+            --n-color: #9b59b6;  
+            --c-color: #2cc36b;  
+            --na-color: #e67e22; 
+            --cl-color: #1abc9c; 
+            --s-color: #f1c40f;  
+            --zn-color: #7f8c8d; 
+            --fe-color: #d35400; 
+            --cu-color: #e67e22; 
+            --al-color: #95a5a6; 
+            --ag-color: #bdc3c7; 
+            --ca-color: #34495e; 
+            --mg-color: #16a085; 
+
+            --border-radius: 16px;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            user-select: none;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        }
+
+        .selector-panel {
+            background: #edf2f7;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            margin-bottom: 25px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-group label {
+            font-size: 0.85rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #4a5568;
+            letter-spacing: 0.5px;
+        }
+
+        select {
+            font-size: 1rem;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 2px solid #cbd5e1;
+            background-color: white;
+            cursor: pointer;
+            color: var(--text-color);
+            font-weight: 600;
+            min-width: 250px;
+        }
+
+        .setup-zone {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #e2e8f0;
+            padding: 15px;
+            border-radius: var(--border-radius);
+            margin-bottom: 25px;
+        }
+
+        .equation-display {
+            font-size: 1.4rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .term {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: white;
+            padding: 6px 14px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .coeff-btn {
+            background: #edf2f7;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            width: 26px;
+            height: 26px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .coeff-btn:hover:not(:disabled) { background: #cbd5e1; }
+        .coeff-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        .coeff-num {
+            min-width: 18px;
+            text-align: center;
+            font-size: 1.5rem;
+            color: #2b6cb0;
+        }
+
+        .arrow { color: #a0aec0; font-size: 1.8rem; }
+
+        .lab-workspace {
+            display: grid;
+            grid-template-columns: 320px 1fr 380px;
+            gap: 20px;
+            min-height: 450px;
+            margin-bottom: 25px;
+        }
+
+        .pane {
+            border: 2px dashed #cbd5e1;
+            border-radius: var(--border-radius);
+            padding: 15px;
+            background: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            position: relative;
+        }
+
+        .pane-title {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            color: #718096;
+            margin-bottom: 5px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 5px;
+        }
+
+        .pool-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+        }
+
+        .molecule-breakable-card {
+            background: white;
+            border: 2px solid #cbd5e1;
+            border-radius: 10px;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.03);
+            transition: all 0.2s;
+        }
+        .molecule-breakable-card:hover:not(.broken) {
+            border-color: #319795;
+            transform: translateY(-2px);
+            cursor: pointer;
+        }
+        .molecule-breakable-card.broken {
+            opacity: 0.25;
+            border-style: dashed;
+            cursor: not-allowed;
+            background-color: #edf2f7;
+        }
+
+        .card-atom-preview {
+            display: flex;
+            gap: 4px;
+        }
+
+        .break-badge {
+            background: #319795;
+            color: white;
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+
+        .playground-zone {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-content: flex-start;
+            justify-content: center;
+            align-items: center;
+            padding: 50px 20px 20px 20px;
+            background: #ffffff;
+            border: 2px solid #e2e8f0;
+        }
+
+        .atom {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9rem;
+            box-shadow: inset -3px -3px 6px rgba(0,0,0,0.25), 2px 4px 6px rgba(0,0,0,0.15);
+            cursor: grab;
+            transition: transform 0.1s;
+            touch-action: none;
+        }
+        .atom:active { cursor: grabbing; }
+
+        .atom.H  { background-color: var(--h-color); }
+        .atom.O  { background-color: var(--o-color); }
+        .atom.N  { background-color: var(--n-color); }
+        .atom.C  { background-color: var(--c-color); }
+        .atom.Na { background-color: var(--na-color); }
+        .atom.Cl { background-color: var(--cl-color); }
+        .atom.S  { background-color: var(--s-color); color: #333; text-shadow: none; }
+        .atom.Zn { background-color: var(--zn-color); }
+        .atom.Fe { background-color: var(--fe-color); }
+        .atom.Cu { background-color: var(--cu-color); }
+        .atom.Al { background-color: var(--al-color); }
+        .atom.Ag { background-color: var(--ag-color); }
+        .atom.Ca { background-color: var(--ca-color); }
+        .atom.Mg { background-color: var(--mg-color); }
+
+        .atom.leftover-warning {
+            box-shadow: 0 0 14px #e74c3c !important;
+            border: 2px solid #ff4d4d !important;
+            animation: atomPulse 0.5s infinite alternate;
+        }
+
+        .recipe-box {
+            background: white;
+            border: 2px dashed #b2bfd2;
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .recipe-box.complete {
+            border: 2px solid #48bb78;
+            background-color: #f0fff4;
+        }
+
+        .recipe-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            font-size: 0.95rem;
+        }
+
+        .slots-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            min-height: 46px;
+            align-items: center;
+            padding: 6px;
+            background: #f7fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .drop-slot {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px dashed #cbd5e1;
+            background: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 0.85rem;
+            color: #a0aec0;
+            transition: all 0.2s;
+        }
+        .drop-slot.drag-over {
+            background: #e6fffa;
+            border-color: #319795;
+            transform: scale(1.05);
+        }
+        .drop-slot.filled {
+            border: none;
+            box-shadow: inset -3px -3px 6px rgba(0,0,0,0.2), 1px 2px 4px rgba(0,0,0,0.1);
+            color: white;
+        }
+
+        .lab-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .status-banner {
+            width: 100%;
+            padding: 15px;
+            text-align: center;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            box-sizing: border-box;
+        }
+
+        .state-setup { background: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; }
+        .state-ready { background: #feebc8; color: #c05621; border: 1px solid #fbd38d; }
+        .state-success { background: #c6f6d5; color: #22543d; border: 1px solid #9ae6b4; font-size: 1.25rem; }
+
+        @keyframes atomPulse {
+            0% { transform: scale(1); box-shadow: 0 0 8px #e74c3c; }
+            100% { transform: scale(1.06); box-shadow: 0 0 18px #ff0000; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2 style="text-align:center; margin-top:0; margin-bottom:5px;">Master Chemistry Lab: Sandbox Edition</h2>
+    <p style="text-align:center; color:#718096; margin-bottom:20px;">Adjust coefficients anytime! Add or remove materials mid-experiment to balance your results.</p>
+
+    <div class="selector-panel">
+        <div class="control-group">
+            <label for="type-select">Reaction Type</label>
+            <select id="type-select" onchange="populateExamples()">
+                <option value="synthesis">1. Synthesis (Combination)</option>
+                <option value="decomposition">2. Decomposition</option>
+                <option value="single">3. Single Replacement</option>
+                <option value="double">4. Double Replacement</option>
+                <option value="combustion">5. Combustion</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label for="example-select">Example Equation</label>
+            <select id="example-select" onchange="loadActiveEquation()">
+                </select>
+        </div>
+    </div>
+
+    <div class="setup-zone">
+        <div class="equation-display" id="dynamic-equation-row"></div>
+    </div>
+
+    <div class="lab-workspace">
+        <div class="pane">
+            <div class="pane-title">Reactant Structures</div>
+            <div class="pool-container" id="reactants-card-pool"></div>
+        </div>
+
+        <div class="pane playground-zone" id="playground">
+            <div class="pane-title" style="position:absolute; top:15px; left:15px; border:none;">Loose Atom Bench</div>
+        </div>
+
+        <div class="pane">
+            <div class="pane-title">Target Product Recipes</div>
+            <div class="pool-container" id="products-recipe-pool"></div>
+        </div>
+    </div>
+
+    <div class="lab-actions">
+        <button class="action-btn" id="reset-lab-btn" onclick="hardResetWorkspace()" style="background:#718096; padding: 10px 25px;">
+            Clear All Benches
+        </button>
+        <div id="status-message" class="status-banner state-setup"></div>
+    </div>
+</div>
+
+<script>
+    const MasterReactionDatabase = {
+        synthesis: [
+            { name: "Making Water (H₂ + O₂)", reactants: [{id:'r1', html:'H<sub>2</sub>', atoms:['H','H']}, {id:'r2', html:'O<sub>2</sub>', atoms:['O','O']}], products: [{id:'p1', name:'H₂O', atoms:['H','O','H']}], balanced: { r1: 2, r2: 1, p1: 2 } },
+            { name: "Making Table Salt (Na + Cl₂)", reactants: [{id:'r1', html:'Na', atoms:['Na']}, {id:'r2', html:'Cl<sub>2</sub>', atoms:['Cl','Cl']}], products: [{id:'p1', name:'NaCl', atoms:['Na','Cl']}], balanced: { r1: 2, r2: 1, p1: 2 } },
+            { name: "Acid Rain Formation (SO₃ + H₂O)", reactants: [{id:'r1', html:'SO<sub>3</sub>', atoms:['S','O','O','O']}, {id:'r2', html:'H<sub>2</sub>O', atoms:['H','O','H']}], products: [{id:'p1', name:'H₂SO₄', atoms:['H','O','S','O','O','O','H']}], balanced: { r1: 1, r2: 1, p1: 1 } }
+        ],
+        decomposition: [
+            { name: "Splitting Water (H₂O)", reactants: [{id:'r1', html:'H<sub>2</sub>O', atoms:['H','O','H']}], products: [{id:'p1', name:'H₂', atoms:['H','H']}, {id:'p2', name:'O₂', atoms:['O','O']}], balanced: { r1: 2, p1: 2, p2: 1 } },
+            { name: "Fizzing Hydrogen Peroxide (H₂O₂)", reactants: [{id:'r1', html:'H<sub>2</sub>O<sub>2</sub>', atoms:['O','H','H','O']}], products: [{id:'p1', name:'H₂O', atoms:['H','O','H']}, {id:'p2', name:'O₂', atoms:['O','O']}], balanced: { r1: 2, p1: 2, p2: 1 } },
+            { name: "Heating Limestone (CaCO₃)", reactants: [{id:'r1', html:'CaCO<sub>3</sub>', atoms:['Ca','C','O','O','O']}], products: [{id:'p1', name:'CaO', atoms:['Ca','O']}, {id:'p2', name:'CO₂', atoms:['O','C','O']}], balanced: { r1: 1, p1: 1, p2: 1 } }
+        ],
+        single: [
+            { name: "Zinc in Acid (Zn + HCl)", reactants: [{id:'r1', html:'Zn', atoms:['Zn']}, {id:'r2', html:'HCl', atoms:['H','Cl']}], products: [{id:'p1', name:'ZnCl₂', atoms:['Cl','Zn','Cl']}, {id:'p2', name:'H₂', atoms:['H','H']}], balanced: { r1: 1, r2: 2, p1: 1, p2: 1 } },
+            { name: "Iron in Copper Sulfate (Fe + CuSO₄)", reactants: [{id:'r1', html:'Fe', atoms:['Fe']}, {id:'r2', html:'CuSO<sub>4</sub>', atoms:['Cu','S','O','O','O','O']}], products: [{id:'p1', name:'FeSO₄', atoms:['Fe','S','O','O','O','O']}, {id:'p2', name:'Cu', atoms:['Cu']}], balanced: { r1: 1, r2: 1, p1: 1, p2: 1 } },
+            { name: "Thermite Blast (Al + Fe₂O₃)", reactants: [{id:'r1', html:'Al', atoms:['Al']}, {id:'r2', html:'Fe<sub>2</sub>O<sub>3</sub>', atoms:['Fe','Fe','O','O','O']}], products: [{id:'p1', name:'Al₂O₃', atoms:['Al','Al','O','O','O']}, {id:'p2', name:'Fe', atoms:['Fe']}], balanced: { r1: 2, r2: 1, p1: 1, p2: 2 } }
+        ],
+        double: [
+            { name: "Silver Precipitate (AgNO₃ + NaCl)", reactants: [{id:'r1', html:'AgNO<sub>3</sub>', atoms:['Ag','N','O','O','O']}, {id:'r2', html:'NaCl', atoms:['Na','Cl']}], products: [{id:'p1', name:'AgCl', atoms:['Ag','Cl']}, {id:'p2', name:'NaNO₃', atoms:['Na','N','O','O','O']}], balanced: { r1: 1, r2: 1, p1: 1, p2: 1 } },
+            { name: "Acid-Base Neutralization (HCl + NaOH)", reactants: [{id:'r1', html:'HCl', atoms:['H','Cl']}, {id:'r2', html:'NaOH', atoms:['Na','O','H']}], products: [{id:'p1', name:'NaCl', atoms:['Na','Cl']}, {id:'p2', name:'H₂O', atoms:['H','O','H']}], balanced: { r1: 1, r2: 1, p1: 1, p2: 1 } },
+            { name: "Antacid Neutralization (HCl + Mg(OH)₂)", reactants: [{id:'r1', html:'HCl', atoms:['H','Cl']}, {id:'r2', html:'Mg(OH)<sub>2</sub>', atoms:['Mg','O','H','O','H']}], products: [{id:'p1', name:'MgCl₂', atoms:['Cl','Mg','Cl']}, {id:'p2', name:'H₂O', atoms:['H','O','H']}], balanced: { r1: 2, r2: 1, p1: 1, p2: 2 } }
+        ],
+        combustion: [
+            { name: "Methane Gas Burn (CH₄ + O₂)", reactants: [{id:'r1', html:'CH<sub>4</sub>', atoms:['H','H','C','H','H']}, {id:'r2', html:'O<sub>2</sub>', atoms:['O','O']}], products: [{id:'p1', name:'CO₂', atoms:['O','C','O']}, {id:'p2', name:'H₂O', atoms:['H','O','H']}], balanced: { r1: 1, r2: 2, p1: 1, p2: 2 } },
+            { name: "Propane Tank Fire (C₃H₈ + O₂)", reactants: [{id:'r1', html:'C<sub>3</sub>H<sub>8</sub>', atoms:['C','C','C','H','H','H','H','H','H','H','H']}, {id:'r2', html:'O<sub>2</sub>', atoms:['O','O']}], products: [{id:'p1', name:'CO₂', atoms:['O','C','O']}, {id:'p2', name:'H₂O', atoms:['H','O','H']}], balanced: { r1: 1, r2: 5, p1: 3, p2: 4 } },
+            { name: "Cellular Respiration (C₆H₁₂O₆ + O₂)", reactants: [{id:'r1', html:'C<sub>6</sub>H<sub>12</sub>O<sub>6</sub>', atoms:['C','C','C','C','C','C','O','O','O','O','O','O','H','H','H','H','H','H','H','H','H','H','H','H']}, {id:'r2', html:'O<sub>2</sub>', atoms:['O','O']}], products: [{id:'p1', name:'CO₂', atoms:['O','C','O']}, {id:'p2', name:'H₂O', atoms:['H','O','H']}], balanced: { r1: 1, r2: 6, p1: 6, p2: 6 } }
+        ]
+    };
+
+    let activeReaction = {};
+    let coeffs = {};
+    
+    let reactantCardsState = []; 
+    let looseAtomsState = [];    
+    let recipeSlotsState = [];   
+    let globalCardUid = 0;
+
+    function populateExamples() {
+        const selectedType = document.getElementById('type-select').value;
+        const exampleDropdown = document.getElementById('example-select');
+        exampleDropdown.innerHTML = '';
+
+        MasterReactionDatabase[selectedType].forEach((ex, idx) => {
+            const opt = document.createElement('option');
+            opt.value = idx;
+            opt.innerText = ex.name;
+            exampleDropdown.appendChild(opt);
+        });
+
+        loadActiveEquation();
+    }
+
+    function loadActiveEquation() {
+        const selectedType = document.getElementById('type-select').value;
+        const selectedIdx = document.getElementById('example-select').value;
+        activeReaction = MasterReactionDatabase[selectedType][selectedIdx];
+
+        coeffs = {};
+        activeReaction.reactants.forEach(r => coeffs[r.id] = 1);
+
+        generateEquationUI();
+        hardResetWorkspace();
+    }
+
+    function generateEquationUI() {
+        const container = document.getElementById('dynamic-equation-row');
+        container.innerHTML = '';
+
+        activeReaction.reactants.forEach((r, index) => {
+            const block = document.createElement('div');
+            block.className = 'term';
+            block.innerHTML = `
+                <span class="coeff-num" id="lbl-${r.id}">1</span>
+                <span>${r.html}</span>
+                <div style="display:flex; flex-direction:column; margin-left:6px;">
+                    <button class="coeff-btn" id="plus-${r.id}" onclick="adjustCoefficient('${r.id}', 1)">+</button>
+                    <button class="coeff-btn" id="minus-${r.id}" onclick="adjustCoefficient('${r.id}', -1)">-</button>
+                </div>
+            `;
+            container.appendChild(block);
+            if (index < activeReaction.reactants.length - 1) {
+                const plus = document.createElement('div'); plus.innerText = '+';
+                container.appendChild(plus);
+            }
+        });
+
+        const arrow = document.createElement('div'); arrow.className = 'arrow'; arrow.innerHTML = '&rarr;';
+        container.appendChild(arrow);
+
+        activeReaction.products.forEach((p, index) => {
+            const block = document.createElement('div');
+            block.className = 'term';
+            block.style.background = '#edf2f7';
+            block.style.border = '1px dashed #cbd5e1';
+            block.innerHTML = `<span>${p.name}</span>`;
+            container.appendChild(block);
+            if (index < activeReaction.products.length - 1) {
+                const plus = document.createElement('div'); plus.innerText = '+';
+                container.appendChild(plus);
+            }
+        });
+    }
+
+    function hardResetWorkspace() {
+        reactantCardsState = [];
+        looseAtomsState = [];
+        recipeSlotsState = [];
+        globalCardUid = 0;
+
+        // Sync initial state cards
+        activeReaction.reactants.forEach(r => {
+            coeffs[r.id] = 1;
+            document.getElementById(`lbl-${r.id}`).innerText = 1;
+            spawnReactantCard(r.id);
+        });
+
+        // Pre-build basic slots
+        let recipeUid = 0;
+        let slotUid = 0;
+        activeReaction.products.forEach(p => {
+            let maxInstances = 12; // Static blueprint container pool
+            for(let i=0; i<maxInstances; i++) {
+                let currentRecipeId = `recipe-${recipeUid++}`;
+                p.atoms.forEach(atomType => {
+                    recipeSlotsState.push({
+                        slotId: `slot-${slotUid++}`,
+                        recipeId: currentRecipeId,
+                        productId: p.id,
+                        productName: p.name,
+                        type: atomType,
+                        filledWithUniqueId: null
+                    });
+                });
+            }
+        });
+
+        render();
+    }
+
+    function spawnReactantCard(reactantId) {
+        let definition = activeReaction.reactants.find(r => r.id === reactantId);
+        reactantCardsState.push({
+            uid: `card-${globalCardUid++}`,
+            reactantId: reactantId,
+            html: definition.html,
+            atoms: [...definition.atoms],
+            broken: false
+        });
+    }
+
+    function adjustCoefficient(reactantId, change) {
+        let currentCount = coeffs[reactantId];
+        
+        if (change === 1 && currentCount < 12) {
+            coeffs[reactantId]++;
+            spawnReactantCard(reactantId);
+        } else if (change === -1 && currentCount > 1) {
+            // Find an unbroken matching card first
+            let indexToRemove = reactantCardsState.findIndex(c => c.reactantId === reactantId && !c.broken);
+            
+            if (indexToRemove !== -1) {
+                reactantCardsState.splice(indexToRemove, 1);
+                coeffs[reactantId]--;
+            } else {
+                // No unbroken card found. Let's see if we can reclaim matching loose playground atoms.
+                let definition = activeReaction.reactants.find(r => r.id === reactantId);
+                let neededToReclaim = [...definition.atoms];
+                
+                // Check if all needed atoms exist loosely in the playground
+                let looseMatches = [];
+                let temporaryLooseState = [...looseAtomsState];
+                let safeToReclaim = true;
+
+                neededToReclaim.forEach(type => {
+                    let matchIndex = temporaryLooseState.findIndex(a => a.type === type);
+                    if (matchIndex !== -1) {
+                        looseMatches.push(temporaryLooseState[matchIndex].uniqueId);
+                        temporaryLooseState.splice(matchIndex, 1);
+                    } else {
+                        safeToReclaim = false;
+                    }
+                });
+
+                if (safeToReclaim) {
+                    // Remove the loose atoms from the playground
+                    looseAtomsState = looseAtomsState.filter(a => !looseMatches.includes(a.uniqueId));
+                    
+                    // Remove one broken marker card instance to keep visual counts clean
+                    let brokenCardIdx = reactantCardsState.findIndex(c => c.reactantId === reactantId && c.broken);
+                    if (brokenCardIdx !== -1) reactantCardsState.splice(brokenCardIdx, 1);
+                    
+                    coeffs[reactantId]--;
+                } else {
+                    alert("Cannot remove molecule: Its atoms are already dropped into a product slot on the right side! Drag them back out first.");
+                    return;
+                }
+            }
+        }
+        
+        document.getElementById(`lbl-${reactantId}`).innerText = coeffs[reactantId];
+        render();
+    }
+
+    function breakCard(cardUid) {
+        const card = reactantCardsState.find(c => c.uid === cardUid);
+        if(!card || card.broken) return;
+
+        card.broken = true;
+        card.atoms.forEach((atomSymbol, idx) => {
+            looseAtomsState.push({
+                uniqueId: `${cardUid}-atom-${idx}`,
+                type: atomSymbol
+            });
+        });
+
+        render();
+    }
+
+    function checkDeadlockState() {
+        if (looseAtomsState.length === 0) return false;
+        let openSlotsAvailable = recipeSlotsState.filter(s => s.filledWithUniqueId === null);
+        
+        let anyMatchPossible = false;
+        looseAtomsState.forEach(atom => {
+            let matches = openSlotsAvailable.filter(s => s.type === atom.type);
+            if (matches.length > 0) anyMatchPossible = true;
+        });
+
+        return !anyMatchPossible;
+    }
+
+    function render() {
+        renderReactantCards();
+        renderPlayground();
+        renderRecipeBlueprints();
+        updateStatus();
+    }
+
+    function renderReactantCards() {
+        const pool = document.getElementById('reactants-card-pool');
+        pool.innerHTML = '';
+
+        reactantCardsState.forEach(card => {
+            const div = document.createElement('div');
+            div.className = `molecule-breakable-card ${card.broken ? 'broken' : ''}`;
+            if (!card.broken) div.onclick = () => breakCard(card.uid);
+
+            let previewHtml = card.atoms.map(a => `<span style="font-weight:bold; margin-right:3px; color:var(--text-color);">${a}</span>`).join('');
+            
+            div.innerHTML = `
+                <div>
+                    <div style="font-weight:bold; font-size:1.1rem;">${card.html}</div>
+                    <div class="card-atom-preview">${previewHtml}</div>
+                </div>
+                <div class="break-badge" style="${card.broken ? 'background:#a0aec0' : ''}">${card.broken ? 'Dissociated' : 'Break'}</div>
+            `;
+            pool.appendChild(div);
+        });
+    }
+
+    function renderPlayground() {
+        const playground = document.getElementById('playground');
+        playground.innerHTML = '<div class="pane-title" style="position:absolute; top:15px; left:15px; border:none;">Loose Atom Bench</div>';
+
+        const isDeadlocked = checkDeadlockState();
+
+        looseAtomsState.forEach(atom => {
+            const el = document.createElement('div');
+            el.className = `atom ${atom.type} ${isDeadlocked ? 'leftover-warning' : ''}`;
+            el.innerText = atom.type;
+            el.draggable = true;
+            el.id = atom.uniqueId;
+
+            el.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', atom.uniqueId);
+            });
+
+            playground.appendChild(el);
+        });
+    }
+
+    function renderRecipeBlueprints() {
+        const pool = document.getElementById('products-recipe-pool');
+        pool.innerHTML = '';
+
+        let uniqueRecipeIds = [...new Set(recipeSlotsState.map(s => s.recipeId))];
+
+        uniqueRecipeIds.forEach(rId => {
+            let associatedSlots = recipeSlotsState.filter(s => s.recipeId === rId);
+            let name = associatedSlots[0].productName;
+            let filledCount = associatedSlots.filter(s => s.filledWithUniqueId !== null).length;
+            
+            if (filledCount === 0) {
+                let matchingChemicalCards = recipeSlotsState.filter(s => s.productName === name);
+                let precedingSlots = matchingChemicalCards.filter(s => s.recipeId < rId && s.filledWithUniqueId === null);
+                if (precedingSlots.length > 0) return; 
+            }
+
+            const card = document.createElement('div');
+            const isComplete = (filledCount === associatedSlots.length);
+            card.className = `recipe-box ${isComplete ? 'complete' : ''}`;
+
+            const header = document.createElement('div');
+            header.className = 'recipe-header';
+            header.innerHTML = `<span>${name}</span> <span>${isComplete ? '🎉 Ready' : 'Blueprint'}</span>`;
+            card.appendChild(header);
+
+            const row = document.createElement('div');
+            row.className = 'slots-row';
+
+            associatedSlots.forEach(slot => {
+                const target = document.createElement('div');
+                
+                if (slot.filledWithUniqueId) {
+                    let matchingAtomType = slot.type;
+                    target.className = `drop-slot filled atom ${matchingAtomType}`;
+                    target.innerText = matchingAtomType;
+                    
+                    // Allow pulling atom BACK into sandbox playground workspace
+                    target.draggable = true;
+                    target.addEventListener('dragstart', (e) => {
+                        e.dataTransfer.setData('text/reclaim', JSON.stringify({
+                            atomId: slot.filledWithUniqueId,
+                            slotId: slot.slotId,
+                            type: slot.type
+                        }));
+                    });
+                } else {
+                    target.className = 'drop-slot';
+                    target.innerText = slot.type;
+
+                    target.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        target.classList.add('drag-over');
+                    });
+
+                    target.addEventListener('dragleave', () => {
+                        target.classList.remove('drag-over');
+                    });
+
+                    target.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        target.classList.remove('drag-over');
+                        const draggedUniqueAtomId = e.dataTransfer.getData('text/plain');
+                        
+                        let atomObject = looseAtomsState.find(a => a.uniqueId === draggedUniqueAtomId);
+                        if (atomObject && atomObject.type === slot.type) {
+                            slot.filledWithUniqueId = draggedUniqueAtomId;
+                            looseAtomsState = looseAtomsState.filter(a => a.uniqueId !== draggedUniqueAtomId);
+                            render();
+                        }
+                    });
+                }
+                row.appendChild(target);
+            });
+
+            card.appendChild(row);
+            pool.appendChild(card);
+        });
+
+        // Allow playground to receive reclaimed items dropped backward
+        const playgroundNode = document.getElementById('playground');
+        playgroundNode.addEventListener('dragover', (e) => e.preventDefault());
+        playgroundNode.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const reclaimDataStr = e.dataTransfer.getData('text/reclaim');
+            if(reclaimDataStr) {
+                let data = JSON.parse(reclaimDataStr);
+                let targetSlot = recipeSlotsState.find(s => s.slotId === data.slotId);
+                if(targetSlot) {
+                    targetSlot.filledWithUniqueId = null;
+                    looseAtomsState.push({ uniqueId: data.atomId, type: data.type });
+                    render();
+                }
+            }
+        });
+    }
+
+    function updateStatus() {
+        const msg = document.getElementById('status-message');
+        
+        let totalUnbrokenCards = reactantCardsState.filter(c => !c.broken).length;
+        let totalPlaygroundAtoms = looseAtomsState.length;
+
+        let distinctRecipes = [...new Set(recipeSlotsState.map(s => s.recipeId))];
+        let finalizedSummaryMap = {};
+
+        distinctRecipes.forEach(rId => {
+            let slots = recipeSlotsState.filter(s => s.recipeId === rId);
+            if(slots.every(s => s.filledWithUniqueId !== null)) {
+                let pId = slots[0].productId;
+                finalizedSummaryMap[pId] = (finalizedSummaryMap[pId] || 0) + 1;
+            }
+        });
+
+        let matchesChemicalEquationBalance = true;
+        
+        activeReaction.reactants.forEach(r => {
+            if (coeffs[r.id] !== activeReaction.balanced[r.id]) {
+                matchesChemicalEquationBalance = false;
+            }
+        });
+
+        activeReaction.products.forEach(p => {
+            if ((finalizedSummaryMap[p.id] || 0) !== activeReaction.balanced[p.id]) {
+                matchesChemicalEquationBalance = false;
+            }
+        });
+
+        if (totalUnbrokenCards === 0 && totalPlaygroundAtoms === 0) {
+            if (matchesChemicalEquationBalance) {
+                msg.className = "status-banner state-success";
+                let formulas = activeReaction.products.map(p => `<b>${finalizedSummaryMap[p.id]}</b>${p.name}`).join(' + ');
+                msg.innerHTML = `🎉 Perfectly Balanced! The reaction completely resolved: ${formulas}`;
+            } else {
+                msg.className = "status-banner state-ready";
+                msg.innerHTML = `⚠️ Atoms all used up, but the current coefficients don't balance cleanly. Adjust the +/- buttons to fix it!`;
+            }
+        } else if (checkDeadlockState()) {
+            msg.className = "status-banner state-ready";
+            msg.innerHTML = `⚠️ Leftover Residue Trapped! Adjust coefficients or click 'Clear All' to start over.`;
+        } else if (totalPlaygroundAtoms > 0 || recipeSlotsState.some(s => s.filledWithUniqueId !== null) || totalUnbrokenCards > 0) {
+            msg.className = "status-banner state-ready";
+            msg.innerHTML = `Dynamic Sandbox Active: Break molecules, change quantities, and drag elements back and forth freely!`;
+        } else {
+            msg.className = "status-banner state-setup";
+            msg.innerHTML = `Lab loaded. Adjust your formula coefficients anytime.`;
+        }
+    }
+
+    populateExamples();
+</script>
+
+</body>
+</html>
